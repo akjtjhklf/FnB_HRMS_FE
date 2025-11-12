@@ -2,13 +2,12 @@
 
 import React from "react";
 import { useLogin } from "@refinedev/core";
-import { Form, Input, Button, Typography, App } from "antd";
+import { Form, Input, Button, Typography, App, Space, Divider } from "antd";
 import { Card } from "@/components/ui";
-import { motion } from "framer-motion";
-import { UserOutlined, LockOutlined } from "@ant-design/icons";
+import { UserOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { useAuthStore } from "@/store";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const [form] = Form.useForm();
@@ -23,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
     login(values, {
       onSuccess: (data: any) => {
-        message.success("Login successful!");
+        message.success("Đăng nhập thành công!");
         
         // Store user data in Zustand
         if (data?.user) {
@@ -34,71 +33,120 @@ export default function LoginPage() {
         setLoading(false);
       },
       onError: (error: any) => {
-        message.error(error?.message || "Login failed");
+        message.error(error?.message || "Đăng nhập thất bại");
         setLoading(false);
       },
     });
   };
 
+  // Quick login for testing
+  const quickLogin = () => {
+    form.setFieldsValue({
+      email: "admin@example.com",
+      password: "admin123",
+    });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md p-6"
-      >
-        <Card className="shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="w-full max-w-md animate-in">
+        <Card className="shadow-2xl border-0">
+          {/* Header */}
           <div className="text-center mb-8">
-            <Title level={2}>HRMS Login</Title>
-            <p className="text-gray-500">Sign in to your account</p>
+            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
+              <span className="text-3xl">🏢</span>
+            </div>
+            <Title level={2} className="!mb-2">
+              HRMS System
+            </Title>
+            <Text className="text-gray-500">
+              Đăng nhập để tiếp tục
+            </Text>
           </div>
 
+          {/* Login Form */}
           <Form
             form={form}
             layout="vertical"
             onFinish={onFinish}
             autoComplete="off"
+            size="large"
           >
             <Form.Item
               name="email"
+              label="Email"
               rules={[
-                { required: true, message: "Please input your email!" },
-                { type: "email", message: "Please enter a valid email!" },
+                { required: true, message: "Vui lòng nhập email!" },
+                { type: "email", message: "Email không hợp lệ!" },
               ]}
             >
               <Input
-                prefix={<UserOutlined />}
-                placeholder="Email"
-                size="large"
+                prefix={<UserOutlined className="text-gray-400" />}
+                placeholder="admin@example.com"
               />
             </Form.Item>
 
             <Form.Item
               name="password"
-              rules={[{ required: true, message: "Please input your password!" }]}
+              label="Mật khẩu"
+              rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
             >
               <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Password"
-                size="large"
+                prefix={<LockOutlined className="text-gray-400" />}
+                placeholder="••••••••"
               />
             </Form.Item>
 
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                block
-                loading={loading}
-              >
-                Sign In
-              </Button>
+            <Form.Item className="!mb-0">
+              <Space direction="vertical" className="w-full" size="middle">
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  icon={<LoginOutlined />}
+                  loading={loading}
+                  className="!h-12"
+                >
+                  Đăng nhập
+                </Button>
+
+                <Divider plain>
+                  <Text className="text-xs text-gray-400">HOẶC</Text>
+                </Divider>
+
+                <Button
+                  type="dashed"
+                  block
+                  onClick={quickLogin}
+                  className="!h-10"
+                >
+                  Điền thông tin demo (Test)
+                </Button>
+              </Space>
             </Form.Item>
           </Form>
+
+          {/* Footer */}
+          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
+            <Text className="text-xs text-gray-400">
+              © 2025 HRMS. All rights reserved.
+            </Text>
+          </div>
         </Card>
-      </motion.div>
+
+        {/* Demo Info */}
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <Text strong className="text-blue-700 block mb-2">
+            🔐 Thông tin đăng nhập demo:
+          </Text>
+          <Text className="text-sm text-blue-600 block">
+            Email: admin@example.com
+          </Text>
+          <Text className="text-sm text-blue-600 block">
+            Password: admin123
+          </Text>
+        </div>
+      </div>
     </div>
   );
 }
