@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   const { refresh } = useDashboardStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between flex-wrap gap-4">

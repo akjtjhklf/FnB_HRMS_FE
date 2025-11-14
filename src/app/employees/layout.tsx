@@ -5,7 +5,7 @@ import { ModernSidebar } from "@/components/layout";
 import { Header } from "@/components/header";
 import { Menu } from "lucide-react";
 
-export default function DashboardLayout({
+export default function EmployeesLayout({
   children,
 }: {
   children: React.ReactNode;
