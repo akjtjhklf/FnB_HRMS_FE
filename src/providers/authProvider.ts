@@ -7,6 +7,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 export const authProvider: AuthProvider = {
   login: async ({ email, password }) => {
     try {
+
+      // Real API call
       const { data } = await apiClient.post<LoginResponse>(`/auth/login`, {
         email,
         password,
@@ -20,7 +22,7 @@ export const authProvider: AuthProvider = {
 
         return {
           success: true,
-          redirectTo: "/",
+          redirectTo: "/dashboard",
         };
       }
 
@@ -32,11 +34,12 @@ export const authProvider: AuthProvider = {
         },
       };
     } catch (error: any) {
+    
       return {
         success: false,
         error: {
           name: "LoginError",
-          message: error.response?.data?.message || "Login failed",
+          message: error.response?.data?.message || "Login failed. Please check if backend is running.",
         },
       };
     }

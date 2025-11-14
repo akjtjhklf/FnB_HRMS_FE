@@ -30,7 +30,7 @@ export const RETRY_CONFIG = {
 
 export const AUTH_CONFIG = {
   LOGIN_ENDPOINT: `${API_VERSION}/auth/login`,
-  REFRESH_TOKEN_ENDPOINT: `${API_VERSION}/auth/refresh-token`,
+  REFRESH_TOKEN_ENDPOINT: `/auth/refresh-token`,
   LOGOUT_ENDPOINT: `${API_VERSION}/auth/logout`,
   ME_ENDPOINT: `${API_VERSION}/users/me`,
 } as const;
