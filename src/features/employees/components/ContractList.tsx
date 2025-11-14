@@ -2,9 +2,28 @@
 
 import { Contract } from "@/types/employee";
 import { useList, useDelete, useCreate, useUpdate } from "@refinedev/core";
-import { Card, Table, Button as AntButton, Tag, Modal, Form, Input, Select, DatePicker, message, InputNumber } from "antd";
+import {
+  Card,
+  Table,
+  Button as AntButton,
+  Tag,
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  message,
+  InputNumber,
+} from "antd";
 import { Button } from "@/components/ui/Button";
-import { Plus, Edit, Trash2, FileText, Calendar, DollarSign } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  FileText,
+  Calendar,
+  DollarSign,
+} from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/utils";
 import dayjs from "dayjs";
@@ -82,7 +101,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
               message.success("Xóa hợp đồng thành công!");
             },
             onError: (error: any) => {
-              message.error(error?.message || "Có lỗi xảy ra khi xóa hợp đồng!");
+              message.error(
+                error?.message || "Có lỗi xảy ra khi xóa hợp đồng!"
+              );
             },
           }
         );
@@ -115,12 +136,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
     const contractData = {
       employee_id: employeeId,
       contract_type: values.contract_type,
-      start_date: values.start_date
-        ? dayjs(values.start_date).format("YYYY-MM-DD")
-        : undefined,
-      end_date: values.end_date
-        ? dayjs(values.end_date).format("YYYY-MM-DD")
-        : undefined,
+      start_date: values.start_date?.toDate(),
+      end_date: values.end_date?.toDate(),
+
       salary: values.salary,
       terms: values.terms,
       status: values.status,
@@ -140,7 +158,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
             form.resetFields();
           },
           onError: (error: any) => {
-            message.error(error?.message || "Có lỗi xảy ra khi cập nhật hợp đồng!");
+            message.error(
+              error?.message || "Có lỗi xảy ra khi cập nhật hợp đồng!"
+            );
           },
         }
       );
@@ -319,7 +339,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
           <Form.Item
             label="Loại hợp đồng"
             name="contract_type"
-            rules={[{ required: true, message: "Vui lòng chọn loại hợp đồng!" }]}
+            rules={[
+              { required: true, message: "Vui lòng chọn loại hợp đồng!" },
+            ]}
           >
             <Select
               size="large"
@@ -336,7 +358,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
             <Form.Item
               label="Ngày bắt đầu"
               name="start_date"
-              rules={[{ required: true, message: "Vui lòng chọn ngày bắt đầu!" }]}
+              rules={[
+                { required: true, message: "Vui lòng chọn ngày bắt đầu!" },
+              ]}
             >
               <DatePicker
                 size="large"

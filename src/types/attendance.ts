@@ -30,7 +30,7 @@ export interface UpdateAttendanceLogDto extends Partial<CreateAttendanceLogDto> 
 export interface AttendanceShift {
   id: string;
   employee_id: string | Employee;
-  shift_id: string | Shift;
+  shift_id: string | WorkShift;
   date: string;
   status: "scheduled" | "completed" | "missed" | "cancelled";
   check_in_time?: string;
@@ -98,11 +98,11 @@ export interface MonthlyEmployeeStat {
   updated_at?: string;
 }
 
-// Shift types
-export interface Shift {
+// WorkShift types (renamed from Shift to avoid conflict with schedule.ts)
+export interface WorkShift {
   id: string;
   name: string;
-  shift_type_id?: string | ShiftType;
+  shift_type_id?: string | WorkShiftType;
   start_time: string;
   end_time: string;
   break_duration?: number; // minutes
@@ -111,7 +111,7 @@ export interface Shift {
   updated_at?: string;
 }
 
-export interface ShiftType {
+export interface WorkShiftType {
   id: string;
   name: string;
   description?: string;
@@ -120,7 +120,7 @@ export interface ShiftType {
   updated_at?: string;
 }
 
-export interface CreateShiftDto {
+export interface CreateWorkShiftDto {
   name: string;
   shift_type_id?: string;
   start_time: string;
@@ -129,4 +129,4 @@ export interface CreateShiftDto {
   description?: string;
 }
 
-export interface UpdateShiftDto extends Partial<CreateShiftDto> {}
+export interface UpdateWorkShiftDto extends Partial<CreateWorkShiftDto> {}

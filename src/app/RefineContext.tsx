@@ -8,7 +8,7 @@ import React from "react";
 import { App as AntdApp } from "antd";
 
 import { ColorModeContextProvider } from "@contexts/color-mode";
-import { authProvider,dataProvider } from "@providers";
+import { authProvider, dataProvider } from "@providers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 

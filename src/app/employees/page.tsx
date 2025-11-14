@@ -3,28 +3,30 @@
 import { useList, useDelete } from "@refinedev/core";
 import { Employee, Contract } from "@/types/employee";
 import { Button } from "@/components/ui/Button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import Link from "next/link";
 import { formatDate, formatPhoneNumber } from "@/lib/utils";
-import { Pencil, Trash2, Plus, Eye, Search, Filter, Download, Users } from "lucide-react";
-import { useState } from "react";
-import { Input, Select, Tabs, Badge, Avatar, Space } from "antd";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  Eye,
+  Search,
+  Filter,
+  Download,
+  Users,
+} from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Select, Tabs, Badge, Avatar, Space, Button as AntButton } from "antd";
+import CustomDataTable, {
+  CustomColumnType,
+} from "@/components/common/CustomDataTable";
+import "@/components/common/CustomDataTable.css";
+import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 
 const { TabPane } = Tabs;
 
 export default function EmployeesListPage() {
-  const [page, setPage] = useState(1);
-  const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("list");
-  const pageSize = 10;
 
   const { query } = useList<Employee>({
     resource: "employees",
@@ -41,43 +43,376 @@ export default function EmployeesListPage() {
 
   const contracts = (contractsQuery.data?.data || []) as unknown as Contract[];
 
-  const handleDelete = (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
-      deleteEmployee({
-        resource: "employees",
-        id,
-      });
-    }
-  };
+  const handleDelete = useCallback(
+    (id: string) => {
+      if (confirm("Bạn có chắc chắn muốn xóa nhân viên này?")) {
+        deleteEmployee({
+          resource: "employees",
+          id,
+        });
+      }
+    },
+    [deleteEmployee]
+  );
 
   const employees = (data?.data || []) as unknown as Employee[];
   const total = data?.total || 0;
-  const totalPages = Math.ceil(total / pageSize);
   const contractsLoading = contractsQuery.isLoading;
-
-  // Filter employees based on search and status
-  const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch =
-      searchText === "" ||
-      `${emp.first_name} ${emp.last_name}`
-        .toLowerCase()
-        .includes(searchText.toLowerCase()) ||
-      emp.employee_code?.toLowerCase().includes(searchText.toLowerCase()) ||
-      emp.email?.toLowerCase().includes(searchText.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === "all" || emp.employment_status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
 
   // Statistics
   const stats = {
     total: total,
     active: employees.filter((e) => e.employment_status === "active").length,
-    inactive: employees.filter((e) => e.employment_status === "inactive").length,
+    inactive: employees.filter((e) => e.employment_status === "inactive")
+      .length,
     onLeave: employees.filter((e) => e.employment_status === "on_leave").length,
   };
+
+  // Define columns for employees table
+  const employeeColumns: CustomColumnType<Employee>[] = useMemo(
+    () => [
+      {
+        title: "Nhân viên",
+        dataIndex: ["first_name"],
+        key: "employee",
+        width: 250,
+        fixed: "left",
+        filterable: true,
+        filterType: "text",
+        sortable: true,
+        sorter: (a, b) =>
+          `${a.first_name} ${a.last_name}`.localeCompare(
+            `${b.first_name} ${b.last_name}`
+          ),
+        render: (_, record) => (
+          <div className="flex items-center gap-3">
+            <Avatar src={record.avatar} size={40} className="bg-blue-500">
+              {record.first_name?.[0]}
+            </Avatar>
+            <div>
+              <p className="font-medium text-gray-900">
+                {record.first_name} {record.last_name}
+              </p>
+              <p className="text-sm text-gray-500">{record.email}</p>
+            </div>
+          </div>
+        ),
+      },
+      {
+        title: "Mã NV",
+        dataIndex: "employee_code",
+        key: "employee_code",
+        width: 120,
+        filterable: true,
+        filterType: "text",
+        sortable: true,
+        render: (code) => (
+          <span className="font-medium text-gray-700">{code}</span>
+        ),
+      },
+      {
+        title: "Email",
+        dataIndex: "email",
+        key: "email",
+        width: 220,
+        ellipsis: true,
+        filterable: true,
+        filterType: "text",
+        render: (email) => <span className="text-gray-600">{email}</span>,
+      },
+      {
+        title: "Số điện thoại",
+        dataIndex: "phone",
+        key: "phone",
+        width: 140,
+        render: (phone) => (
+          <span className="text-gray-600">
+            {phone ? formatPhoneNumber(phone) : "-"}
+          </span>
+        ),
+      },
+      {
+        title: "Chức vụ",
+        dataIndex: ["position_id", "name"],
+        key: "position",
+        width: 160,
+        filterable: true,
+        filterType: "select",
+        filterOptions: Array.from(
+          new Set(
+            employees
+              .map((e) =>
+                typeof e.position_id === "object" ? e.position_id?.name : null
+              )
+              .filter(Boolean)
+          )
+        ).map((name) => ({ label: name as string, value: name as string })),
+        onFilter: (value, record) => {
+          const positionName =
+            typeof record.position_id === "object"
+              ? record.position_id?.name
+              : null;
+          return positionName === value;
+        },
+        render: (_, record) => (
+          <span className="text-gray-700">
+            {typeof record.position_id === "object"
+              ? record.position_id.name
+              : "-"}
+          </span>
+        ),
+      },
+      {
+        title: "Trạng thái",
+        dataIndex: "employment_status",
+        key: "employment_status",
+        width: 150,
+        align: "center",
+        filterable: true,
+        filterType: "select",
+        filterOptions: [
+          { label: "Đang làm việc", value: "active" },
+          { label: "Nghỉ phép", value: "on_leave" },
+          { label: "Không hoạt động", value: "inactive" },
+        ],
+        render: (status) => (
+          <Badge
+            status={
+              status === "active"
+                ? "success"
+                : status === "on_leave"
+                  ? "warning"
+                  : "default"
+            }
+            text={
+              status === "active"
+                ? "Đang làm việc"
+                : status === "on_leave"
+                  ? "Nghỉ phép"
+                  : "Không hoạt động"
+            }
+          />
+        ),
+      },
+      {
+        title: "Ngày vào làm",
+        dataIndex: "hire_date",
+        key: "hire_date",
+        width: 130,
+        sortable: true,
+        sorter: (a, b) =>
+          new Date(a.hire_date || "").getTime() -
+          new Date(b.hire_date || "").getTime(),
+        render: (date) => (
+          <span className="text-gray-600">{formatDate(date || "")}</span>
+        ),
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        width: 150,
+        align: "center",
+        fixed: "right",
+        render: (_, record) => (
+          <Space size="small">
+            <Link href={`/employees/${record.id}`}>
+              <AntButton
+                type="text"
+                icon={<EyeOutlined />}
+                className="text-blue-600 hover:bg-blue-50"
+                title="Xem chi tiết"
+              />
+            </Link>
+            <Link href={`/employees/${record.id}/edit`}>
+              <AntButton
+                type="text"
+                icon={<EditOutlined />}
+                className="text-yellow-600 hover:bg-yellow-50"
+                title="Chỉnh sửa"
+              />
+            </Link>
+            <AntButton
+              type="text"
+              icon={<DeleteOutlined />}
+              className="text-red-600 hover:bg-red-50"
+              onClick={() => handleDelete(record.id)}
+              title="Xóa"
+            />
+          </Space>
+        ),
+      },
+    ],
+    [employees]
+  );
+
+  // Define columns for contracts table
+  const contractColumns: CustomColumnType<Contract>[] = useMemo(
+    () => [
+      {
+        title: "Nhân viên",
+        dataIndex: ["employee_id"],
+        key: "employee",
+        width: 250,
+        fixed: "left",
+        filterable: true,
+        filterType: "text",
+        render: (_, record) => {
+          const employee =
+            typeof record.employee_id === "object" ? record.employee_id : null;
+
+          return employee ? (
+            <div className="flex items-center gap-3">
+              <Avatar src={employee.avatar} size={40} className="bg-blue-500">
+                {employee.first_name?.[0]}
+              </Avatar>
+              <div>
+                <p className="font-medium text-gray-900">
+                  {employee.first_name} {employee.last_name}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {employee.employee_code}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <span className="text-gray-400">N/A</span>
+          );
+        },
+      },
+      {
+        title: "Loại hợp đồng",
+        dataIndex: "contract_type",
+        key: "contract_type",
+        width: 150,
+        filterable: true,
+        filterType: "select",
+        filterOptions: [
+          { label: "Toàn thời gian", value: "full_time" },
+          { label: "Bán thời gian", value: "part_time" },
+          { label: "Hợp đồng", value: "contract" },
+          { label: "Thực tập", value: "internship" },
+        ],
+        render: (type) => (
+          <span className="text-gray-700">
+            {type === "full_time"
+              ? "Toàn thời gian"
+              : type === "part_time"
+                ? "Bán thời gian"
+                : type === "contract"
+                  ? "Hợp đồng"
+                  : "Thực tập"}
+          </span>
+        ),
+      },
+      {
+        title: "Ngày bắt đầu",
+        dataIndex: "start_date",
+        key: "start_date",
+        width: 130,
+        sortable: true,
+        sorter: (a, b) =>
+          new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+        render: (date) => (
+          <span className="text-gray-600">{formatDate(date)}</span>
+        ),
+      },
+      {
+        title: "Ngày kết thúc",
+        dataIndex: "end_date",
+        key: "end_date",
+        width: 130,
+        sortable: true,
+        sorter: (a, b) => {
+          const dateA = a.end_date ? new Date(a.end_date).getTime() : 0;
+          const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
+          return dateA - dateB;
+        },
+        render: (date) => (
+          <span className="text-gray-600">
+            {date ? formatDate(date) : "Không xác định"}
+          </span>
+        ),
+      },
+      {
+        title: "Lương",
+        dataIndex: "salary",
+        key: "salary",
+        width: 150,
+        sortable: true,
+        sorter: (a, b) => a.salary - b.salary,
+        render: (salary) => (
+          <span className="font-medium text-gray-900">
+            {new Intl.NumberFormat("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            }).format(salary)}
+          </span>
+        ),
+      },
+      {
+        title: "Trạng thái",
+        dataIndex: "status",
+        key: "status",
+        width: 140,
+        align: "center",
+        filterable: true,
+        filterType: "select",
+        filterOptions: [
+          { label: "Đang hiệu lực", value: "active" },
+          { label: "Hết hạn", value: "expired" },
+          { label: "Đã chấm dứt", value: "terminated" },
+        ],
+        render: (status) => (
+          <Badge
+            status={
+              status === "active"
+                ? "success"
+                : status === "expired"
+                  ? "warning"
+                  : "default"
+            }
+            text={
+              status === "active"
+                ? "Đang hiệu lực"
+                : status === "expired"
+                  ? "Hết hạn"
+                  : "Đã chấm dứt"
+            }
+          />
+        ),
+      },
+      {
+        title: "Thao tác",
+        key: "actions",
+        width: 150,
+        align: "center",
+        fixed: "right",
+        render: (_, record) => (
+          <Space size="small">
+            <AntButton
+              type="text"
+              icon={<EyeOutlined />}
+              className="text-blue-600 hover:bg-blue-50"
+              title="Xem chi tiết"
+            />
+            <AntButton
+              type="text"
+              icon={<EditOutlined />}
+              className="text-yellow-600 hover:bg-yellow-50"
+              title="Chỉnh sửa"
+            />
+            <AntButton
+              type="text"
+              icon={<DeleteOutlined />}
+              className="text-red-600 hover:bg-red-50"
+              title="Xóa"
+            />
+          </Space>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -108,8 +443,12 @@ export default function EmployeesListPage() {
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Tổng nhân viên</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Tổng nhân viên
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats.total}
+                </p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <Users className="w-7 h-7 text-white" />
@@ -120,8 +459,12 @@ export default function EmployeesListPage() {
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Đang làm việc</p>
-                <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Đang làm việc
+                </p>
+                <p className="text-3xl font-bold text-green-600">
+                  {stats.active}
+                </p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
                 <Users className="w-7 h-7 text-white" />
@@ -132,8 +475,12 @@ export default function EmployeesListPage() {
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Nghỉ phép</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.onLeave}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Nghỉ phép
+                </p>
+                <p className="text-3xl font-bold text-yellow-600">
+                  {stats.onLeave}
+                </p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
                 <Users className="w-7 h-7 text-white" />
@@ -144,8 +491,12 @@ export default function EmployeesListPage() {
           <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Không hoạt động</p>
-                <p className="text-3xl font-bold text-gray-600">{stats.inactive}</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  Không hoạt động
+                </p>
+                <p className="text-3xl font-bold text-gray-600">
+                  {stats.inactive}
+                </p>
               </div>
               <div className="w-14 h-14 bg-gradient-to-br from-gray-400 to-gray-500 rounded-xl flex items-center justify-center shadow-lg shadow-gray-500/20">
                 <Users className="w-7 h-7 text-white" />
@@ -186,336 +537,62 @@ export default function EmployeesListPage() {
         {/* Tab Content */}
         <div className="px-6 pb-6">
           {activeTab === "list" && (
-            <>
-              {/* Filters */}
-              <div className="flex gap-3 mb-6">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Tìm kiếm theo tên, mã NV, email..."
-                    prefix={<Search className="w-4 h-4 text-gray-400" />}
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    size="large"
-                    className="rounded-lg"
-                  />
-                </div>
-                <Select
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  size="large"
-                  className="w-52"
-                  options={[
-                    { label: "Tất cả trạng thái", value: "all" },
-                    { label: "Đang làm việc", value: "active" },
-                    { label: "Nghỉ phép", value: "on_leave" },
-                    { label: "Không hoạt động", value: "inactive" },
-                  ]}
-                />
-                <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 shadow-sm">
-                  <Download className="w-4 h-4" />
-                  Xuất Excel
-                </button>
-              </div>
-
-              {isLoading ? (
-                <div className="text-center py-20">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <p className="mt-2 text-gray-500">Đang tải dữ liệu...</p>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nhân viên</TableHead>
-                          <TableHead>Mã NV</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Số điện thoại</TableHead>
-                          <TableHead>Chức vụ</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead>Ngày vào làm</TableHead>
-                          <TableHead className="text-right">Thao tác</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredEmployees.map((employee) => (
-                          <TableRow key={employee.id} className="hover:bg-gray-50">
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar
-                                  src={employee.avatar}
-                                  size={40}
-                                  className="bg-blue-500"
-                                >
-                                  {employee.first_name?.[0]}
-                                </Avatar>
-                                <div>
-                                  <p className="font-medium text-gray-900">
-                                    {employee.first_name} {employee.last_name}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {employee.email}
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium text-gray-700">
-                              {employee.employee_code}
-                            </TableCell>
-                            <TableCell className="text-gray-600">
-                              {employee.email}
-                            </TableCell>
-                            <TableCell className="text-gray-600">
-                              {formatPhoneNumber(employee.phone || "")}
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-gray-700">
-                                {typeof employee.position_id === "object"
-                                  ? employee.position_id.name
-                                  : "-"}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                status={
-                                  employee.employment_status === "active"
-                                    ? "success"
-                                    : employee.employment_status === "on_leave"
-                                    ? "warning"
-                                    : "default"
-                                }
-                                text={
-                                  employee.employment_status === "active"
-                                    ? "Đang làm việc"
-                                    : employee.employment_status === "on_leave"
-                                    ? "Nghỉ phép"
-                                    : "Không hoạt động"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="text-gray-600">
-                              {formatDate(employee.hire_date || "")}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-2">
-                                <Link href={`/employees/${employee.id}`}>
-                                  <button
-                                    className="p-2 hover:bg-blue-50 rounded-lg transition-colors group"
-                                    title="Xem chi tiết"
-                                  >
-                                    <Eye className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
-                                  </button>
-                                </Link>
-                                <Link href={`/employees/${employee.id}/edit`}>
-                                  <button
-                                    className="p-2 hover:bg-yellow-50 rounded-lg transition-colors group"
-                                    title="Chỉnh sửa"
-                                  >
-                                    <Pencil className="w-4 h-4 text-yellow-600 group-hover:scale-110 transition-transform" />
-                                  </button>
-                                </Link>
-                                <button
-                                  className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
-                                  onClick={() => handleDelete(employee.id)}
-                                  title="Xóa"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform" />
-                                </button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {filteredEmployees.length === 0 && (
-                    <div className="text-center py-16">
-                      <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Users className="w-10 h-10 text-gray-400" />
-                      </div>
-                      <p className="text-gray-600 font-medium text-lg mb-2">
-                        {searchText || statusFilter !== "all"
-                          ? "Không tìm thấy nhân viên phù hợp"
-                          : "Chưa có nhân viên nào"}
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        {searchText || statusFilter !== "all"
-                          ? "Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm"
-                          : "Hãy thêm nhân viên đầu tiên"}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Pagination */}
-                  {filteredEmployees.length > 0 && (
-                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-                      <p className="text-sm text-gray-600 font-medium">
-                        Hiển thị <span className="text-blue-600">{filteredEmployees.length}</span> / <span className="text-blue-600">{total}</span> nhân viên
-                      </p>
-                      <div className="flex gap-2 items-center">
-                        <button
-                          disabled={page === 1}
-                          onClick={() => setPage(page - 1)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
-                        >
-                          Trước
-                        </button>
-                        <span className="px-4 py-2 text-gray-700 font-medium">
-                          Trang <span className="text-blue-600">{page}</span> / {totalPages}
-                        </span>
-                        <button
-                          disabled={page >= totalPages}
-                          onClick={() => setPage(page + 1)}
-                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
-                        >
-                          Sau
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </>
+            <CustomDataTable<Employee>
+              data={employees}
+              columns={employeeColumns}
+              loading={isLoading}
+              rowKey="id"
+              searchable
+              searchPlaceholder="Tìm kiếm theo tên, mã NV, email..."
+              showFilters
+              showRefresh
+              showExport
+              onRefresh={() => query.refetch()}
+              onExport={() => {
+                // Implement export functionality
+                console.log("Export employees to Excel");
+              }}
+              pagination={{
+                current: 1,
+                pageSize: 10,
+                total: total,
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} nhân viên`,
+                pageSizeOptions: ["10", "20", "50", "100"],
+              }}
+              bordered={false}
+              size="middle"
+              scroll={{ x: 1200 }}
+              className="mt-4"
+            />
           )}
 
           {activeTab === "contracts" && (
-            <>
-              {contractsLoading ? (
-                <div className="text-center py-20">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <p className="mt-2 text-gray-500">Đang tải dữ liệu...</p>
-                </div>
-              ) : contracts.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nhân viên</TableHead>
-                        <TableHead>Loại hợp đồng</TableHead>
-                        <TableHead>Ngày bắt đầu</TableHead>
-                        <TableHead>Ngày kết thúc</TableHead>
-                        <TableHead>Lương</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                        <TableHead className="text-right">Thao tác</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {contracts.map((contract) => {
-                        const employee = typeof contract.employee_id === 'object' 
-                          ? contract.employee_id 
-                          : null;
-                        
-                        return (
-                          <TableRow key={contract.id} className="hover:bg-gray-50">
-                            <TableCell>
-                              {employee ? (
-                                <div className="flex items-center gap-3">
-                                  <Avatar
-                                    src={employee.avatar}
-                                    size={40}
-                                    className="bg-blue-500"
-                                  >
-                                    {employee.first_name?.[0]}
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-medium text-gray-900">
-                                      {employee.first_name} {employee.last_name}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                      {employee.employee_code}
-                                    </p>
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">N/A</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-gray-700">
-                                {contract.contract_type === "full_time"
-                                  ? "Toàn thời gian"
-                                  : contract.contract_type === "part_time"
-                                  ? "Bán thời gian"
-                                  : contract.contract_type === "contract"
-                                  ? "Hợp đồng"
-                                  : "Thực tập"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-gray-600">
-                              {formatDate(contract.start_date)}
-                            </TableCell>
-                            <TableCell className="text-gray-600">
-                              {contract.end_date
-                                ? formatDate(contract.end_date)
-                                : "Không xác định"}
-                            </TableCell>
-                            <TableCell className="font-medium text-gray-900">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(contract.salary)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                status={
-                                  contract.status === "active"
-                                    ? "success"
-                                    : contract.status === "expired"
-                                    ? "warning"
-                                    : "default"
-                                }
-                                text={
-                                  contract.status === "active"
-                                    ? "Đang hiệu lực"
-                                    : contract.status === "expired"
-                                    ? "Hết hạn"
-                                    : "Đã chấm dứt"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  size="small"
-                                  className="hover:bg-blue-50"
-                                  title="Xem chi tiết"
-                                >
-                                  <Eye className="w-4 h-4 text-blue-600" />
-                                </Button>
-                                <Button
-                                  size="small"
-                                  className="hover:bg-yellow-50"
-                                  title="Chỉnh sửa"
-                                >
-                                  <Pencil className="w-4 h-4 text-yellow-600" />
-                                </Button>
-                                <Button
-                                  size="small"
-                                  className="hover:bg-red-50"
-                                  title="Xóa"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-600" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <Eye className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg">Chưa có hợp đồng nào</p>
-                  <p className="text-gray-400 text-sm mt-2">
-                    Thêm hợp đồng cho nhân viên từ trang chi tiết nhân viên
-                  </p>
-                </div>
-              )}
-            </>
+            <CustomDataTable<Contract>
+              data={contracts}
+              columns={contractColumns}
+              loading={contractsLoading}
+              rowKey="id"
+              searchable
+              searchPlaceholder="Tìm kiếm hợp đồng..."
+              showFilters
+              showRefresh
+              onRefresh={() => contractsQuery.refetch()}
+              pagination={{
+                current: 1,
+                pageSize: 10,
+                total: contracts.length,
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} hợp đồng`,
+                pageSizeOptions: ["10", "20", "50", "100"],
+              }}
+              bordered={false}
+              size="middle"
+              scroll={{ x: 1200 }}
+              className="mt-4"
+            />
           )}
         </div>
       </div>

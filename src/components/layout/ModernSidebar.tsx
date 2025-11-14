@@ -82,7 +82,7 @@ interface ModernSidebarProps {
 }
 
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({
-  mobileOpen = false,
+  mobileOpen = true, // Set default to always open
   onMobileClose,
 }) => {
   const pathname = usePathname();
@@ -95,32 +95,22 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
     return pathname?.startsWith(href);
   };
 
-  // Close mobile sidebar on route change
+  // Remove mobile close behavior
   useEffect(() => {
-    if (mobileOpen && onMobileClose) {
-      onMobileClose();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  if (onMobileClose) {
+    onMobileClose();
+  }
+}, [onMobileClose]);
+
 
   return (
     <>
-      {/* Mobile Overlay */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onMobileClose}
-        />
-      )}
-
       {/* Sidebar */}
       <div
         className={cn(
           "h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 fixed left-0 top-0 z-50",
           "w-24",
-          // Mobile: slide in/out
-          "lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "lg:translate-x-0 translate-x-0" // Always open
         )}
       >
         {/* Logo */}
@@ -128,14 +118,6 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">L</span>
           </div>
-          
-          {/* Mobile Close Button */}
-          <button
-            onClick={onMobileClose}
-            className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X size={16} className="text-gray-600" />
-          </button>
         </div>
 
         {/* Main Navigation */}
