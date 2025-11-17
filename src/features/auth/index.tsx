@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation"; // Sử dụng next/navigation cho App Router
 import { useLogin } from "@refinedev/core";
 import { Form, Input, Button, Typography, App, Space, Divider } from "antd";
 import { Card } from "@/components/ui";
@@ -10,6 +11,7 @@ import { useAuthStore } from "@/store";
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
+  const router = useRouter();
   const [form] = Form.useForm();
   const { mutate: login } = useLogin();
   const [loading, setLoading] = React.useState(false);
@@ -23,14 +25,10 @@ export default function LoginPage() {
     login(values, {
       onSuccess: (data: any) => {
         message.success("Đăng nhập thành công!");
-        
-        // Store user data in Zustand
-        if (data?.user) {
-          setUser(data.user);
-          setToken(data.token);
-          setRoles(data.roles || []);
-        }
         setLoading(false);
+        
+        // Refine sẽ tự động redirect về "/" (đã config trong authProviderClient)
+        // "/" sẽ redirect về dashboard nếu đã authenticated
       },
       onError: (error: any) => {
         message.error(error?.message || "Đăng nhập thất bại");
@@ -59,9 +57,7 @@ export default function LoginPage() {
             <Title level={2} className="!mb-2">
               HRMS System
             </Title>
-            <Text className="text-gray-500">
-              Đăng nhập để tiếp tục
-            </Text>
+            <Text className="text-gray-500">Đăng nhập để tiếp tục</Text>
           </div>
 
           {/* Login Form */}

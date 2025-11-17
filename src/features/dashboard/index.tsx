@@ -1,8 +1,16 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Typography, Button, Row, Col, Space } from "antd";
-import { RefreshCw, Users, UserCheck, Clock, AlertCircle, Zap, Globe } from "lucide-react";
+import {
+  RefreshCw,
+  Users,
+  UserCheck,
+  Clock,
+  AlertCircle,
+  Zap,
+  Globe,
+} from "lucide-react";
 import { useDashboardStore } from "./stores/dashboardStore";
 import { useDashboardStats } from "./hooks/useDashboardStats";
 import { StatCard } from "./components/StatCard";
@@ -16,6 +24,12 @@ const { Title, Text } = Typography;
 const Dashboard: React.FC = () => {
   const { stats, loading } = useDashboardStore();
   const { refresh } = useDashboardStats();
+
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleString("vi-VN"));
+  }, []);
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -159,7 +173,7 @@ const Dashboard: React.FC = () => {
             </Text>
           </div>
           <Text className="text-sm text-gray-400">
-            Cập nhật lần cuối: {new Date().toLocaleString("vi-VN")}
+            Cập nhật lần cuối: {lastUpdated}
           </Text>
         </div>
       </div>

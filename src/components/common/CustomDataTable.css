@@ -1,0 +1,57 @@
+/* Custom DataTable Styles */
+.custom-data-table {
+  @apply w-full;
+}
+
+.custom-table .ant-table {
+  @apply bg-white;
+}
+
+.custom-table .ant-table-thead > tr > th {
+  @apply bg-gray-50 font-semibold text-gray-700 border-b-2 border-gray-200;
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  @apply bg-blue-50/50;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  @apply border-b border-gray-100;
+}
+
+.custom-table .ant-pagination {
+  @apply mt-4;
+}
+
+.custom-table .ant-pagination-item-active {
+  @apply border-blue-600 bg-blue-50;
+}
+
+.custom-table .ant-pagination-item-active a {
+  @apply text-blue-600;
+}
+
+/* Filter Dropdown */
+.ant-table-filter-dropdown {
+  @apply rounded-lg shadow-lg;
+}
+
+/* Sort Icons */
+.ant-table-column-sorter {
+  @apply ml-2;
+}
+
+/* Selection */
+.custom-table .ant-table-selection-column {
+  @apply w-12;
+}
+
+/* Empty State */
+.custom-table .ant-empty {
+  @apply py-12;
+}
+
+/* Loading */
+.custom-table .ant-spin-container {
+  @apply min-h-[200px];
+}
