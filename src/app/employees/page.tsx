@@ -1,6 +1,6 @@
 "use client";
 
-import { useList, useDelete } from "@refinedev/core";
+import { useList, useDelete, useOne } from "@refinedev/core";
 import { Employee, Contract } from "@/types/employee";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
@@ -16,7 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
-import { Select, Tabs, Badge, Avatar, Space, Button as AntButton } from "antd";
+import { Select, Tabs, Badge, Avatar, Space, Button as AntButton, Drawer, Descriptions, Divider, Tag } from "antd";
 import CustomDataTable, {
   CustomColumnType,
 } from "@/components/common/CustomDataTable";
@@ -27,12 +27,36 @@ const { TabPane } = Tabs;
 
 export default function EmployeesListPage() {
   const [activeTab, setActiveTab] = useState("list");
+  const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [contractViewDrawerOpen, setContractViewDrawerOpen] = useState(false);
+  const [contractEditDrawerOpen, setContractEditDrawerOpen] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
   const { query } = useList<Employee>({
     resource: "employees",
   });
 
   const { data, isLoading } = query;
+
+  // Fetch selected employee details
+  const { data: employeeDetail, isLoading: employeeDetailLoading } = useOne<Employee>({
+    resource: "employees",
+    id: selectedEmployeeId || "",
+    queryOptions: {
+      enabled: !!selectedEmployeeId && viewDrawerOpen,
+    },
+  });
+
+  // Fetch selected contract details
+  const { data: contractDetail, isLoading: contractDetailLoading } = useOne<Contract>({
+    resource: "contracts",
+    id: selectedContractId || "",
+    queryOptions: {
+      enabled: !!selectedContractId && contractViewDrawerOpen,
+    },
+  });
 
   const { mutate: deleteEmployee } = useDelete();
 
@@ -42,6 +66,38 @@ export default function EmployeesListPage() {
   });
 
   const contracts = (contractsQuery.data?.data || []) as unknown as Contract[];
+
+  const handleView = useCallback((id: string) => {
+    setSelectedEmployeeId(id);
+    setViewDrawerOpen(true);
+  }, []);
+
+  const handleEdit = useCallback((id: string) => {
+    setSelectedEmployeeId(id);
+    setEditDrawerOpen(true);
+  }, []);
+
+  const handleViewContract = useCallback((id: string) => {
+    setSelectedContractId(id);
+    setContractViewDrawerOpen(true);
+  }, []);
+
+  const handleEditContract = useCallback((id: string) => {
+    setSelectedContractId(id);
+    setContractEditDrawerOpen(true);
+  }, []);
+
+  const handleDeleteContract = useCallback(
+    (id: string) => {
+      if (confirm("Bạn có chắc chắn muốn xóa hợp đồng này?")) {
+        deleteEmployee({
+          resource: "contracts",
+          id,
+        });
+      }
+    },
+    [deleteEmployee]
+  );
 
   const handleDelete = useCallback(
     (id: string) => {
@@ -215,22 +271,20 @@ export default function EmployeesListPage() {
         fixed: "right",
         render: (_, record) => (
           <Space size="small">
-            <Link href={`/employees/${record.id}`}>
-              <AntButton
-                type="text"
-                icon={<EyeOutlined />}
-                className="text-blue-600 hover:bg-blue-50"
-                title="Xem chi tiết"
-              />
-            </Link>
-            <Link href={`/employees/${record.id}/edit`}>
-              <AntButton
-                type="text"
-                icon={<EditOutlined />}
-                className="text-yellow-600 hover:bg-yellow-50"
-                title="Chỉnh sửa"
-              />
-            </Link>
+            <AntButton
+              type="text"
+              icon={<EyeOutlined />}
+              className="text-blue-600 hover:bg-blue-50"
+              onClick={() => handleView(record.id)}
+              title="Xem chi tiết"
+            />
+            <AntButton
+              type="text"
+              icon={<EditOutlined />}
+              className="text-yellow-600 hover:bg-yellow-50"
+              onClick={() => handleEdit(record.id)}
+              title="Chỉnh sửa"
+            />
             <AntButton
               type="text"
               icon={<DeleteOutlined />}
@@ -242,7 +296,7 @@ export default function EmployeesListPage() {
         ),
       },
     ],
-    [employees]
+    [employees, handleView, handleEdit, handleDelete]
   );
 
   // Define columns for contracts table
@@ -263,11 +317,11 @@ export default function EmployeesListPage() {
           return employee ? (
             <div className="flex items-center gap-3">
               <Avatar src={employee.avatar} size={40} className="bg-blue-500">
-                {employee.first_name?.[0]}
+                {(employee.full_name || employee.first_name)?.[0]}
               </Avatar>
               <div>
                 <p className="font-medium text-gray-900">
-                  {employee.first_name} {employee.last_name}
+                  {employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim()}
                 </p>
                 <p className="text-sm text-gray-500">
                   {employee.employee_code}
@@ -339,15 +393,20 @@ export default function EmployeesListPage() {
         key: "salary",
         width: 150,
         sortable: true,
-        sorter: (a, b) => a.salary - b.salary,
-        render: (salary) => (
-          <span className="font-medium text-gray-900">
-            {new Intl.NumberFormat("vi-VN", {
-              style: "currency",
-              currency: "VND",
-            }).format(salary)}
-          </span>
-        ),
+        sorter: (a, b) => {
+          const salaryA = parseFloat(a.salary as any) || 0;
+          const salaryB = parseFloat(b.salary as any) || 0;
+          return salaryA - salaryB;
+        },
+        render: (salary) => {
+          const amount = parseFloat(salary as any) || 0;
+          const formatted = Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          return (
+            <span className="font-medium text-gray-900">
+              {formatted}
+            </span>
+          );
+        },
       },
       {
         title: "Trạng thái",
@@ -393,25 +452,28 @@ export default function EmployeesListPage() {
               type="text"
               icon={<EyeOutlined />}
               className="text-blue-600 hover:bg-blue-50"
+              onClick={() => handleViewContract(record.id)}
               title="Xem chi tiết"
             />
             <AntButton
               type="text"
               icon={<EditOutlined />}
               className="text-yellow-600 hover:bg-yellow-50"
+              onClick={() => handleEditContract(record.id)}
               title="Chỉnh sửa"
             />
             <AntButton
               type="text"
               icon={<DeleteOutlined />}
               className="text-red-600 hover:bg-red-50"
+              onClick={() => handleDeleteContract(record.id)}
               title="Xóa"
             />
           </Space>
         ),
       },
     ],
-    []
+    [handleViewContract, handleEditContract, handleDeleteContract]
   );
 
   return (
@@ -596,6 +658,243 @@ export default function EmployeesListPage() {
           )}
         </div>
       </div>
+
+      {/* View Employee Drawer */}
+      <Drawer
+        title="Thông tin nhân viên"
+        placement="right"
+        width="66%"
+        onClose={() => setViewDrawerOpen(false)}
+        open={viewDrawerOpen}
+        loading={employeeDetailLoading}
+      >
+        {employeeDetail?.data && (
+          <div className="space-y-6">
+            {/* Header với Avatar */}
+            <div className="flex items-center gap-4 pb-6 border-b">
+              <Avatar 
+                src={employeeDetail.data.avatar} 
+                size={80} 
+                className="bg-blue-500"
+              >
+                {employeeDetail.data.full_name?.[0] || employeeDetail.data.first_name?.[0]}
+              </Avatar>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {employeeDetail.data.full_name || `${employeeDetail.data.first_name} ${employeeDetail.data.last_name}`}
+                </h2>
+                <p className="text-gray-500">{employeeDetail.data.employee_code}</p>
+                <Tag color={employeeDetail.data.status === 'active' ? 'green' : 'red'} className="mt-2">
+                  {employeeDetail.data.status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}
+                </Tag>
+              </div>
+            </div>
+
+            {/* Thông tin cơ bản */}
+            <div>
+              <Divider orientation="left">Thông tin cơ bản</Divider>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="Mã nhân viên" span={1}>
+                  {employeeDetail.data.employee_code}
+                </Descriptions.Item>
+                <Descriptions.Item label="Giới tính" span={1}>
+                  {employeeDetail.data.gender === 'male' ? 'Nam' : employeeDetail.data.gender === 'female' ? 'Nữ' : 'Khác'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày sinh" span={1}>
+                  {employeeDetail.data.dob ? formatDate(employeeDetail.data.dob) : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="CMND/CCCD" span={1}>
+                  {employeeDetail.data.personal_id || 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số điện thoại" span={1}>
+                  {formatPhoneNumber(employeeDetail.data.phone || '')}
+                </Descriptions.Item>
+                <Descriptions.Item label="Email" span={1}>
+                  {employeeDetail.data.email}
+                </Descriptions.Item>
+                <Descriptions.Item label="Địa chỉ" span={2}>
+                  {employeeDetail.data.address || 'N/A'}
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+
+            {/* Thông tin công việc */}
+            <div>
+              <Divider orientation="left">Thông tin công việc</Divider>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="Ngày vào làm" span={1}>
+                  {employeeDetail.data.hire_date ? formatDate(employeeDetail.data.hire_date) : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày nghỉ việc" span={1}>
+                  {employeeDetail.data.termination_date ? formatDate(employeeDetail.data.termination_date) : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái" span={2}>
+                  <Tag color={employeeDetail.data.status === 'active' ? 'green' : 'red'}>
+                    {employeeDetail.data.status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Giờ làm mặc định/tuần" span={1}>
+                  {employeeDetail.data.default_work_hours_per_week || 'N/A'} giờ
+                </Descriptions.Item>
+                <Descriptions.Item label="Giờ làm tối đa/tuần" span={1}>
+                  {employeeDetail.data.max_hours_per_week || 'N/A'} giờ
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+
+            {/* Liên hệ khẩn cấp */}
+            {(employeeDetail.data.emergency_contact_name || employeeDetail.data.emergency_contact_phone) && (
+              <div>
+                <Divider orientation="left">Liên hệ khẩn cấp</Divider>
+                <Descriptions column={2} bordered size="small">
+                  <Descriptions.Item label="Tên người liên hệ" span={1}>
+                    {employeeDetail.data.emergency_contact_name || 'N/A'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Số điện thoại" span={1}>
+                    {formatPhoneNumber(employeeDetail.data.emergency_contact_phone || '')}
+                  </Descriptions.Item>
+                </Descriptions>
+              </div>
+            )}
+
+            {/* Ghi chú */}
+            {employeeDetail.data.notes && (
+              <div>
+                <Divider orientation="left">Ghi chú</Divider>
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                  {employeeDetail.data.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
+
+      {/* Edit Employee Drawer */}
+      <Drawer
+        title="Chỉnh sửa nhân viên"
+        placement="right"
+        width="66%"
+        onClose={() => setEditDrawerOpen(false)}
+        open={editDrawerOpen}
+      >
+        <div className="text-center py-12">
+          <p className="text-gray-500">Form chỉnh sửa nhân viên đang được phát triển</p>
+          <p className="text-sm text-gray-400 mt-2">Tính năng sẽ được bổ sung trong phiên bản tiếp theo</p>
+        </div>
+      </Drawer>
+
+      {/* View Contract Drawer */}
+      <Drawer
+        title="Chi tiết hợp đồng"
+        placement="right"
+        width="66%"
+        onClose={() => setContractViewDrawerOpen(false)}
+        open={contractViewDrawerOpen}
+        loading={contractDetailLoading}
+      >
+        {contractDetail?.data && (
+          <div className="space-y-6">
+            {/* Thông tin nhân viên */}
+            {contractDetail.data.employee_id && typeof contractDetail.data.employee_id === 'object' && (
+              <div>
+                <Divider orientation="left">Thông tin nhân viên</Divider>
+                <div className="flex items-center gap-4 pb-4">
+                  <Avatar 
+                    src={contractDetail.data.employee_id.avatar} 
+                    size={64} 
+                    className="bg-blue-500"
+                  >
+                    {(contractDetail.data.employee_id.full_name || contractDetail.data.employee_id.first_name)?.[0]}
+                  </Avatar>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {contractDetail.data.employee_id.full_name || 
+                       `${contractDetail.data.employee_id.first_name} ${contractDetail.data.employee_id.last_name}`}
+                    </h3>
+                    <p className="text-gray-500">{contractDetail.data.employee_id.employee_code}</p>
+                    <p className="text-sm text-gray-400">{contractDetail.data.employee_id.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Thông tin hợp đồng */}
+            <div>
+              <Divider orientation="left">Thông tin hợp đồng</Divider>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="Loại hợp đồng" span={2}>
+                  <Tag color="blue">
+                    {contractDetail.data.contract_type === 'full_time' ? 'Toàn thời gian' :
+                     contractDetail.data.contract_type === 'part_time' ? 'Bán thời gian' :
+                     contractDetail.data.contract_type === 'contract' ? 'Hợp đồng' : 'Thực tập'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày bắt đầu" span={1}>
+                  {contractDetail.data.start_date ? formatDate(contractDetail.data.start_date) : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày kết thúc" span={1}>
+                  {contractDetail.data.end_date ? formatDate(contractDetail.data.end_date) : 'Không xác định'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Lương cơ bản" span={2}>
+                  <span className="font-semibold text-lg text-green-600">
+                    {(() => {
+                      const salary = parseFloat(contractDetail.data.base_salary as any) || 0;
+                      return Math.round(salary).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    })()}
+                  </span>
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày kết thúc thử việc" span={2}>
+                  {contractDetail.data.probation_end_date ? formatDate(contractDetail.data.probation_end_date) : 'Không có'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái" span={2}>
+                  <Badge 
+                    status={contractDetail.data.is_active ? 'success' : 'default'}
+                    text={contractDetail.data.is_active ? 'Đang hiệu lực' : 'Đã chấm dứt'}
+                  />
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+
+            {/* Ghi chú */}
+            {contractDetail.data.notes && (
+              <div>
+                <Divider orientation="left">Ghi chú</Divider>
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                  {contractDetail.data.notes}
+                </p>
+              </div>
+            )}
+
+            {/* Thông tin tạo/cập nhật */}
+            <div>
+              <Divider orientation="left">Thông tin hệ thống</Divider>
+              <Descriptions column={2} bordered size="small">
+                <Descriptions.Item label="Ngày tạo" span={1}>
+                  {contractDetail.data.created_at ? formatDate(contractDetail.data.created_at) : 'N/A'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Cập nhật lần cuối" span={1}>
+                  {contractDetail.data.updated_at ? formatDate(contractDetail.data.updated_at) : 'N/A'}
+                </Descriptions.Item>
+              </Descriptions>
+            </div>
+          </div>
+        )}
+      </Drawer>
+
+      {/* Edit Contract Drawer */}
+      <Drawer
+        title="Chỉnh sửa hợp đồng"
+        placement="right"
+        width="66%"
+        onClose={() => setContractEditDrawerOpen(false)}
+        open={contractEditDrawerOpen}
+      >
+        <div className="text-center py-12">
+          <p className="text-gray-500">Form chỉnh sửa hợp đồng đang được phát triển</p>
+          <p className="text-sm text-gray-400 mt-2">Tính năng sẽ được bổ sung trong phiên bản tiếp theo</p>
+        </div>
+      </Drawer>
     </div>
   );
 }
