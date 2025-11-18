@@ -16,7 +16,18 @@ import {
   Users,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
-import { Select, Tabs, Badge, Avatar, Space, Button as AntButton, Drawer, Descriptions, Divider, Tag } from "antd";
+import {
+  Select,
+  Tabs,
+  Badge,
+  Avatar,
+  Space,
+  Button as AntButton,
+  Drawer,
+  Descriptions,
+  Divider,
+  Tag,
+} from "antd";
 import CustomDataTable, {
   CustomColumnType,
 } from "@/components/common/CustomDataTable";
@@ -29,10 +40,14 @@ export default function EmployeesListPage() {
   const [activeTab, setActiveTab] = useState("list");
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
+    null
+  );
   const [contractViewDrawerOpen, setContractViewDrawerOpen] = useState(false);
   const [contractEditDrawerOpen, setContractEditDrawerOpen] = useState(false);
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(
+    null
+  );
 
   const { query } = useList<Employee>({
     resource: "employees",
@@ -41,7 +56,7 @@ export default function EmployeesListPage() {
   const { data, isLoading } = query;
 
   // Fetch selected employee details
-  const { data: employeeDetail, isLoading: employeeDetailLoading } = useOne<Employee>({
+  const { result: employeeDetail } = useOne<Employee>({
     resource: "employees",
     id: selectedEmployeeId || "",
     queryOptions: {
@@ -50,7 +65,7 @@ export default function EmployeesListPage() {
   });
 
   // Fetch selected contract details
-  const { data: contractDetail, isLoading: contractDetailLoading } = useOne<Contract>({
+  const { result: contractDetail } = useOne<Contract>({
     resource: "contracts",
     id: selectedContractId || "",
     queryOptions: {
@@ -118,10 +133,9 @@ export default function EmployeesListPage() {
   // Statistics
   const stats = {
     total: total,
-    active: employees.filter((e) => e.employment_status === "active").length,
-    inactive: employees.filter((e) => e.employment_status === "inactive")
-      .length,
-    onLeave: employees.filter((e) => e.employment_status === "on_leave").length,
+    active: employees.filter((e) => e?.status === "active").length,
+    inactive: employees.filter((e) => e?.status === "terminated").length,
+    onLeave: employees.filter((e) => e?.status === "on_leave").length,
   };
 
   // Define columns for employees table
@@ -142,14 +156,14 @@ export default function EmployeesListPage() {
           ),
         render: (_, record) => (
           <div className="flex items-center gap-3">
-            <Avatar src={record.avatar} size={40} className="bg-blue-500">
-              {record.first_name?.[0]}
+            <Avatar src={record?.photo_url} size={40} className="bg-blue-500">
+              {record?.first_name}
             </Avatar>
             <div>
               <p className="font-medium text-gray-900">
-                {record.first_name} {record.last_name}
+                {record?.first_name} {record?.last_name}
               </p>
-              <p className="text-sm text-gray-500">{record.email}</p>
+              <p className="text-sm text-gray-500">{record?.email}</p>
             </div>
           </div>
         ),
@@ -198,22 +212,22 @@ export default function EmployeesListPage() {
           new Set(
             employees
               .map((e) =>
-                typeof e.position_id === "object" ? e.position_id?.name : null
+                typeof e?.user?.role === "object" ? e.user?.role?.name : null
               )
               .filter(Boolean)
           )
         ).map((name) => ({ label: name as string, value: name as string })),
         onFilter: (value, record) => {
           const positionName =
-            typeof record.position_id === "object"
-              ? record.position_id?.name
+            typeof record?.user?.role === "object"
+              ? record?.user?.role?.name
               : null;
           return positionName === value;
         },
         render: (_, record) => (
           <span className="text-gray-700">
-            {typeof record.position_id === "object"
-              ? record.position_id.name
+            {typeof record?.user?.role === "object"
+              ? record?.user?.role?.name
               : "-"}
           </span>
         ),
@@ -275,21 +289,21 @@ export default function EmployeesListPage() {
               type="text"
               icon={<EyeOutlined />}
               className="text-blue-600 hover:bg-blue-50"
-              onClick={() => handleView(record.id)}
+              onClick={() => handleView(record?.id)}
               title="Xem chi tiết"
             />
             <AntButton
               type="text"
               icon={<EditOutlined />}
               className="text-yellow-600 hover:bg-yellow-50"
-              onClick={() => handleEdit(record.id)}
+              onClick={() => handleEdit(record?.id)}
               title="Chỉnh sửa"
             />
             <AntButton
               type="text"
               icon={<DeleteOutlined />}
               className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDelete(record.id)}
+              onClick={() => handleDelete(record?.id)}
               title="Xóa"
             />
           </Space>
@@ -304,7 +318,7 @@ export default function EmployeesListPage() {
     () => [
       {
         title: "Nhân viên",
-        dataIndex: ["employee_id"],
+        dataIndex: ["employee?"],
         key: "employee",
         width: 250,
         fixed: "left",
@@ -312,16 +326,23 @@ export default function EmployeesListPage() {
         filterType: "text",
         render: (_, record) => {
           const employee =
-            typeof record.employee_id === "object" ? record.employee_id : null;
+            typeof record?.employee_id === "object"
+              ? record?.employee_id
+              : null;
 
           return employee ? (
             <div className="flex items-center gap-3">
-              <Avatar src={employee.avatar} size={40} className="bg-blue-500">
-                {(employee.full_name || employee.first_name)?.[0]}
+              <Avatar
+                src={employee?.photo_url}
+                size={40}
+                className="bg-blue-500"
+              >
+                {employee.full_name || employee.first_name}
               </Avatar>
               <div>
                 <p className="font-medium text-gray-900">
-                  {employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim()}
+                  {employee.full_name ||
+                    `${employee.first_name || ""} ${employee.last_name || ""}`.trim()}
                 </p>
                 <p className="text-sm text-gray-500">
                   {employee.employee_code}
@@ -394,18 +415,16 @@ export default function EmployeesListPage() {
         width: 150,
         sortable: true,
         sorter: (a, b) => {
-          const salaryA = parseFloat(a.salary as any) || 0;
-          const salaryB = parseFloat(b.salary as any) || 0;
+          const salaryA = parseFloat(a.base_salary as any) || 0;
+          const salaryB = parseFloat(b.base_salary as any) || 0;
           return salaryA - salaryB;
         },
         render: (salary) => {
           const amount = parseFloat(salary as any) || 0;
-          const formatted = Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-          return (
-            <span className="font-medium text-gray-900">
-              {formatted}
-            </span>
-          );
+          const formatted = Math.round(amount)
+            .toString()
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+          return <span className="font-medium text-gray-900">{formatted}</span>;
         },
       },
       {
@@ -452,21 +471,21 @@ export default function EmployeesListPage() {
               type="text"
               icon={<EyeOutlined />}
               className="text-blue-600 hover:bg-blue-50"
-              onClick={() => handleViewContract(record.id)}
+              onClick={() => handleViewContract(record?.id)}
               title="Xem chi tiết"
             />
             <AntButton
               type="text"
               icon={<EditOutlined />}
               className="text-yellow-600 hover:bg-yellow-50"
-              onClick={() => handleEditContract(record.id)}
+              onClick={() => handleEditContract(record?.id)}
               title="Chỉnh sửa"
             />
             <AntButton
               type="text"
               icon={<DeleteOutlined />}
               className="text-red-600 hover:bg-red-50"
-              onClick={() => handleDeleteContract(record.id)}
+              onClick={() => handleDeleteContract(record?.id)}
               title="Xóa"
             />
           </Space>
@@ -666,26 +685,31 @@ export default function EmployeesListPage() {
         width="66%"
         onClose={() => setViewDrawerOpen(false)}
         open={viewDrawerOpen}
-        loading={employeeDetailLoading}
       >
-        {employeeDetail?.data && (
+        {employeeDetail && (
           <div className="space-y-6">
             {/* Header với Avatar */}
             <div className="flex items-center gap-4 pb-6 border-b">
-              <Avatar 
-                src={employeeDetail.data.avatar} 
-                size={80} 
+              <Avatar
+                src={employeeDetail?.photo_url}
+                size={80}
                 className="bg-blue-500"
               >
-                {employeeDetail.data.full_name?.[0] || employeeDetail.data.first_name?.[0]}
+                {employeeDetail?.full_name || employeeDetail?.first_name}
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {employeeDetail.data.full_name || `${employeeDetail.data.first_name} ${employeeDetail.data.last_name}`}
+                  {employeeDetail?.full_name ||
+                    `${employeeDetail?.first_name} ${employeeDetail?.last_name}`}
                 </h2>
-                <p className="text-gray-500">{employeeDetail.data.employee_code}</p>
-                <Tag color={employeeDetail.data.status === 'active' ? 'green' : 'red'} className="mt-2">
-                  {employeeDetail.data.status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}
+                <p className="text-gray-500">{employeeDetail?.employee_code}</p>
+                <Tag
+                  color={employeeDetail?.status === "active" ? "green" : "red"}
+                  className="mt-2"
+                >
+                  {employeeDetail?.status === "active"
+                    ? "Đang làm việc"
+                    : "Nghỉ việc"}
                 </Tag>
               </div>
             </div>
@@ -695,25 +719,31 @@ export default function EmployeesListPage() {
               <Divider orientation="left">Thông tin cơ bản</Divider>
               <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Mã nhân viên" span={1}>
-                  {employeeDetail.data.employee_code}
+                  {employeeDetail?.employee_code}
                 </Descriptions.Item>
                 <Descriptions.Item label="Giới tính" span={1}>
-                  {employeeDetail.data.gender === 'male' ? 'Nam' : employeeDetail.data.gender === 'female' ? 'Nữ' : 'Khác'}
+                  {employeeDetail?.gender === "male"
+                    ? "Nam"
+                    : employeeDetail?.gender === "female"
+                      ? "Nữ"
+                      : "Khác"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày sinh" span={1}>
-                  {employeeDetail.data.dob ? formatDate(employeeDetail.data.dob) : 'N/A'}
+                  {employeeDetail?.dob
+                    ? formatDate(employeeDetail?.dob)
+                    : "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="CMND/CCCD" span={1}>
-                  {employeeDetail.data.personal_id || 'N/A'}
+                  {employeeDetail?.personal_id || "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Số điện thoại" span={1}>
-                  {formatPhoneNumber(employeeDetail.data.phone || '')}
+                  {formatPhoneNumber(employeeDetail?.phone || "")}
                 </Descriptions.Item>
                 <Descriptions.Item label="Email" span={1}>
-                  {employeeDetail.data.email}
+                  {employeeDetail?.email}
                 </Descriptions.Item>
                 <Descriptions.Item label="Địa chỉ" span={2}>
-                  {employeeDetail.data.address || 'N/A'}
+                  {employeeDetail?.address || "N/A"}
                 </Descriptions.Item>
               </Descriptions>
             </div>
@@ -723,46 +753,59 @@ export default function EmployeesListPage() {
               <Divider orientation="left">Thông tin công việc</Divider>
               <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Ngày vào làm" span={1}>
-                  {employeeDetail.data.hire_date ? formatDate(employeeDetail.data.hire_date) : 'N/A'}
+                  {employeeDetail?.hire_date
+                    ? formatDate(employeeDetail?.hire_date)
+                    : "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày nghỉ việc" span={1}>
-                  {employeeDetail.data.termination_date ? formatDate(employeeDetail.data.termination_date) : 'N/A'}
+                  {employeeDetail?.termination_date
+                    ? formatDate(employeeDetail?.termination_date)
+                    : "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái" span={2}>
-                  <Tag color={employeeDetail.data.status === 'active' ? 'green' : 'red'}>
-                    {employeeDetail.data.status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}
+                  <Tag
+                    color={
+                      employeeDetail?.status === "active" ? "green" : "red"
+                    }
+                  >
+                    {employeeDetail?.status === "active"
+                      ? "Đang làm việc"
+                      : "Nghỉ việc"}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Giờ làm mặc định/tuần" span={1}>
-                  {employeeDetail.data.default_work_hours_per_week || 'N/A'} giờ
+                  {employeeDetail?.default_work_hours_per_week || "N/A"} giờ
                 </Descriptions.Item>
                 <Descriptions.Item label="Giờ làm tối đa/tuần" span={1}>
-                  {employeeDetail.data.max_hours_per_week || 'N/A'} giờ
+                  {employeeDetail?.max_hours_per_week || "N/A"} giờ
                 </Descriptions.Item>
               </Descriptions>
             </div>
 
             {/* Liên hệ khẩn cấp */}
-            {(employeeDetail.data.emergency_contact_name || employeeDetail.data.emergency_contact_phone) && (
+            {(employeeDetail?.emergency_contact_name ||
+              employeeDetail?.emergency_contact_phone) && (
               <div>
                 <Divider orientation="left">Liên hệ khẩn cấp</Divider>
                 <Descriptions column={2} bordered size="small">
                   <Descriptions.Item label="Tên người liên hệ" span={1}>
-                    {employeeDetail.data.emergency_contact_name || 'N/A'}
+                    {employeeDetail?.emergency_contact_name || "N/A"}
                   </Descriptions.Item>
                   <Descriptions.Item label="Số điện thoại" span={1}>
-                    {formatPhoneNumber(employeeDetail.data.emergency_contact_phone || '')}
+                    {formatPhoneNumber(
+                      employeeDetail?.emergency_contact_phone || ""
+                    )}
                   </Descriptions.Item>
                 </Descriptions>
               </div>
             )}
 
             {/* Ghi chú */}
-            {employeeDetail.data.notes && (
+            {employeeDetail?.notes && (
               <div>
                 <Divider orientation="left">Ghi chú</Divider>
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
-                  {employeeDetail.data.notes}
+                  {employeeDetail?.notes}
                 </p>
               </div>
             )}
@@ -779,8 +822,12 @@ export default function EmployeesListPage() {
         open={editDrawerOpen}
       >
         <div className="text-center py-12">
-          <p className="text-gray-500">Form chỉnh sửa nhân viên đang được phát triển</p>
-          <p className="text-sm text-gray-400 mt-2">Tính năng sẽ được bổ sung trong phiên bản tiếp theo</p>
+          <p className="text-gray-500">
+            Form chỉnh sửa nhân viên đang được phát triển
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Tính năng sẽ được bổ sung trong phiên bản tiếp theo
+          </p>
         </div>
       </Drawer>
 
@@ -791,33 +838,38 @@ export default function EmployeesListPage() {
         width="66%"
         onClose={() => setContractViewDrawerOpen(false)}
         open={contractViewDrawerOpen}
-        loading={contractDetailLoading}
       >
-        {contractDetail?.data && (
+        {contractDetail && (
           <div className="space-y-6">
             {/* Thông tin nhân viên */}
-            {contractDetail.data.employee_id && typeof contractDetail.data.employee_id === 'object' && (
-              <div>
-                <Divider orientation="left">Thông tin nhân viên</Divider>
-                <div className="flex items-center gap-4 pb-4">
-                  <Avatar 
-                    src={contractDetail.data.employee_id.avatar} 
-                    size={64} 
-                    className="bg-blue-500"
-                  >
-                    {(contractDetail.data.employee_id.full_name || contractDetail.data.employee_id.first_name)?.[0]}
-                  </Avatar>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {contractDetail.data.employee_id.full_name || 
-                       `${contractDetail.data.employee_id.first_name} ${contractDetail.data.employee_id.last_name}`}
-                    </h3>
-                    <p className="text-gray-500">{contractDetail.data.employee_id.employee_code}</p>
-                    <p className="text-sm text-gray-400">{contractDetail.data.employee_id.email}</p>
+            {contractDetail?.employee_id &&
+              typeof contractDetail?.employee_id === "object" && (
+                <div>
+                  <Divider orientation="left">Thông tin nhân viên</Divider>
+                  <div className="flex items-center gap-4 pb-4">
+                    <Avatar
+                      src={contractDetail?.employee_id?.photo_url}
+                      size={64}
+                      className="bg-blue-500"
+                    >
+                      {contractDetail?.employee_id?.full_name ||
+                        contractDetail?.employee_id?.first_name}
+                    </Avatar>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {contractDetail?.employee_id?.full_name ||
+                          `${contractDetail?.employee_id?.first_name} ${contractDetail?.employee_id?.last_name}`}
+                      </h3>
+                      <p className="text-gray-500">
+                        {contractDetail?.employee_id?.employee_code}
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        {contractDetail?.employee_id?.email}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Thông tin hợp đồng */}
             <div>
@@ -825,43 +877,60 @@ export default function EmployeesListPage() {
               <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Loại hợp đồng" span={2}>
                   <Tag color="blue">
-                    {contractDetail.data.contract_type === 'full_time' ? 'Toàn thời gian' :
-                     contractDetail.data.contract_type === 'part_time' ? 'Bán thời gian' :
-                     contractDetail.data.contract_type === 'contract' ? 'Hợp đồng' : 'Thực tập'}
+                    {contractDetail?.contract_type === "full_time"
+                      ? "Toàn thời gian"
+                      : contractDetail?.contract_type === "part_time"
+                        ? "Bán thời gian"
+                        : contractDetail?.contract_type === "casual"
+                          ? "Hợp đồng"
+                          : "Thực tập"}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày bắt đầu" span={1}>
-                  {contractDetail.data.start_date ? formatDate(contractDetail.data.start_date) : 'N/A'}
+                  {contractDetail?.start_date
+                    ? formatDate(contractDetail?.start_date)
+                    : "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày kết thúc" span={1}>
-                  {contractDetail.data.end_date ? formatDate(contractDetail.data.end_date) : 'Không xác định'}
+                  {contractDetail?.end_date
+                    ? formatDate(contractDetail?.end_date)
+                    : "Không xác định"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Lương cơ bản" span={2}>
                   <span className="font-semibold text-lg text-green-600">
                     {(() => {
-                      const salary = parseFloat(contractDetail.data.base_salary as any) || 0;
-                      return Math.round(salary).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                      const salary =
+                        parseFloat(contractDetail?.base_salary as any) || 0;
+                      return Math.round(salary)
+                        .toString()
+                        .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
                     })()}
                   </span>
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày kết thúc thử việc" span={2}>
-                  {contractDetail.data.probation_end_date ? formatDate(contractDetail.data.probation_end_date) : 'Không có'}
+                  {contractDetail?.probation_end_date
+                    ? formatDate(contractDetail?.probation_end_date)
+                    : "Không có"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái" span={2}>
-                  <Badge 
-                    status={contractDetail.data.is_active ? 'success' : 'default'}
-                    text={contractDetail.data.is_active ? 'Đang hiệu lực' : 'Đã chấm dứt'}
+                  <Badge
+                    status={contractDetail?.is_active ? "success" : "default"}
+                    text={
+                      contractDetail?.is_active
+                        ? "Đang hiệu lực"
+                        : "Đã chấm dứt"
+                    }
                   />
                 </Descriptions.Item>
               </Descriptions>
             </div>
 
             {/* Ghi chú */}
-            {contractDetail.data.notes && (
+            {contractDetail?.notes && (
               <div>
                 <Divider orientation="left">Ghi chú</Divider>
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
-                  {contractDetail.data.notes}
+                  {contractDetail?.notes}
                 </p>
               </div>
             )}
@@ -871,10 +940,14 @@ export default function EmployeesListPage() {
               <Divider orientation="left">Thông tin hệ thống</Divider>
               <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Ngày tạo" span={1}>
-                  {contractDetail.data.created_at ? formatDate(contractDetail.data.created_at) : 'N/A'}
+                  {contractDetail?.created_at
+                    ? formatDate(contractDetail?.created_at)
+                    : "N/A"}
                 </Descriptions.Item>
                 <Descriptions.Item label="Cập nhật lần cuối" span={1}>
-                  {contractDetail.data.updated_at ? formatDate(contractDetail.data.updated_at) : 'N/A'}
+                  {contractDetail?.updated_at
+                    ? formatDate(contractDetail?.updated_at)
+                    : "N/A"}
                 </Descriptions.Item>
               </Descriptions>
             </div>
@@ -891,8 +964,12 @@ export default function EmployeesListPage() {
         open={contractEditDrawerOpen}
       >
         <div className="text-center py-12">
-          <p className="text-gray-500">Form chỉnh sửa hợp đồng đang được phát triển</p>
-          <p className="text-sm text-gray-400 mt-2">Tính năng sẽ được bổ sung trong phiên bản tiếp theo</p>
+          <p className="text-gray-500">
+            Form chỉnh sửa hợp đồng đang được phát triển
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Tính năng sẽ được bổ sung trong phiên bản tiếp theo
+          </p>
         </div>
       </Drawer>
     </div>
