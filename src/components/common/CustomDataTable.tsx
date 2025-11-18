@@ -309,9 +309,7 @@ export function CustomDataTable<T extends Record<string, any>>({
                 icon={<ReloadOutlined />}
                 onClick={handleRefresh}
                 title="Làm mới"
-              >
-                Làm mới
-              </Button>
+              />
             )}
 
             {/* Export Button */}

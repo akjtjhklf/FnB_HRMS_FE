@@ -9,6 +9,7 @@ import { App as AntdApp } from "antd";
 
 import { ColorModeContextProvider } from "@contexts/color-mode";
 import { authProvider, dataProvider } from "@providers";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -217,6 +218,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
             <RefineKbar />
           </Refine>
         </ColorModeContextProvider>
+        <ConfirmModal />
       </AntdApp>
     </RefineKbarProvider>
   );

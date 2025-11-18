@@ -8,11 +8,19 @@
 }
 
 .custom-table .ant-table-thead > tr > th {
-  @apply bg-gray-50 font-semibold text-gray-700 border-b-2 border-gray-200;
+  @apply bg-gray-100 font-bold text-gray-800 border-b-2 border-gray-200;
+}
+
+.custom-table .ant-table-thead > tr > th:first-child {
+  @apply rounded-tl-md;
+}
+
+.custom-table .ant-table-thead > tr > th:last-child {
+  @apply rounded-tr-md;
 }
 
 .custom-table .ant-table-tbody > tr:hover > td {
-  @apply bg-blue-50/50;
+  @apply bg-blue-50/50 cursor-pointer font-medium;
 }
 
 .custom-table .ant-table-tbody > tr > td {
