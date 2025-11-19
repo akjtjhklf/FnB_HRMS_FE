@@ -1,6 +1,7 @@
 "use client";
 
 import { useTable } from "@refinedev/antd";
+import { useCreate } from "@refinedev/core";
 import {
   Table,
   Card,
@@ -11,11 +12,13 @@ import {
   Col,
   Statistic,
   Select,
-  Modal,
+  Drawer,
   Descriptions,
   Divider,
-  Tooltip,
   App,
+  Modal,
+  Form,
+  Input,
 } from "antd";
 import {
   DollarOutlined,
@@ -26,33 +29,14 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   FileTextOutlined,
+  SendOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo } from "react";
 import { formatDate } from "@/lib/utils";
-
-interface Employee {
-  id: string;
-  full_name?: string;
-  employee_code?: string;
-}
-
-interface MonthlyPayroll {
-  id: string;
-  employee_id: string | Employee;
-  month: string;
-  base_salary: number;
-  allowances?: number;
-  bonuses?: number;
-  overtime_pay?: number;
-  deductions?: number;
-  penalties?: number;
-  gross_salary: number;
-  net_salary: number;
-  status: "draft" | "pending_approval" | "approved" | "paid";
-  notes?: string;
-  approved_by?: string;
-  approved_at?: string;
-}
+import { MonthlyPayroll } from "@/types/payroll";
+import { Employee } from "@/types/employee";
+import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
+import { useRouter } from "next/navigation";
 
 const formatCurrency = (value: number) => {
   if (!value || isNaN(value)) return "0";
@@ -62,9 +46,17 @@ const formatCurrency = (value: number) => {
 
 export const SalaryList = () => {
   const { message } = App.useApp();
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const router = useRouter();
+  const currentMonth = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [currentPayroll, setCurrentPayroll] = useState<MonthlyPayroll | null>(null);
+  const [requestForm] = Form.useForm();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewingPayroll, setViewingPayroll] = useState<MonthlyPayroll | null>(null);
+  const [searchText, setSearchText] = useState("");
+
+  const { mutate: createRequest } = useCreate();
 
   const { tableProps } = useTable<MonthlyPayroll>({
     resource: "monthly-payrolls",
@@ -84,29 +76,45 @@ export const SalaryList = () => {
     },
   });
 
-  const payrolls = tableProps.dataSource || [];
+  const payrolls = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
+
+  const getEmployeeName = (employee: any) => {
+    if (!employee) return "N/A";
+    if (typeof employee === "object") {
+      return employee.full_name || employee.employee_code || "N/A";
+    }
+    return "N/A";
+  };
+
+  // Filter payrolls by search text
+  const filteredPayrolls = useMemo(() => {
+    if (!searchText) return payrolls;
+    const searchLower = searchText.toLowerCase();
+    return payrolls.filter((p) => {
+      const employeeName = getEmployeeName(p.employee_id).toLowerCase();
+      return employeeName.includes(searchLower);
+    });
+  }, [payrolls, searchText]);
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const total = payrolls.length;
-    const totalGross = payrolls.reduce((sum, p) => {
+    const total = filteredPayrolls.length;
+    const totalGross = filteredPayrolls.reduce((sum, p) => {
       const value = parseFloat(p.gross_salary as any) || 0;
       return sum + value;
     }, 0);
-    const totalNet = payrolls.reduce((sum, p) => {
+    const totalNet = filteredPayrolls.reduce((sum, p) => {
       const value = parseFloat(p.net_salary as any) || 0;
       return sum + value;
     }, 0);
-    const totalDeductions = payrolls.reduce((sum, p) => {
+    const totalDeductions = filteredPayrolls.reduce((sum, p) => {
       const ded = parseFloat(p.deductions as any) || 0;
       const pen = parseFloat(p.penalties as any) || 0;
       return sum + ded + pen;
     }, 0);
-    const paid = payrolls.filter((p) => p.status === "paid").length;
-    const pending = payrolls.filter((p) => p.status === "pending_approval").length;
 
-    return { total, totalGross, totalNet, totalDeductions, paid, pending };
-  }, [payrolls]);
+    return { total, totalGross, totalNet, totalDeductions };
+  }, [filteredPayrolls]);
 
   // Generate month options for last 12 months
   const monthOptions = useMemo(() => {
@@ -124,11 +132,20 @@ export const SalaryList = () => {
   const getStatusTag = (status: string) => {
     const statusMap = {
       draft: { color: "default", icon: <FileTextOutlined />, text: "Nháp" },
-      pending_approval: { color: "gold", icon: <ClockCircleOutlined />, text: "Chờ duyệt" },
-      approved: { color: "green", icon: <CheckCircleOutlined />, text: "Đã duyệt" },
+      pending_approval: {
+        color: "gold",
+        icon: <ClockCircleOutlined />,
+        text: "Chờ duyệt",
+      },
+      approved: {
+        color: "green",
+        icon: <CheckCircleOutlined />,
+        text: "Đã duyệt",
+      },
       paid: { color: "blue", icon: <DollarOutlined />, text: "Đã thanh toán" },
     };
-    const config = statusMap[status as keyof typeof statusMap] || statusMap.draft;
+    const config =
+      statusMap[status as keyof typeof statusMap] || statusMap.draft;
     return (
       <Tag color={config.color} icon={config.icon}>
         {config.text}
@@ -136,24 +153,59 @@ export const SalaryList = () => {
     );
   };
 
-  const getEmployeeName = (employee: any) => {
-    if (!employee) return "N/A";
-    if (typeof employee === "object") {
-      return employee.full_name || employee.employee_code || "N/A";
-    }
-    return "N/A";
-  };
-
   const handleView = (record: MonthlyPayroll) => {
     setViewingPayroll(record);
+    setDrawerOpen(true);
   };
 
   const handleEdit = (record: MonthlyPayroll) => {
-    message.info("Chức năng chỉnh sửa bảng lương đang được phát triển");
+    router.push(`/salary/${record.id}/edit`);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setViewingPayroll(null);
   };
 
   const handleRequestEdit = (record: MonthlyPayroll) => {
-    message.info("Yêu cầu chỉnh sửa bảng lương đã được gửi");
+    setCurrentPayroll(record);
+    setRequestModalOpen(true);
+    requestForm.resetFields();
+  };
+
+  const handleSubmitRequest = async () => {
+    try {
+      const values = await requestForm.validateFields();
+      
+      createRequest(
+        {
+          resource: "salary-requests",
+          values: {
+            employee_id: typeof currentPayroll?.employee_id === "object" 
+              ? (currentPayroll?.employee_id as Employee).id 
+              : currentPayroll?.employee_id,
+            current_rate: currentPayroll?.base_salary,
+            proposed_rate: currentPayroll?.base_salary,
+            request_date: new Date().toISOString(),
+            status: "pending",
+            note: values.reason,
+          },
+        },
+        {
+          onSuccess: () => {
+            message.success("Yêu cầu chỉnh sửa đã được gửi thành công");
+            setRequestModalOpen(false);
+            setCurrentPayroll(null);
+            requestForm.resetFields();
+          },
+          onError: () => {
+            message.error("Gửi yêu cầu thất bại, vui lòng thử lại");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Validation failed:", error);
+    }
   };
 
   const handleExport = () => {
@@ -161,15 +213,37 @@ export const SalaryList = () => {
   };
 
   const handleCreatePayroll = () => {
-    message.info("Chức năng tạo bảng lương đang được phát triển");
+    router.push("/salary/create");
   };
 
-  const columns = [
+  const getActionItems = (record: MonthlyPayroll): ActionItem[] => [
+    {
+      key: "view",
+      label: "Xem chi tiết",
+      icon: <EyeOutlined />,
+      onClick: () => handleView(record),
+    },
+    {
+      key: "edit",
+      label: "Chỉnh sửa",
+      icon: <EditOutlined />,
+      onClick: () => handleEdit(record),
+    },
+    {
+      key: "request",
+      label: "Yêu cầu sửa",
+      icon: <SendOutlined />,
+      onClick: () => handleRequestEdit(record),
+    },
+  ];
+
+  const columns: any[] = [
     {
       title: "Nhân viên",
       dataIndex: "employee_id",
       key: "employee",
       ellipsis: true,
+      width: 200,
       render: (employee: any) => {
         const name = getEmployeeName(employee);
         return <span className="font-medium text-gray-900">{name}</span>;
@@ -180,6 +254,7 @@ export const SalaryList = () => {
       dataIndex: "base_salary",
       key: "base_salary",
       width: 130,
+      align: "right" as const,
       sorter: true,
       render: (value: number) => (
         <span className="text-gray-700">{formatCurrency(value)}</span>
@@ -189,6 +264,7 @@ export const SalaryList = () => {
       title: "Phụ cấp & Thưởng",
       key: "allowances_bonuses",
       width: 140,
+      align: "right" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const allowances = parseFloat(record.allowances as any) || 0;
         const bonuses = parseFloat(record.bonuses as any) || 0;
@@ -200,6 +276,7 @@ export const SalaryList = () => {
       title: "Trừ & Phạt",
       key: "deductions_penalties",
       width: 120,
+      align: "right" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const deductions = parseFloat(record.deductions as any) || 0;
         const penalties = parseFloat(record.penalties as any) || 0;
@@ -212,9 +289,12 @@ export const SalaryList = () => {
       dataIndex: "gross_salary",
       key: "gross_salary",
       width: 130,
+      align: "right" as const,
       sorter: true,
       render: (value: number) => (
-        <span className="font-semibold text-gray-900">{formatCurrency(value)}</span>
+        <span className="font-semibold text-gray-900">
+          {formatCurrency(value)}
+        </span>
       ),
     },
     {
@@ -222,6 +302,7 @@ export const SalaryList = () => {
       dataIndex: "net_salary",
       key: "net_salary",
       width: 140,
+      align: "right" as const,
       sorter: true,
       render: (value: number) => (
         <span className="font-bold text-green-600">{formatCurrency(value)}</span>
@@ -244,96 +325,97 @@ export const SalaryList = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 150,
+      width: 80,
       fixed: "right" as const,
+      align: "center" as const,
       render: (_: any, record: MonthlyPayroll) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)} />
-          </Tooltip>
-          {(record.status === "draft" || record.status === "pending_approval") && (
-            <Tooltip title="Chỉnh sửa">
-              <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-            </Tooltip>
-          )}
-          {record.status === "approved" && (
-            <Tooltip title="Yêu cầu sửa">
-              <Button type="text" onClick={() => handleRequestEdit(record)}>
-                Yêu cầu
-              </Button>
-            </Tooltip>
-          )}
-        </Space>
+        <ActionPopover actions={getActionItems(record)} />
       ),
     },
   ];
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-6 flex justify-between items-start">
+    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+      <div className="mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <DollarOutlined className="text-xl text-green-600" />
             </div>
             Bảng lương
           </h1>
-          <p className="text-gray-500 mt-2 ml-[52px]">Quản lý lương và thưởng nhân viên</p>
+          <p className="text-gray-500 mt-2 ml-0 md:ml-[52px] text-sm md:text-base">
+            Quản lý lương và thưởng nhân viên
+          </p>
         </div>
-        <Space>
+        <Space wrap size="small" className="w-full md:w-auto">
+          <Input.Search
+            placeholder="Tìm theo tên nhân viên..."
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full md:w-[250px]"
+          />
           <Select
             value={selectedMonth}
             onChange={setSelectedMonth}
             options={monthOptions}
-            style={{ width: 200 }}
+            className="w-full md:w-[200px]"
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreatePayroll}>
-            Tạo bảng lương
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleCreatePayroll}
+          >
+            <span className="hidden md:inline">Tạo bảng lương</span>
+            <span className="md:hidden">Tạo</span>
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport}>
-            Xuất Excel
+            <span className="hidden md:inline">Xuất Excel</span>
+            <span className="md:hidden">Xuất</span>
           </Button>
         </Space>
       </div>
 
       {/* Statistics Cards */}
-      <Row gutter={16} className="mb-6">
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm">
+      <Row gutter={[16, 16]} className="mb-4 md:mb-6">
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small" className="shadow-sm">
             <Statistic
-              title="Tổng số nhân viên"
+              title="Tổng NV"
               value={stats.total}
               prefix={<DollarOutlined />}
+              valueStyle={{ fontSize: "18px" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm">
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small" className="shadow-sm">
             <Statistic
               title="Tổng lương"
               value={stats.totalGross}
               formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#1890ff" }}
+              valueStyle={{ color: "#1890ff", fontSize: "18px" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm">
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small" className="shadow-sm">
             <Statistic
-              title="Tổng thực lãnh"
+              title="Thực lãnh"
               value={stats.totalNet}
               formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#52c41a" }}
+              valueStyle={{ color: "#52c41a", fontSize: "18px" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="shadow-sm">
+        <Col xs={12} sm={12} md={6}>
+          <Card size="small" className="shadow-sm">
             <Statistic
-              title="Tổng khấu trừ"
+              title="Khấu trừ"
               value={stats.totalDeductions}
               formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#ff4d4f" }}
+              valueStyle={{ color: "#ff4d4f", fontSize: "18px" }}
             />
           </Card>
         </Col>
@@ -343,52 +425,49 @@ export const SalaryList = () => {
       <Card className="shadow-sm border border-gray-200">
         <Table
           {...tableProps}
+          dataSource={filteredPayrolls}
           columns={columns}
           rowKey="id"
           scroll={{ x: 1200 }}
           pagination={{
             ...tableProps.pagination,
+            total: filteredPayrolls.length,
             showSizeChanger: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bảng lương`,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} của ${total} bảng lương`,
           }}
         />
       </Card>
 
-      {/* Payroll Detail Modal */}
-      <Modal
-        title="Chi tiết phiếu lương"
-        open={!!viewingPayroll}
-        onCancel={() => setViewingPayroll(null)}
-        footer={[
-          <Button key="close" onClick={() => setViewingPayroll(null)}>
-            Đóng
-          </Button>,
-          viewingPayroll?.status === "approved" && (
-            <Button
-              key="request"
-              type="primary"
-              onClick={() => {
-                handleRequestEdit(viewingPayroll);
-                setViewingPayroll(null);
-              }}
-            >
-              Yêu cầu chỉnh sửa
-            </Button>
-          ),
-        ]}
-        width={700}
+      {/* Payroll Detail Drawer */}
+      <Drawer
+        open={drawerOpen}
+        title={
+          <div className="flex items-center gap-2">
+            <FileTextOutlined />
+            Chi tiết phiếu lương
+          </div>
+        }
+        width={typeof window !== 'undefined' && window.innerWidth < 768 ? "100%" : 700}
+        onClose={handleCloseDrawer}
+        styles={{ body: { paddingTop: 16 } }}
       >
         {viewingPayroll && (
           <div>
-            <Descriptions column={2} bordered>
-              <Descriptions.Item label="Nhân viên" span={2}>
-                {getEmployeeName(viewingPayroll.employee_id as Employee)}
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="Nhân viên">
+                <span className="font-semibold">
+                  {getEmployeeName(viewingPayroll.employee_id)}
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Tháng">
-                {new Date(viewingPayroll.month + "-01").toLocaleDateString("vi-VN", {
-                  month: "long",
-                  year: "numeric",
-                })}
+                {new Date(viewingPayroll.month + "-01").toLocaleDateString(
+                  "vi-VN",
+                  {
+                    month: "long",
+                    year: "numeric",
+                  }
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 {getStatusTag(viewingPayroll.status)}
@@ -397,42 +476,50 @@ export const SalaryList = () => {
 
             <Divider orientation="left">Chi tiết lương</Divider>
 
-            <Descriptions column={1} bordered>
+            <Descriptions column={1} bordered size="small">
               <Descriptions.Item label="Lương cơ bản">
-                {formatCurrency(viewingPayroll.base_salary)}
+                <span className="font-semibold">
+                  {formatCurrency(viewingPayroll.base_salary)} VNĐ
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Phụ cấp">
-                +{formatCurrency(viewingPayroll.allowances || 0)}
+                <span className="text-green-600">
+                  +{formatCurrency(viewingPayroll.allowances || 0)} VNĐ
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Thưởng">
-                +{formatCurrency(viewingPayroll.bonuses || 0)}
+                <span className="text-green-600">
+                  +{formatCurrency(viewingPayroll.bonuses || 0)} VNĐ
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Lương làm thêm">
-                +{formatCurrency(viewingPayroll.overtime_pay || 0)}
+                <span className="text-green-600">
+                  +{formatCurrency(viewingPayroll.overtime_pay || 0)} VNĐ
+                </span>
               </Descriptions.Item>
-              <Descriptions.Item label="Khấu trừ (đồng phục, ứng trước, v.v.)">
+              <Descriptions.Item label="Khấu trừ">
                 <span className="text-red-600">
-                  -{formatCurrency(viewingPayroll.deductions || 0)}
+                  -{formatCurrency(viewingPayroll.deductions || 0)} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Phạt">
                 <span className="text-red-600">
-                  -{formatCurrency(viewingPayroll.penalties || 0)}
+                  -{formatCurrency(viewingPayroll.penalties || 0)} VNĐ
                 </span>
               </Descriptions.Item>
             </Descriptions>
 
             <Divider />
 
-            <Descriptions column={1} bordered>
+            <Descriptions column={1} bordered size="middle">
               <Descriptions.Item label="Tổng lương">
                 <span className="font-semibold text-base">
-                  {formatCurrency(viewingPayroll.gross_salary)}
+                  {formatCurrency(viewingPayroll.gross_salary)} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Thực lãnh">
                 <span className="font-bold text-lg text-green-600">
-                  {formatCurrency(viewingPayroll.net_salary)}
+                  {formatCurrency(viewingPayroll.net_salary)} VNĐ
                 </span>
               </Descriptions.Item>
             </Descriptions>
@@ -440,14 +527,16 @@ export const SalaryList = () => {
             {viewingPayroll.notes && (
               <>
                 <Divider orientation="left">Ghi chú</Divider>
-                <p className="p-3 bg-gray-50 rounded">{viewingPayroll.notes}</p>
+                <div className="p-3 bg-gray-50 rounded text-sm">
+                  {viewingPayroll.notes}
+                </div>
               </>
             )}
 
             {viewingPayroll.approved_at && (
               <>
                 <Divider orientation="left">Thông tin duyệt</Divider>
-                <Descriptions column={1} bordered>
+                <Descriptions column={1} bordered size="small">
                   <Descriptions.Item label="Người duyệt">
                     {viewingPayroll.approved_by || "N/A"}
                   </Descriptions.Item>
@@ -459,6 +548,53 @@ export const SalaryList = () => {
             )}
           </div>
         )}
+      </Drawer>
+
+      {/* Request Edit Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <SendOutlined />
+            Yêu cầu chỉnh sửa bảng lương
+          </div>
+        }
+        open={requestModalOpen}
+        onCancel={() => {
+          setRequestModalOpen(false);
+          setCurrentPayroll(null);
+          requestForm.resetFields();
+        }}
+        onOk={handleSubmitRequest}
+        okText="Gửi yêu cầu"
+        cancelText="Hủy"
+        width={500}
+      >
+        <div className="mb-4 p-3 bg-blue-50 rounded">
+          <p className="text-sm text-blue-800">
+            <strong>Nhân viên:</strong>{" "}
+            {getEmployeeName(currentPayroll?.employee_id)}
+          </p>
+          <p className="text-sm text-blue-800">
+            <strong>Tháng:</strong> {currentPayroll?.month}
+          </p>
+        </div>
+        <Form form={requestForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Lý do yêu cầu chỉnh sửa"
+            rules={[
+              { required: true, message: "Vui lòng nhập lý do yêu cầu" },
+              { min: 10, message: "Lý do phải có ít nhất 10 ký tự" },
+            ]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="Nhập lý do chi tiết (ví dụ: Thiếu thưởng KPI tháng 10, chưa tính phụ cấp đi lại...)"
+              showCount
+              maxLength={500}
+            />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
