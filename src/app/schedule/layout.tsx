@@ -2,11 +2,27 @@
 
 import { Header } from "@components/header";
 import { ModernSidebar } from "@components/layout";
-import { Menu } from "lucide-react";
+import { Menu, Calendar, ClipboardList, BarChart3 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ReactNode, useState } from "react";
 
 export default function ScheduleLayout({ children }: { children: ReactNode }) {
-    const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+
+  const scheduleMenuItems = [
+    { icon: <BarChart3 size={18} />, label: "Dashboard", href: "/schedule/dashboard" },
+    { icon: <Calendar size={18} />, label: "Quản lý lịch", href: "/schedule" },
+    { icon: <ClipboardList size={18} />, label: "Đăng ký ca", href: "/schedule/availability" },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === "/schedule") {
+      return pathname === "/schedule";
+    }
+    return pathname?.startsWith(href);
+  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,8 +47,32 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
           <Header />
         </div>
 
+        {/* Sub Navigation */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2 overflow-x-auto py-3 scrollbar-hide">
+              {scheduleMenuItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap
+                    ${isActive(item.href)
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-gray-700 hover:bg-gray-100"
+                    }
+                  `}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Page Content */}
-        <main className="min-h-[calc(100vh-64px)]">{children}</main>
+        <main className="min-h-[calc(100vh-140px)]">{children}</main>
       </div>
     </div>
   );

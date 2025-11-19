@@ -84,7 +84,7 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
     const url = `/${resource}/${id}`;
 
     try {
-      const response = await axiosClient.put<ResponseAPI<any>>(url, variables);
+      const response = await axiosClient.patch<ResponseAPI<any>>(url, variables);
       const data = response.data;
 
       return {
