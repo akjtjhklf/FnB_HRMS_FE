@@ -5,8 +5,15 @@ export interface User {
   first_name?: string;
   last_name?: string;
   avatar?: string;
-  role?: Role;
+  role?: Role | string; // Can be populated object or just ID
   status?: string;
+  employee_id?: string; // Link to employees table
+  last_access?: string;
+  language?: string;
+  theme_light?: string;
+  theme_dark?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LoginCredentials {
