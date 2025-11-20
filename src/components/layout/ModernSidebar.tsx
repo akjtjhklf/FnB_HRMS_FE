@@ -82,7 +82,7 @@ interface ModernSidebarProps {
 }
 
 export const ModernSidebar: React.FC<ModernSidebarProps> = ({
-  mobileOpen = true, // Set default to always open
+  mobileOpen = false,
   onMobileClose,
 }) => {
   const pathname = usePathname();
@@ -95,22 +95,30 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
     return pathname?.startsWith(href);
   };
 
-  // Remove mobile close behavior
+  // Close mobile sidebar on route change
   useEffect(() => {
-  if (onMobileClose) {
-    onMobileClose();
-  }
-}, [onMobileClose]);
-
+    if (onMobileClose && typeof window !== 'undefined' && window.innerWidth < 1024) {
+      onMobileClose();
+    }
+  }, [pathname, onMobileClose]);
 
   return (
     <>
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
+
       {/* Sidebar */}
       <div
         className={cn(
           "h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 fixed left-0 top-0 z-50",
           "w-24",
-          "lg:translate-x-0 translate-x-0" // Always open
+          "lg:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Logo */}

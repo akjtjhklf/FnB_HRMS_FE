@@ -31,12 +31,14 @@ import {
   FileTextOutlined,
   SendOutlined,
 } from "@ant-design/icons";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
 import { MonthlyPayroll } from "@/types/payroll";
 import { Employee } from "@/types/employee";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
 import { useRouter } from "next/navigation";
+import { CustomDrawer } from "@/components/common/CustomDrawer";
+import { SalaryForm } from "./SalaryForm";
 
 const formatCurrency = (value: number) => {
   if (!value || isNaN(value)) return "0";
@@ -54,6 +56,8 @@ export const SalaryList = () => {
   const [requestForm] = Form.useForm();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewingPayroll, setViewingPayroll] = useState<MonthlyPayroll | null>(null);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editingPayroll, setEditingPayroll] = useState<MonthlyPayroll | null>(null);
   const [searchText, setSearchText] = useState("");
 
   const { mutate: createRequest } = useCreate();
@@ -159,12 +163,23 @@ export const SalaryList = () => {
   };
 
   const handleEdit = (record: MonthlyPayroll) => {
-    router.push(`/salary/${record.id}/edit`);
+    setEditingPayroll(record);
+    setEditDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
     setViewingPayroll(null);
+  };
+
+  const handleCloseEditDrawer = () => {
+    setEditDrawerOpen(false);
+    setEditingPayroll(null);
+  };
+
+  const handleEditSuccess = () => {
+    handleCloseEditDrawer();
+    tableProps.dataSource && (tableProps as any).refetch?.();
   };
 
   const handleRequestEdit = (record: MonthlyPayroll) => {
@@ -177,16 +192,22 @@ export const SalaryList = () => {
     try {
       const values = await requestForm.validateFields();
       
+      // Convert to correct types for backend validation
+      const employeeId = typeof currentPayroll?.employee_id === "object" 
+        ? (currentPayroll?.employee_id as Employee).id 
+        : currentPayroll?.employee_id;
+      
+      const currentRate = Number(currentPayroll?.base_salary) || 0;
+      const proposedRate = Number(currentPayroll?.base_salary) || 0;
+      
       createRequest(
         {
           resource: "salary-requests",
           values: {
-            employee_id: typeof currentPayroll?.employee_id === "object" 
-              ? (currentPayroll?.employee_id as Employee).id 
-              : currentPayroll?.employee_id,
-            current_rate: currentPayroll?.base_salary,
-            proposed_rate: currentPayroll?.base_salary,
-            request_date: new Date().toISOString(),
+            employee_id: employeeId,
+            current_rate: currentRate,
+            proposed_rate: proposedRate,
+            request_date: new Date(),
             status: "pending",
             note: values.reason,
           },
@@ -198,8 +219,9 @@ export const SalaryList = () => {
             setCurrentPayroll(null);
             requestForm.resetFields();
           },
-          onError: () => {
-            message.error("Gửi yêu cầu thất bại, vui lòng thử lại");
+          onError: (error: any) => {
+            const errorMsg = error?.response?.data?.error?.message || "Gửi yêu cầu thất bại, vui lòng thử lại";
+            message.error(errorMsg);
           },
         }
       );
@@ -244,9 +266,10 @@ export const SalaryList = () => {
       key: "employee",
       ellipsis: true,
       width: 200,
+      fixed: "left" as const,
       render: (employee: any) => {
         const name = getEmployeeName(employee);
-        return <span className="font-medium text-gray-900">{name}</span>;
+        return <span className="font-semibold text-gray-900">{name}</span>;
       },
     },
     {
@@ -257,31 +280,31 @@ export const SalaryList = () => {
       align: "right" as const,
       sorter: true,
       render: (value: number) => (
-        <span className="text-gray-700">{formatCurrency(value)}</span>
+        <span className="text-gray-700 whitespace-nowrap">{formatCurrency(value)}</span>
       ),
     },
     {
       title: "Phụ cấp & Thưởng",
       key: "allowances_bonuses",
-      width: 140,
+      width: 130,
       align: "right" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const allowances = parseFloat(record.allowances as any) || 0;
         const bonuses = parseFloat(record.bonuses as any) || 0;
         const total = Math.round(allowances + bonuses);
-        return <span className="text-green-600">+{formatCurrency(total)}</span>;
+        return <span className="text-green-600 whitespace-nowrap">+{formatCurrency(total)}</span>;
       },
     },
     {
       title: "Trừ & Phạt",
       key: "deductions_penalties",
-      width: 120,
+      width: 110,
       align: "right" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const deductions = parseFloat(record.deductions as any) || 0;
         const penalties = parseFloat(record.penalties as any) || 0;
         const total = Math.round(deductions + penalties);
-        return <span className="text-red-600">-{formatCurrency(total)}</span>;
+        return <span className="text-red-600 whitespace-nowrap">-{formatCurrency(total)}</span>;
       },
     },
     {
@@ -292,7 +315,7 @@ export const SalaryList = () => {
       align: "right" as const,
       sorter: true,
       render: (value: number) => (
-        <span className="font-semibold text-gray-900">
+        <span className="font-semibold text-gray-900 whitespace-nowrap">
           {formatCurrency(value)}
         </span>
       ),
@@ -305,7 +328,7 @@ export const SalaryList = () => {
       align: "right" as const,
       sorter: true,
       render: (value: number) => (
-        <span className="font-bold text-green-600">{formatCurrency(value)}</span>
+        <span className="font-bold text-green-600 whitespace-nowrap">{formatCurrency(value)}</span>
       ),
     },
     {
@@ -325,9 +348,8 @@ export const SalaryList = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 80,
+      width: 100,
       fixed: "right" as const,
-      align: "center" as const,
       render: (_: any, record: MonthlyPayroll) => (
         <ActionPopover actions={getActionItems(record)} />
       ),
@@ -335,50 +357,44 @@ export const SalaryList = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
-      <div className="mb-4 md:mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <DollarOutlined className="text-xl text-green-600" />
-            </div>
+          <h1 className="text-2xl font-bold text-gray-900">
             Bảng lương
           </h1>
-          <p className="text-gray-500 mt-2 ml-0 md:ml-[52px] text-sm md:text-base">
-            Quản lý lương và thưởng nhân viên
-          </p>
+          <p className="text-gray-500 mt-1">Quản lý lương và thưởng nhân viên</p>
         </div>
-        <Space wrap size="small" className="w-full md:w-auto">
+        <Space>
           <Input.Search
             placeholder="Tìm theo tên nhân viên..."
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="w-full md:w-[250px]"
+            style={{ width: 250 }}
           />
           <Select
             value={selectedMonth}
             onChange={setSelectedMonth}
             options={monthOptions}
-            className="w-full md:w-[200px]"
+            style={{ width: 200 }}
           />
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleCreatePayroll}
+            size="large"
           >
-            <span className="hidden md:inline">Tạo bảng lương</span>
-            <span className="md:hidden">Tạo</span>
+            Tạo bảng lương
           </Button>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>
-            <span className="hidden md:inline">Xuất Excel</span>
-            <span className="md:hidden">Xuất</span>
+          <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
+            Xuất Excel
           </Button>
         </Space>
       </div>
 
       {/* Statistics Cards */}
-      <Row gutter={[16, 16]} className="mb-4 md:mb-6">
+      <Row gutter={[16, 16]} className="mb-6">
         <Col xs={12} sm={12} md={6}>
           <Card size="small" className="shadow-sm">
             <Statistic
@@ -422,7 +438,7 @@ export const SalaryList = () => {
       </Row>
 
       {/* Payroll Table */}
-      <Card className="shadow-sm border border-gray-200">
+      <div className="bg-white rounded-lg shadow">
         <Table
           {...tableProps}
           dataSource={filteredPayrolls}
@@ -437,7 +453,7 @@ export const SalaryList = () => {
               `${range[0]}-${range[1]} của ${total} bảng lương`,
           }}
         />
-      </Card>
+      </div>
 
       {/* Payroll Detail Drawer */}
       <Drawer
@@ -445,16 +461,16 @@ export const SalaryList = () => {
         title={
           <div className="flex items-center gap-2">
             <FileTextOutlined />
-            Chi tiết phiếu lương
+            <span className="text-base md:text-lg">Chi tiết phiếu lương</span>
           </div>
         }
-        width={typeof window !== 'undefined' && window.innerWidth < 768 ? "100%" : 700}
+        width={700}
         onClose={handleCloseDrawer}
         styles={{ body: { paddingTop: 16 } }}
       >
         {viewingPayroll && (
-          <div>
-            <Descriptions column={1} bordered size="small">
+          <div className="space-y-4">
+            <Descriptions column={1} bordered size="small" className="text-sm">
               <Descriptions.Item label="Nhân viên">
                 <span className="font-semibold">
                   {getEmployeeName(viewingPayroll.employee_id)}
@@ -474,9 +490,9 @@ export const SalaryList = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            <Divider orientation="left">Chi tiết lương</Divider>
+            <Divider orientation="left" className="text-sm md:text-base my-3">Chi tiết lương</Divider>
 
-            <Descriptions column={1} bordered size="small">
+            <Descriptions column={1} bordered size="small" className="text-sm">
               <Descriptions.Item label="Lương cơ bản">
                 <span className="font-semibold">
                   {formatCurrency(viewingPayroll.base_salary)} VNĐ
@@ -509,9 +525,9 @@ export const SalaryList = () => {
               </Descriptions.Item>
             </Descriptions>
 
-            <Divider />
+            <Divider className="my-3" />
 
-            <Descriptions column={1} bordered size="middle">
+            <Descriptions column={1} bordered size="middle" className="text-sm md:text-base">
               <Descriptions.Item label="Tổng lương">
                 <span className="font-semibold text-base">
                   {formatCurrency(viewingPayroll.gross_salary)} VNĐ
@@ -526,8 +542,8 @@ export const SalaryList = () => {
 
             {viewingPayroll.notes && (
               <>
-                <Divider orientation="left">Ghi chú</Divider>
-                <div className="p-3 bg-gray-50 rounded text-sm">
+                <Divider orientation="left" className="text-sm md:text-base my-3">Ghi chú</Divider>
+                <div className="p-3 bg-gray-50 rounded text-xs md:text-sm">
                   {viewingPayroll.notes}
                 </div>
               </>
@@ -535,8 +551,8 @@ export const SalaryList = () => {
 
             {viewingPayroll.approved_at && (
               <>
-                <Divider orientation="left">Thông tin duyệt</Divider>
-                <Descriptions column={1} bordered size="small">
+                <Divider orientation="left" className="text-sm md:text-base my-3">Thông tin duyệt</Divider>
+                <Descriptions column={1} bordered size="small" className="text-sm">
                   <Descriptions.Item label="Người duyệt">
                     {viewingPayroll.approved_by || "N/A"}
                   </Descriptions.Item>
@@ -555,7 +571,7 @@ export const SalaryList = () => {
         title={
           <div className="flex items-center gap-2">
             <SendOutlined />
-            Yêu cầu chỉnh sửa bảng lương
+            <span className="text-base md:text-lg">Yêu cầu chỉnh sửa bảng lương</span>
           </div>
         }
         open={requestModalOpen}
@@ -568,13 +584,14 @@ export const SalaryList = () => {
         okText="Gửi yêu cầu"
         cancelText="Hủy"
         width={500}
+        centered
       >
         <div className="mb-4 p-3 bg-blue-50 rounded">
-          <p className="text-sm text-blue-800">
+          <p className="text-xs md:text-sm text-blue-800 mb-1">
             <strong>Nhân viên:</strong>{" "}
             {getEmployeeName(currentPayroll?.employee_id)}
           </p>
-          <p className="text-sm text-blue-800">
+          <p className="text-xs md:text-sm text-blue-800">
             <strong>Tháng:</strong> {currentPayroll?.month}
           </p>
         </div>
@@ -584,7 +601,6 @@ export const SalaryList = () => {
             label="Lý do yêu cầu chỉnh sửa"
             rules={[
               { required: true, message: "Vui lòng nhập lý do yêu cầu" },
-              { min: 10, message: "Lý do phải có ít nhất 10 ký tự" },
             ]}
           >
             <Input.TextArea
@@ -596,6 +612,24 @@ export const SalaryList = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Edit Drawer */}
+      <CustomDrawer
+        open={editDrawerOpen}
+        onClose={handleCloseEditDrawer}
+        title="Chỉnh sửa bảng lương"
+        width="66%"
+        mode="edit"
+      >
+        {editingPayroll && (
+          <SalaryForm
+            action="edit"
+            id={editingPayroll.id}
+            onSuccess={handleEditSuccess}
+            onCancel={handleCloseEditDrawer}
+          />
+        )}
+      </CustomDrawer>
     </div>
   );
 };

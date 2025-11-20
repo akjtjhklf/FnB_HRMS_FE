@@ -52,7 +52,7 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
   ];
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-40">
+    <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-6 pl-16 lg:pl-6 flex items-center justify-between sticky top-0 z-20">
       {/* Left Side - Search */}
       <div className="flex items-center gap-4 flex-1">
         <div className="relative max-w-md w-full">

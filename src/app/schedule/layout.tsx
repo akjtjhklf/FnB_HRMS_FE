@@ -39,7 +39,7 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden fixed top-4 left-4 z-30 w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+            className="lg:hidden fixed top-4 left-4 z-[60] w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Menu size={20} className="text-gray-600" />
           </button>

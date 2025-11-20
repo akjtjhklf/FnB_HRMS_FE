@@ -25,13 +25,16 @@ import { Employee } from "@/types/employee";
 
 interface SalaryFormProps {
   action: "create" | "edit";
+  id?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export const SalaryForm = ({ action }: SalaryFormProps) => {
+export const SalaryForm = ({ action, id: propId, onSuccess, onCancel }: SalaryFormProps) => {
   const { message } = App.useApp();
   const router = useRouter();
   const params = useParams();
-  const id = params?.id as string;
+  const id = propId || (params?.id as string);
 
   const { formProps, saveButtonProps, onFinish } = useForm<MonthlyPayroll>({
     action,
@@ -44,9 +47,19 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
           ? "Tạo bảng lương thành công"
           : "Cập nhật bảng lương thành công"
       );
-      setTimeout(() => {
-        router.push("/salary");
-      }, 500);
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 500);
+      } else {
+        setTimeout(() => {
+          router.push("/salary");
+        }, 500);
+      }
+    },
+    onMutationError: (error: any) => {
+      const errorMsg = error?.response?.data?.error?.message || "Có lỗi xảy ra, vui lòng thử lại";
+      message.error(errorMsg);
     },
   });
 
@@ -79,21 +92,28 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
   ];
 
   const handleCancel = () => {
-    router.push("/salary");
+    if (onCancel) {
+      onCancel();
+    } else {
+      router.push("/salary");
+    }
   };
 
   return (
-    <div className="p-4 md:p-6 bg-gray-50 min-h-screen">
+    <div className={onCancel ? "" : "p-3 sm:p-4 md:p-6 bg-gray-50 min-h-screen"}>
       <Card
         title={
-          <div className="flex items-center gap-2">
-            <DollarOutlined />
-            <span className="text-lg md:text-xl font-semibold">
-              {action === "create" ? "Tạo bảng lương mới" : "Chỉnh sửa bảng lương"}
-            </span>
-          </div>
+          onCancel ? undefined : (
+            <div className="flex items-center gap-2">
+              <DollarOutlined className="text-lg md:text-xl" />
+              <span className="text-base sm:text-lg md:text-xl font-semibold">
+                {action === "create" ? "Tạo bảng lương mới" : "Chỉnh sửa bảng lương"}
+              </span>
+            </div>
+          )
         }
-        className="shadow-sm border border-gray-200"
+        className={onCancel ? "shadow-none border-0" : "shadow-sm border border-gray-200"}
+        bordered={!onCancel}
       >
         <Form
           {...formProps}
@@ -123,7 +143,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             });
           }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
             <Form.Item
               label="Nhân viên"
               name="employee_id"
@@ -133,6 +153,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
                 {...employeeSelectProps}
                 placeholder="Chọn nhân viên"
                 showSearch
+                size="large"
                 filterOption={(input, option) =>
                   String(option?.label ?? "")
                     .toLowerCase()
@@ -150,14 +171,15 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
               <Select
                 options={monthOptions}
                 placeholder="Chọn tháng"
+                size="large"
                 disabled={action === "edit"}
               />
             </Form.Item>
           </div>
 
-          <Divider orientation="left">Thông tin lương</Divider>
+          <Divider orientation="left" className="my-3 md:my-4">Thông tin lương</Divider>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
             <Form.Item
               label="Lương cơ bản"
               name="base_salary"
@@ -167,6 +189,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             >
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập lương cơ bản"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -180,6 +203,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             <Form.Item label="Phụ cấp" name="allowances">
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập phụ cấp"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -193,6 +217,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             <Form.Item label="Thưởng" name="bonuses">
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập thưởng"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -206,6 +231,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             <Form.Item label="Lương làm thêm" name="overtime_pay">
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập lương làm thêm"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -219,6 +245,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             <Form.Item label="Khấu trừ" name="deductions">
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập khấu trừ"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -232,6 +259,7 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             <Form.Item label="Phạt" name="penalties">
               <InputNumber
                 className="w-full"
+                size="large"
                 placeholder="Nhập phạt"
                 formatter={(value) =>
                   `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -243,39 +271,47 @@ export const SalaryForm = ({ action }: SalaryFormProps) => {
             </Form.Item>
           </div>
 
-          <Divider orientation="left">Trạng thái và ghi chú</Divider>
+          <Divider orientation="left" className="my-3 md:my-4">Trạng thái và ghi chú</Divider>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-3 md:gap-4">
             <Form.Item
               label="Trạng thái"
               name="status"
               rules={[{ required: true, message: "Vui lòng chọn trạng thái" }]}
               initialValue="draft"
             >
-              <Select options={statusOptions} placeholder="Chọn trạng thái" />
+              <Select options={statusOptions} placeholder="Chọn trạng thái" size="large" />
             </Form.Item>
 
-            <Form.Item label="Ghi chú" name="notes">
+            <Form.Item label="Ghi chú" name="notes" className="col-span-1">
               <Input.TextArea
                 rows={4}
                 placeholder="Nhập ghi chú (tùy chọn)"
                 maxLength={500}
                 showCount
+                size="large"
               />
             </Form.Item>
           </div>
 
-          <Divider />
+          {!onCancel && <Divider className="my-3 md:my-4" />}
 
-          <Form.Item className="mb-0">
-            <Space className="w-full justify-end">
-              <Button icon={<CloseOutlined />} onClick={handleCancel}>
+          <Form.Item className="mb-0 mt-4">
+            <Space className="w-full justify-end flex-wrap">
+              <Button 
+                icon={<CloseOutlined />} 
+                onClick={handleCancel}
+                size="large"
+                className="min-w-[100px]"
+              >
                 Hủy
               </Button>
               <Button
                 type="primary"
                 icon={<SaveOutlined />}
                 {...saveButtonProps}
+                size="large"
+                className="min-w-[120px]"
               >
                 {action === "create" ? "Tạo mới" : "Lưu thay đổi"}
               </Button>
