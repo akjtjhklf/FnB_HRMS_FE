@@ -30,6 +30,7 @@ import {
   ClockCircleOutlined,
   FileTextOutlined,
   SendOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
@@ -238,6 +239,10 @@ export const SalaryList = () => {
     router.push("/salary/create");
   };
 
+  const handleSendPayslips = () => {
+    message.info("Chức năng gửi phiếu lương đang được phát triển");
+  };
+
   const getActionItems = (record: MonthlyPayroll): ActionItem[] => [
     {
       key: "view",
@@ -386,6 +391,14 @@ export const SalaryList = () => {
             size="large"
           >
             Tạo bảng lương
+          </Button>
+          <Button
+            type="default"
+            icon={<MailOutlined />}
+            onClick={handleSendPayslips}
+            size="large"
+          >
+            Gửi phiếu lương
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
             Xuất Excel

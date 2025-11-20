@@ -39,6 +39,11 @@ import {
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import type { BadgeProps } from "antd";
+import type { 
+  EmployeeAvailability, 
+  Shift, 
+  CreateEmployeeAvailabilityDto 
+} from "@/types/schedule";
 
 const { Title, Text } = Typography;
 
@@ -46,43 +51,6 @@ interface User {
   id: string;
   employee_id: string;
   role: string;
-}
-
-interface EmployeeAvailability {
-  id: string;
-  employee_id: string;
-  shift_id: string;
-  priority?: number;
-  note?: string;
-  status: "pending" | "approved" | "rejected";
-  created_at?: string;
-  shift?: Shift;
-}
-
-interface Shift {
-  id: string;
-  weekly_schedule_id: string;
-  shift_type_id: string;
-  shift_date: string;
-  start_time: string;
-  end_time: string;
-  status?: string;
-  shift_type?: {
-    id: string;
-    name: string;
-    description?: string;
-  };
-  weekly_schedule?: {
-    id: string;
-    status: string;
-    start_date: string;
-    end_date: string;
-  };
-}
-
-interface Position {
-  id: string;
-  name: string;
 }
 
 /**

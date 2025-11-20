@@ -1,552 +1,503 @@
 "use client";
 
 import { useMemo } from "react";
-import { useList, useGetIdentity } from "@refinedev/core";
+import { useList, useGetIdentity, useGo } from "@refinedev/core";
 import {
   Card,
   Row,
   Col,
   Statistic,
-  Progress,
-  Space,
-  Button,
-  Alert,
-  Empty,
   Typography,
+  Button,
+  Space,
   List,
   Tag,
-  Avatar,
+  Progress,
+  Alert,
   Divider,
 } from "antd";
 import {
   CalendarOutlined,
-  TeamOutlined,
-  ClockCircleOutlined,
-  SwapOutlined,
-  ThunderboltOutlined,
-  RiseOutlined,
   UserOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
   WarningOutlined,
+  PlusOutlined,
+  EyeOutlined,
+  SendOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import { useRouter } from "next/navigation";
+import type { 
+  WeeklySchedule, 
+  ScheduleAssignment,
+  EmployeeAvailability,
+  ScheduleChangeRequest,
+  Shift
+} from "@/types/schedule";
 
 dayjs.extend(isoWeek);
 
 const { Title, Text } = Typography;
 
-interface User {
-  id: string;
-  employee_id: string;
-  role: string;
-}
-
-interface WeeklySchedule {
-  id: string;
-  start_date: string;
-  end_date: string;
-  status: "draft" | "published" | "finalized";
-  published_at?: string;
-}
-
-interface ScheduleAssignment {
-  id: string;
-  shift_id: string;
-  employee_id: string;
-  status?: string;
-}
-
-interface EmployeeAvailability {
-  id: string;
-  employee_id: string;
-  shift_id: string;
-  priority?: number;
-  status: "pending" | "approved" | "rejected";
-}
-
-interface ScheduleChangeRequest {
-  id: string;
-  from_assignment_id: string;
-  type: "shift_swap" | "time_off" | "other";
-  status: "pending" | "approved" | "rejected";
-}
-
-interface Shift {
-  id: string;
-  weekly_schedule_id: string;
-  shift_date: string;
-  status?: string;
-}
+import { useCanManageSchedule } from "@/hooks/usePermissions";
+import { useScheduleStats } from "@/hooks/useScheduleWorkflow";
+import type { User } from "@/types/auth";
 
 /**
- * ScheduleDashboard - Trang Tổng Quan Quản Lý Lịch
+ * Schedule Dashboard
  * 
- * Layout đơn giản, rõ ràng:
- * - Thống kê tổng quan (4 cards)
- * - Tiến độ phân công tuần này
- * - Quick actions (6 nút chính)
- * - Lịch tuần sắp tới + Yêu cầu chờ xử lý
+ * Manager View:
+ * - Overview of all schedules
+ * - Pending approvals
+ * - Quick actions to manage schedules
+ * 
+ * Employee View:
+ * - My upcoming shifts
+ * - Available shifts to register
+ * - My change requests
  */
 export function ScheduleDashboard() {
-  const router = useRouter();
+  const go = useGo();
   const { data: user } = useGetIdentity<User>();
+  
+  // RBAC: Dynamic permission check
+  const isManager = useCanManageSchedule();
+  const thisWeek = dayjs().startOf("isoWeek");
 
   // Fetch data
-  const schedulesQuery = useList<WeeklySchedule>({
+  const { query: schedulesQuery } = useList<WeeklySchedule>({
     resource: "weekly-schedules",
     pagination: { pageSize: 100 },
+    meta: { fields: ["*"] },
   });
 
-  const assignmentsQuery = useList<ScheduleAssignment>({
+  const { query: shiftsQuery } = useList<Shift>({
+    resource: "shifts",
+    pagination: { pageSize: 500 },
+    filters: [
+      {
+        field: "shift_date",
+        operator: "gte",
+        value: thisWeek.format("YYYY-MM-DD"),
+      },
+    ],
+    meta: { fields: ["*", "shift_type.name"] },
+  });
+
+  const { query: assignmentsQuery } = useList<ScheduleAssignment>({
     resource: "schedule-assignments",
-    pagination: { pageSize: 1000 },
+    pagination: { pageSize: 500 },
+    filters: isManager ? [] : [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: user?.employee_id,
+      },
+    ],
+    meta: { fields: ["*", "shift.shift_date", "shift.shift_type.name", "position.name"] },
   });
 
-  const availabilitiesQuery = useList<EmployeeAvailability>({
+  const { query: availabilitiesQuery } = useList<EmployeeAvailability>({
     resource: "employee-availability",
-    pagination: { pageSize: 1000 },
+    pagination: { pageSize: 100 },
+    filters: isManager ? [
+      { field: "status", operator: "eq", value: "pending" }
+    ] : [
+      { field: "employee_id", operator: "eq", value: user?.employee_id }
+    ],
+    meta: { fields: ["*", "shift.shift_date", "shift.shift_type.name"] },
   });
 
-  const changeRequestsQuery = useList<ScheduleChangeRequest>({
+  const { query: changeRequestsQuery } = useList<ScheduleChangeRequest>({
     resource: "schedule-change-requests",
     pagination: { pageSize: 100 },
+    filters: isManager ? [
+      { field: "status", operator: "eq", value: "pending" }
+    ] : [
+      { field: "requester_id", operator: "eq", value: user?.employee_id }
+    ],
+    meta: { fields: ["*"] },
   });
 
-  const shiftsQuery = useList<Shift>({
-    resource: "shifts",
-    pagination: { pageSize: 1000 },
-  });
+  // Get this week's schedule ID for stats
+  const thisWeekScheduleId = useMemo(() => {
+    const schedule = schedulesQuery.data?.data?.find((s: WeeklySchedule) => 
+      dayjs(s.week_start).isSame(thisWeek, "day")
+    );
+    return schedule?.id;
+  }, [schedulesQuery.data?.data, thisWeek]);
+  
+  // Fetch detailed stats for current week
+  const { stats: weeklyStats, isLoading: statsLoading } = useScheduleStats(thisWeekScheduleId);
 
   // Memoized data
-  const schedules = useMemo(() => schedulesQuery.query.data?.data || [], [schedulesQuery.query.data?.data]);
-  const assignments = useMemo(() => assignmentsQuery.query.data?.data || [], [assignmentsQuery.query.data?.data]);
-  const availabilities = useMemo(() => availabilitiesQuery.query.data?.data || [], [availabilitiesQuery.query.data?.data]);
-  const changeRequests = useMemo(() => changeRequestsQuery.query.data?.data || [], [changeRequestsQuery.query.data?.data]);
-  const shifts = useMemo(() => shiftsQuery.query.data?.data || [], [shiftsQuery.query.data?.data]);
+  const schedules = useMemo(() => schedulesQuery.data?.data || [], [schedulesQuery.data?.data]);
+  const shifts = useMemo(() => shiftsQuery.data?.data || [], [shiftsQuery.data?.data]);
+  const assignments = useMemo(() => assignmentsQuery.data?.data || [], [assignmentsQuery.data?.data]);
+  const availabilities = useMemo(() => availabilitiesQuery.data?.data || [], [availabilitiesQuery.data?.data]);
+  const changeRequests = useMemo(() => changeRequestsQuery.data?.data || [], [changeRequestsQuery.data?.data]);
 
-  // Calculate statistics
+  // Calculate stats
   const stats = useMemo(() => {
-    const thisWeek = dayjs().startOf("isoWeek");
-    
-    const thisWeekSchedule = schedules.find(
-      (s: WeeklySchedule) => dayjs(s.start_date).isSame(thisWeek, "day")
+    if (isManager) {
+      const thisWeekSchedule = schedules.find((s: WeeklySchedule) => 
+        dayjs(s.week_start).isSame(thisWeek, "day")
+      );
+      
+      const thisWeekShifts = shifts.filter((sh: Shift) =>
+        thisWeekSchedule && sh.schedule_id === thisWeekSchedule.id
+      );
+
+      const thisWeekAssignments = assignments.filter((a: any) =>
+        thisWeekShifts.some((sh: Shift) => sh.id === a.shift_id)
+      );
+
+      return {
+        totalSchedules: schedules.length,
+        publishedSchedules: schedules.filter((s: WeeklySchedule) => s.status === "scheduled").length,
+        draftSchedules: schedules.filter((s: WeeklySchedule) => s.status === "draft").length,
+        thisWeekCoverage: thisWeekShifts.length > 0 
+          ? Math.round((thisWeekAssignments.length / thisWeekShifts.length) * 100) 
+          : 0,
+        pendingAvailabilities: availabilities.length,
+        pendingChangeRequests: changeRequests.length,
+      };
+    } else {
+      // Employee stats
+      const myUpcomingShifts = assignments.filter((a: any) =>
+        a.shift?.shift_date && dayjs(a.shift.shift_date).isAfter(dayjs())
+      );
+
+      return {
+        myTotalShifts: assignments.length,
+        myUpcomingShifts: myUpcomingShifts.length,
+        myAvailabilities: availabilities.length,
+        myPendingRequests: changeRequests.filter((r: ScheduleChangeRequest) => r.status === "pending").length,
+      };
+    }
+  }, [isManager, schedules, shifts, assignments, availabilities, changeRequests, thisWeek]);
+
+  // Render Manager Dashboard
+  if (isManager) {
+    const upcomingSchedules = schedules
+      .filter((s: WeeklySchedule) => dayjs(s.week_start).isAfter(dayjs()) || dayjs(s.week_start).isSame(thisWeek, "day"))
+      .sort((a: WeeklySchedule, b: WeeklySchedule) => dayjs(a.week_start).diff(dayjs(b.week_start)))
+      .slice(0, 5);
+
+    const pendingApprovals = [...availabilities, ...changeRequests]
+      .sort((a, b) => dayjs(b.created_at).diff(dayjs(a.created_at)))
+      .slice(0, 5);
+
+    return (
+      <div style={{ padding: "24px" }}>
+        {/* Header */}
+        <Title level={2} style={{ marginBottom: "24px" }}>
+          <CalendarOutlined /> Dashboard Quản Lý Lịch
+        </Title>
+
+        {/* Alert if pending items */}
+        {((stats.pendingAvailabilities ?? 0) > 0 || (stats.pendingChangeRequests ?? 0) > 0) && (
+          <Alert
+            message={`Bạn có ${stats.pendingAvailabilities ?? 0} đăng ký ca và ${stats.pendingChangeRequests ?? 0} yêu cầu đổi ca đang chờ duyệt`}
+            type="warning"
+            showIcon
+            icon={<ClockCircleOutlined />}
+            style={{ marginBottom: "24px" }}
+            action={
+              <Button size="small" onClick={() => go({ to: "/schedule/change-requests" })}>
+                Xem ngay
+              </Button>
+            }
+          />
+        )}
+
+        {/* Statistics */}
+        <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Tổng lịch tuần"
+                value={stats.totalSchedules ?? 0}
+                prefix={<CalendarOutlined />}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Đã công bố"
+                value={stats.publishedSchedules ?? 0}
+                prefix={<SendOutlined />}
+                valueStyle={{ color: "#1890ff" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Chờ duyệt"
+                value={(stats.pendingAvailabilities ?? 0) + (stats.pendingChangeRequests ?? 0)}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: "#fa8c16" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="Độ phủ tuần này"
+                value={stats.thisWeekCoverage ?? 0}
+                prefix={<TeamOutlined />}
+                suffix="%"
+                valueStyle={{ color: (stats.thisWeekCoverage ?? 0) >= 80 ? "#3f8600" : "#cf1322" }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Progress */}
+        <Card style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: "8px" }}>
+            <Text strong>Độ phủ lịch tuần này</Text>
+          </div>
+          <Progress 
+            percent={stats.thisWeekCoverage ?? 0} 
+            status={(stats.thisWeekCoverage ?? 0) >= 80 ? "success" : "exception"}
+          />
+          
+          {/* Detailed Stats from API */}
+          {weeklyStats && !statsLoading && (
+            <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #f0f0f0" }}>
+              <Row gutter={[16, 16]}>
+                <Col span={8}>
+                  <Statistic
+                    title="Tổng ca"
+                    value={weeklyStats.shifts.total}
+                    prefix={<CalendarOutlined />}
+                    valueStyle={{ fontSize: "18px" }}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Nhân viên đã đăng ký"
+                    value={weeklyStats.employees.registered}
+                    prefix={<UserOutlined />}
+                    valueStyle={{ fontSize: "18px", color: "#1890ff" }}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Đã phân công"
+                    value={weeklyStats.assignments.total}
+                    prefix={<CheckCircleOutlined />}
+                    valueStyle={{ fontSize: "18px", color: "#52c41a" }}
+                  />
+                </Col>
+              </Row>
+            </div>
+          )}
+        </Card>
+
+        {/* Quick Actions */}
+        <Card title="Thao Tác Nhanh" style={{ marginBottom: "24px" }}>
+          <Space wrap>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => go({ to: "/schedule/weekly-schedules" })}>
+              Tạo Lịch Tuần
+            </Button>
+            <Button icon={<CalendarOutlined />} onClick={() => go({ to: "/schedule" })}>
+              Quản Lý Ca
+            </Button>
+            <Button icon={<TeamOutlined />} onClick={() => go({ to: "/schedule/assignments" })}>
+              Phân Công Nhân Viên
+            </Button>
+            <Button icon={<ClockCircleOutlined />} onClick={() => go({ to: "/schedule/change-requests" })}>
+              Duyệt Yêu Cầu
+            </Button>
+          </Space>
+        </Card>
+
+        <Row gutter={[16, 16]}>
+          {/* Upcoming Schedules */}
+          <Col xs={24} lg={12}>
+            <Card 
+              title={<Space><CalendarOutlined /> Lịch Sắp Tới</Space>}
+              extra={<Button type="link" onClick={() => go({ to: "/schedule/weekly-schedules" })}>Xem tất cả</Button>}
+            >
+              <List
+                dataSource={upcomingSchedules}
+                renderItem={(schedule: WeeklySchedule) => (
+                  <List.Item
+                    key={schedule.id}
+                    actions={[
+                      <Button 
+                        key="view"
+                        type="link" 
+                        size="small" 
+                        icon={<EyeOutlined />}
+                        onClick={() => go({ to: `/schedule/weekly-schedules` })}
+                      >
+                        Xem
+                      </Button>
+                    ]}
+                  >
+                    <List.Item.Meta
+                      title={`Tuần ${dayjs(schedule.week_start).isoWeek()} - ${dayjs(schedule.week_start).year()}`}
+                      description={`${dayjs(schedule.week_start).format("DD/MM")} - ${dayjs(schedule.week_end).format("DD/MM/YYYY")}`}
+                    />
+                    <Tag color={schedule.status === "scheduled" ? "blue" : "default"}>
+                      {schedule.status === "scheduled" ? "Đã công bố" : "Nháp"}
+                    </Tag>
+                  </List.Item>
+                )}
+              />
+              {upcomingSchedules.length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "#8c8c8c" }}>
+                  Chưa có lịch tuần nào
+                </div>
+              )}
+            </Card>
+          </Col>
+
+          {/* Pending Approvals */}
+          <Col xs={24} lg={12}>
+            <Card 
+              title={<Space><ClockCircleOutlined /> Chờ Duyệt</Space>}
+              extra={<Button type="link" onClick={() => go({ to: "/schedule/change-requests" })}>Xem tất cả</Button>}
+            >
+              <List
+                dataSource={pendingApprovals}
+                renderItem={(item: any) => {
+                  const isAvailability = "shift_id" in item;
+                  return (
+                    <List.Item>
+                      <List.Item.Meta
+                        title={isAvailability ? "Đăng ký ca" : "Yêu cầu đổi ca"}
+                        description={dayjs(item.created_at).format("DD/MM/YYYY HH:mm")}
+                      />
+                      <Tag color="orange">Chờ duyệt</Tag>
+                    </List.Item>
+                  );
+                }}
+              />
+              {pendingApprovals.length === 0 && (
+                <div style={{ textAlign: "center", padding: "24px 0", color: "#8c8c8c" }}>
+                  Không có yêu cầu nào
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      </div>
     );
+  }
 
-    const thisWeekShifts = thisWeekSchedule
-      ? shifts.filter((sh: Shift) => sh.weekly_schedule_id === thisWeekSchedule.id)
-      : [];
-
-    const thisWeekAssignments = thisWeekSchedule
-      ? assignments.filter((a: ScheduleAssignment) =>
-          thisWeekShifts.some((sh: Shift) => sh.id === a.shift_id)
-        )
-      : [];
-
-    const coverage =
-      thisWeekShifts.length > 0
-        ? Math.round((thisWeekAssignments.length / thisWeekShifts.length) * 100)
-        : 0;
-
-    return {
-      totalSchedules: schedules.length,
-      publishedSchedules: schedules.filter((s: WeeklySchedule) => s.status === "published").length,
-      draftSchedules: schedules.filter((s: WeeklySchedule) => s.status === "draft").length,
-      totalAssignments: assignments.length,
-      thisWeekAssignments: thisWeekAssignments.length,
-      thisWeekShifts: thisWeekShifts.length,
-      coveragePercent: coverage,
-      totalAvailabilities: availabilities.length,
-      pendingAvailabilities: availabilities.filter((a: EmployeeAvailability) => a.status === "pending").length,
-      totalChangeRequests: changeRequests.length,
-      pendingChangeRequests: changeRequests.filter((r: ScheduleChangeRequest) => r.status === "pending").length,
-    };
-  }, [schedules, assignments, availabilities, changeRequests, shifts]);
-
-  // Get upcoming schedules
-  const upcomingSchedules = useMemo(() => {
-    const now = dayjs();
-    return schedules
-      .filter((s: WeeklySchedule) => dayjs(s.start_date).isAfter(now))
-      .sort((a: WeeklySchedule, b: WeeklySchedule) => dayjs(a.start_date).diff(dayjs(b.start_date)))
-      .slice(0, 5);
-  }, [schedules]);
-
-  // Get pending requests
-  const pendingRequests = useMemo(() => {
-    return changeRequests
-      .filter((r: ScheduleChangeRequest) => r.status === "pending")
-      .slice(0, 5);
-  }, [changeRequests]);
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: "default",
-      published: "blue",
-      finalized: "green",
-      pending: "orange",
-      approved: "green",
-      rejected: "red",
-    };
-    return colors[status] || "default";
-  };
-
-  const getStatusText = (status: string) => {
-    const texts: Record<string, string> = {
-      draft: "Nháp",
-      published: "Đã công bố",
-      finalized: "Hoàn tất",
-      pending: "Chờ duyệt",
-      approved: "Đã duyệt",
-      rejected: "Từ chối",
-    };
-    return texts[status] || status;
-  };
-
-  const getRequestTypeText = (type: string) => {
-    const types: Record<string, string> = {
-      shift_swap: "Đổi ca",
-      time_off: "Nghỉ phép",
-      other: "Khác",
-    };
-    return types[type] || type;
-  };
+  // Employee Dashboard
+  const myUpcomingShifts = assignments
+    .filter((a: any) =>
+      a.shift?.shift_date && dayjs(a.shift.shift_date).isAfter(dayjs())
+    )
+    .sort((a: any, b: any) => 
+      dayjs(a.shift?.shift_date).diff(dayjs(b.shift?.shift_date))
+    )
+    .slice(0, 5);
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div style={{ padding: "24px" }}>
       {/* Header */}
-      <div style={{ marginBottom: "24px" }}>
-        <Title level={2} style={{ marginBottom: "8px" }}>
-          <ThunderboltOutlined /> Tổng Quan Quản Lý Lịch
-        </Title>
-        <Text type="secondary">
-          Xem tổng quan về lịch làm việc, phân công, đăng ký và yêu cầu thay đổi
-        </Text>
-      </div>
+      <Title level={2} style={{ marginBottom: "24px" }}>
+        <UserOutlined /> Lịch Làm Việc Của Tôi
+      </Title>
 
-      {/* Alert for pending items */}
-      {(stats.pendingAvailabilities > 0 || stats.pendingChangeRequests > 0) && (
-        <Alert
-          message="Có yêu cầu cần xử lý!"
-          description={
-            <Space direction="vertical" size="small">
-              {stats.pendingAvailabilities > 0 && (
-                <Text>• {stats.pendingAvailabilities} đăng ký khả năng làm việc chờ duyệt</Text>
-              )}
-              {stats.pendingChangeRequests > 0 && (
-                <Text>• {stats.pendingChangeRequests} yêu cầu thay đổi ca chờ xử lý</Text>
-              )}
-            </Space>
-          }
-          type="warning"
-          showIcon
-          icon={<WarningOutlined />}
-          style={{ marginBottom: "24px" }}
-        />
-      )}
-
-      {/* Main Statistics */}
+      {/* Statistics */}
       <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Lịch Tuần"
-              value={stats.totalSchedules}
+              title="Tổng ca của tôi"
+              value={stats.myTotalShifts ?? 0}
               prefix={<CalendarOutlined />}
-              suffix={
-                <div style={{ fontSize: "14px", color: "#8c8c8c", marginTop: "4px" }}>
-                  {stats.publishedSchedules} đã công bố
-                </div>
-              }
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Phân Công Ca"
-              value={stats.totalAssignments}
-              prefix={<TeamOutlined />}
+              title="Ca sắp tới"
+              value={stats.myUpcomingShifts ?? 0}
+              prefix={<ClockCircleOutlined />}
               valueStyle={{ color: "#1890ff" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Đăng Ký Khả Năng"
-              value={stats.totalAvailabilities}
-              prefix={<ClockCircleOutlined />}
-              suffix={
-                stats.pendingAvailabilities > 0 ? (
-                  <Tag color="orange" style={{ marginTop: "4px" }}>
-                    {stats.pendingAvailabilities} chờ
-                  </Tag>
-                ) : null
-              }
+              title="Đã đăng ký"
+              value={stats.myAvailabilities ?? 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#3f8600" }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Yêu Cầu Thay Đổi"
-              value={stats.totalChangeRequests}
-              prefix={<SwapOutlined />}
-              suffix={
-                stats.pendingChangeRequests > 0 ? (
-                  <Tag color="orange" style={{ marginTop: "4px" }}>
-                    {stats.pendingChangeRequests} chờ
-                  </Tag>
-                ) : null
-              }
+              title="Yêu cầu chờ"
+              value={stats.myPendingRequests ?? 0}
+              prefix={<WarningOutlined />}
+              valueStyle={{ color: "#fa8c16" }}
             />
           </Card>
         </Col>
       </Row>
-
-      {/* This Week Coverage */}
-      <Card
-        title={
-          <Space>
-            <RiseOutlined />
-            <span>Tiến Độ Phân Công Tuần Này</span>
-          </Space>
-        }
-        style={{ marginBottom: "24px" }}
-      >
-        {stats.thisWeekShifts > 0 ? (
-          <div>
-            <Row gutter={16} align="middle">
-              <Col xs={24} md={16}>
-                <Progress
-                  percent={stats.coveragePercent}
-                  status={
-                    stats.coveragePercent >= 80
-                      ? "success"
-                      : stats.coveragePercent >= 50
-                      ? "normal"
-                      : "exception"
-                  }
-                  strokeColor={
-                    stats.coveragePercent >= 80
-                      ? "#52c41a"
-                      : stats.coveragePercent >= 50
-                      ? "#1890ff"
-                      : "#ff4d4f"
-                  }
-                />
-              </Col>
-              <Col xs={24} md={8}>
-                <Space direction="vertical" size="small">
-                  <Text>
-                    Đã phân công: <strong>{stats.thisWeekAssignments}</strong> / {stats.thisWeekShifts} ca
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: "12px" }}>
-                    {stats.thisWeekShifts - stats.thisWeekAssignments} ca chưa có người
-                  </Text>
-                </Space>
-              </Col>
-            </Row>
-          </div>
-        ) : (
-          <Empty description="Chưa có lịch tuần này" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        )}
-      </Card>
 
       {/* Quick Actions */}
-      <Card
-        title={
-          <Space>
-            <ThunderboltOutlined />
-            <span>Thao Tác Nhanh</span>
-          </Space>
-        }
-        style={{ marginBottom: "24px" }}
-      >
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="primary"
-              size="large"
-              block
-              icon={<CalendarOutlined />}
-              onClick={() => router.push("/schedule/shift-types")}
-            >
-              Quản Lý Loại Ca
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="primary"
-              size="large"
-              block
-              icon={<CalendarOutlined />}
-              onClick={() => router.push("/schedule/weekly-schedules")}
-            >
-              Quản Lý Lịch Tuần
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="primary"
-              size="large"
-              block
-              icon={<ClockCircleOutlined />}
-              onClick={() => router.push("/schedule/availability")}
-            >
-              Đăng Ký Ca
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="default"
-              size="large"
-              block
-              icon={<TeamOutlined />}
-              onClick={() => router.push("/schedule/assignments")}
-            >
-              Phân Công Ca
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="default"
-              size="large"
-              block
-              icon={<UserOutlined />}
-              onClick={() => router.push("/schedule/my-schedule")}
-            >
-              Lịch Của Tôi
-            </Button>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Button
-              type="default"
-              size="large"
-              block
-              icon={<SwapOutlined />}
-              onClick={() => router.push("/schedule/change-requests")}
-            >
-              Yêu Cầu Thay Đổi
-            </Button>
-          </Col>
-        </Row>
+      <Card title="Thao Tác Nhanh" style={{ marginBottom: "24px" }}>
+        <Space wrap>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => go({ to: "/schedule/availability" })}>
+            Đăng Ký Ca
+          </Button>
+          <Button icon={<CalendarOutlined />} onClick={() => go({ to: "/schedule/my-schedule" })}>
+            Xem Lịch Của Tôi
+          </Button>
+          <Button icon={<ClockCircleOutlined />} onClick={() => go({ to: "/schedule/change-requests" })}>
+            Yêu Cầu Đổi Ca
+          </Button>
+        </Space>
       </Card>
 
-      <Row gutter={[16, 16]}>
-        {/* Upcoming Schedules */}
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Space>
-                <CalendarOutlined />
-                <span>Lịch Tuần Sắp Tới</span>
-              </Space>
-            }
-            extra={
-              <Button
-                type="link"
-                size="small"
-                onClick={() => router.push("/schedule/weekly-schedules")}
-              >
-                Xem tất cả
-              </Button>
-            }
-          >
-            {upcomingSchedules.length > 0 ? (
-              <List
-                dataSource={upcomingSchedules}
-                renderItem={(schedule: WeeklySchedule) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      avatar={
-                        <Avatar
-                          style={{
-                            backgroundColor:
-                              schedule.status === "published" ? "#1890ff" : "#d9d9d9",
-                          }}
-                          icon={<CalendarOutlined />}
-                        />
-                      }
-                      title={
-                        <Space>
-                          <span>
-                            Tuần {dayjs(schedule.start_date).isoWeek()}
-                          </span>
-                          <Tag color={getStatusColor(schedule.status)}>
-                            {getStatusText(schedule.status)}
-                          </Tag>
-                        </Space>
-                      }
-                      description={
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          {dayjs(schedule.start_date).format("DD/MM/YYYY")} -{" "}
-                          {dayjs(schedule.end_date).format("DD/MM/YYYY")}
-                        </Text>
-                      }
-                    />
-                  </List.Item>
-                )}
+      {/* My Upcoming Shifts */}
+      <Card 
+        title={<Space><CalendarOutlined /> Ca Sắp Tới</Space>}
+        extra={<Button type="link" onClick={() => go({ to: "/schedule/my-schedule" })}>Xem tất cả</Button>}
+      >
+        <List
+          dataSource={myUpcomingShifts}
+          renderItem={(assignment: any) => (
+            <List.Item key={assignment.id}>
+              <List.Item.Meta
+                title={assignment.shift?.shift_type?.name || "Ca làm việc"}
+                description={
+                  <Space direction="vertical" size={0}>
+                    <Text>{dayjs(assignment.shift?.shift_date).format("dddd, DD/MM/YYYY")}</Text>
+                    <Text type="secondary">{assignment.position?.name}</Text>
+                  </Space>
+                }
               />
-            ) : (
-              <Empty description="Không có lịch sắp tới" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </Card>
-        </Col>
-
-        {/* Pending Change Requests */}
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Space>
-                <SwapOutlined />
-                <span>Yêu Cầu Chờ Xử Lý</span>
-              </Space>
-            }
-            extra={
-              <Button
-                type="link"
-                size="small"
-                onClick={() => router.push("/schedule/change-requests")}
-              >
-                Xem tất cả
-              </Button>
-            }
-          >
-            {pendingRequests.length > 0 ? (
-              <List
-                dataSource={pendingRequests}
-                renderItem={(request: ScheduleChangeRequest) => (
-                  <List.Item>
-                    <List.Item.Meta
-                      avatar={
-                        <Avatar
-                          style={{ backgroundColor: "#faad14" }}
-                          icon={<ClockCircleOutlined />}
-                        />
-                      }
-                      title={
-                        <Space>
-                          <span>{getRequestTypeText(request.type)}</span>
-                          <Tag color="orange">Chờ duyệt</Tag>
-                        </Space>
-                      }
-                      description={
-                        <Text type="secondary" style={{ fontSize: "12px" }}>
-                          ID: {request.id.substring(0, 8)}...
-                        </Text>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Empty description="Không có yêu cầu chờ xử lý" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-            )}
-          </Card>
-        </Col>
-      </Row>
+              <Tag color={assignment.confirmed_by_employee ? "green" : "orange"}>
+                {assignment.confirmed_by_employee ? "Đã xác nhận" : "Chưa xác nhận"}
+              </Tag>
+            </List.Item>
+          )}
+        />
+        {myUpcomingShifts.length === 0 && (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "#8c8c8c" }}>
+            Bạn chưa có ca nào sắp tới
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
