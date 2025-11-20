@@ -229,6 +229,8 @@ export const authProviderClient: AuthProvider = {
         throw new Error("No user data found");
       }
 
+      // Populate role with full data if needed
+      // TODO: Backend should return populated role with permissions
       return {
         ...data,
         name:

@@ -1,184 +1,214 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTable } from "@refinedev/antd";
-import { useCreate, useUpdate, useDelete, useList } from "@refinedev/core";
+import { useCreate, useUpdate, useDelete, useGetIdentity, useCustomMutation } from "@refinedev/core";
 import {
   Table,
   Button,
   Modal,
   Form,
+  Input,
   DatePicker,
   App,
   Space,
   Popconfirm,
   Tag,
   Card,
+  Typography,
   Row,
   Col,
   Statistic,
-  Descriptions,
   Alert,
-  Input,
+  Dropdown,
+  Badge,
 } from "antd";
 import {
   PlusOutlined,
+  EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
-  CheckCircleOutlined,
-  SendOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
+  WarningOutlined,
+  MoreOutlined,
+  SendOutlined,
+  LockOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+import type { WeeklySchedule } from "@/types/schedule";
+import type { CreateWeeklyScheduleDto, UpdateWeeklyScheduleDto } from "@/types/schedule/weekly-schedule.types";
 
 dayjs.extend(isoWeek);
 
-interface WeeklySchedule {
-  id: string;
-  week_start: string;
-  week_end: string;
-  status: "draft" | "published" | "finalized";
-  created_by?: string;
-  published_at?: string;
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+const { RangePicker } = DatePicker;
+
+import { useCanManageSchedule } from "@/hooks/usePermissions";
+import {
+  useScheduleValidation,
+  usePublishSchedule,
+  useFinalizeSchedule,
+} from "@/hooks/useScheduleWorkflow";
+import { ValidationChecker } from "../components/ValidationChecker";
 
 /**
- * WeeklySchedulesManagement - Quản lý Lịch Tuần
+ * Weekly Schedules Management - Manager Only
  * 
- * Chức năng:
- * - Tạo lịch tuần mới → Auto-generate shifts từ shift-types
- * - Công bố lịch (Publish) → Hiển thị cho nhân viên đăng ký
- * - Xem danh sách lịch theo trạng thái
- * - Xóa lịch nháp
+ * RBAC: Dynamic permissions based on user's role policies
  * 
- * Luồng:
- * 1. Tạo lịch tuần (POST /weekly-schedules/with-shifts)
- * 2. Hệ thống tự động tạo shifts cho mỗi ngày theo shift-types đã có
- * 3. Admin công bố lịch (status: draft → published)
- * 4. Nhân viên thấy lịch và đăng ký
+ * Features:
+ * - CRUD weekly schedules
+ * - Publish schedule (cho phép nhân viên đăng ký)
+ * - Finalize schedule (khóa lịch)
+ * - View schedule details với shifts
+ * - Status workflow: draft → published → finalized
  */
 export function WeeklySchedulesManagement() {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<WeeklySchedule | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Fetch schedules
-  const { tableProps } = useTable<WeeklySchedule>({
+  // Get user for created_by field
+  const { data: user } = useGetIdentity();
+  
+  // RBAC: Dynamic permission check
+  const canManage = useCanManageSchedule();
+
+  // Fetch weekly schedules
+  const { tableProps, tableQuery } = useTable<WeeklySchedule>({
     resource: "weekly-schedules",
     sorters: {
       initial: [{ field: "week_start", order: "desc" }],
     },
+    meta: {
+      fields: ["*"],
+    },
   });
-
-  const { query: schedulesQuery } = useList<WeeklySchedule>({
-    resource: "weekly-schedules",
-  });
-
-  const schedules = schedulesQuery.data?.data || [];
 
   // Mutations
   const { mutate: createSchedule } = useCreate();
   const { mutate: updateSchedule } = useUpdate();
   const { mutate: deleteSchedule } = useDelete();
 
-  // Stats
-  const stats = {
-    total: schedules.length,
-    draft: schedules.filter((s: WeeklySchedule) => s.status === "draft").length,
-    published: schedules.filter((s: WeeklySchedule) => s.status === "published").length,
-    finalized: schedules.filter((s: WeeklySchedule) => s.status === "finalized").length,
-  };
+  // Workflow hooks
+  const { publishSchedule: publishScheduleFn, isLoading: isPublishing } = usePublishSchedule();
+  const { finalizeSchedule: finalizeScheduleFn, isLoading: isFinalizing } = useFinalizeSchedule();
 
-  // Handle create with auto-generate shifts
-  const handleCreate = async () => {
+  // Calculate stats
+  const stats = useMemo(() => {
+    const schedules = tableProps.dataSource || [];
+    return {
+      total: schedules.length,
+      draft: schedules.filter((s) => s.status === "draft").length,
+      published: schedules.filter((s) => s.status === "scheduled").length,
+      finalized: schedules.filter((s) => s.status === "finalized").length,
+    };
+  }, [tableProps.dataSource]);
+
+  // Handle create/update
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      
+      const dto: CreateWeeklyScheduleDto | UpdateWeeklyScheduleDto = {
+        week_start: values.week_range[0].format("YYYY-MM-DD"),
+        week_end: values.week_range[1].format("YYYY-MM-DD"),
+        created_by: user?.id || null,
+        status: values.status || "draft",
+        notes: values.notes || null,
+      };
 
-      const weekStart = dayjs(values.week_range[0]);
-      const weekEnd = dayjs(values.week_range[1]);
-
-      createSchedule(
-        {
-          resource: "weekly-schedules/with-shifts",
-          values: {
-            week_start: weekStart.format("YYYY-MM-DD"),
-            week_end: weekEnd.format("YYYY-MM-DD"),
-            status: "draft",
-            notes: values.notes || null,
+      if (editingId) {
+        updateSchedule(
+          {
+            resource: "weekly-schedules",
+            id: editingId,
+            values: dto,
           },
-        },
-        {
-          onSuccess: () => {
-            message.success("Tạo lịch tuần thành công! Đã tự động tạo ca làm việc.");
-            setCreateModalOpen(false);
-            form.resetFields();
-            schedulesQuery.refetch();
+          {
+            onSuccess: () => {
+              message.success("Cập nhật lịch tuần thành công!");
+              handleCloseModal();
+              tableQuery.refetch();
+            },
+            onError: (error: any) => {
+              message.error(error?.message || "Có lỗi xảy ra khi cập nhật");
+            },
+          }
+        );
+      } else {
+        createSchedule(
+          {
+            resource: "weekly-schedules",
+            values: dto,
           },
-          onError: (error: any) => {
-            message.error(error?.message || "Có lỗi xảy ra khi tạo lịch");
-          },
-        }
-      );
+          {
+            onSuccess: () => {
+              message.success("Tạo lịch tuần thành công!");
+              handleCloseModal();
+              tableQuery.refetch();
+            },
+            onError: (error: any) => {
+              message.error(error?.message || "Có lỗi xảy ra khi tạo lịch");
+            },
+          }
+        );
+      }
     } catch (error) {
       console.error("Validation error:", error);
     }
   };
 
-  // Handle publish
-  const handlePublish = (id: string) => {
-    updateSchedule(
-      {
-        resource: "weekly-schedules",
-        id,
-        values: {
-          status: "published",
-          published_at: new Date().toISOString(),
-        },
-      },
-      {
-        onSuccess: () => {
-          message.success("Công bố lịch thành công! Nhân viên có thể đăng ký.");
-          schedulesQuery.refetch();
-          setViewModalOpen(false);
-        },
-        onError: (error: any) => {
-          message.error(error?.message || "Có lỗi xảy ra");
-        },
-      }
-    );
+  // Handle publish with validation
+  const handlePublish = async (id: string) => {
+    // Show validation modal first
+    Modal.confirm({
+      title: "Công bố lịch tuần",
+      content: (
+        <ValidationChecker scheduleId={id} onValidated={() => publishScheduleFn(id).then(() => tableQuery.refetch())} />
+      ),
+      width: 700,
+      footer: null,
+    });
   };
 
   // Handle finalize
-  const handleFinalize = (id: string) => {
-    updateSchedule(
-      {
-        resource: "weekly-schedules",
-        id,
-        values: {
-          status: "finalized",
-        },
-      },
-      {
-        onSuccess: () => {
-          message.success("Hoàn tất lịch thành công!");
-          schedulesQuery.refetch();
-          setViewModalOpen(false);
-        },
-        onError: (error: any) => {
-          message.error(error?.message || "Có lỗi xảy ra");
-        },
-      }
-    );
+  const handleFinalize = async (id: string) => {
+    try {
+      await finalizeScheduleFn(id);
+      tableQuery.refetch();
+    } catch (error) {
+      console.error("Finalize error:", error);
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (record: WeeklySchedule) => {
+    if (record.status === "finalized") {
+      message.warning("Không thể sửa lịch đã hoàn tất");
+      return;
+    }
+    
+    setEditingId(record.id);
+    form.setFieldsValue({
+      week_range: [dayjs(record.week_start), dayjs(record.week_end)],
+      status: record.status,
+      notes: record.notes,
+    });
+    setModalOpen(true);
   };
 
   // Handle delete
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, status: string) => {
+    if (status === "finalized") {
+      message.warning("Không thể xóa lịch đã hoàn tất");
+      return;
+    }
+
     deleteSchedule(
       {
         resource: "weekly-schedules",
@@ -186,21 +216,46 @@ export function WeeklySchedulesManagement() {
       },
       {
         onSuccess: () => {
-          message.success("Xóa lịch thành công");
-          schedulesQuery.refetch();
+          message.success("Xóa lịch tuần thành công");
+          tableQuery.refetch();
         },
         onError: (error: any) => {
-          message.error(error?.message || "Có lỗi xảy ra");
+          message.error(error?.message || "Có lỗi xảy ra khi xóa");
         },
       }
     );
   };
 
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingId(null);
+    form.resetFields();
+  };
+
+  // RBAC Check
+  if (!canManage) {
+    return (
+      <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
+        <Card>
+          <Space direction="vertical" size="large" style={{ width: "100%", textAlign: "center" }}>
+            <WarningOutlined style={{ fontSize: "64px", color: "#faad14" }} />
+            <Title level={3}>Bạn không có quyền truy cập trang này</Title>
+            <Text type="secondary">
+              Chỉ Quản lý mới có thể quản lý lịch tuần.
+            </Text>
+          </Space>
+        </Card>
+      </div>
+    );
+  }
+
+  // Status renderer
   const getStatusTag = (status: string) => {
     const configs = {
-      draft: { color: "default", icon: <EyeOutlined />, text: "Nháp" },
-      published: { color: "processing", icon: <SendOutlined />, text: "Đã công bố" },
-      finalized: { color: "success", icon: <CheckCircleOutlined />, text: "Hoàn tất" },
+      draft: { color: "default", text: "Nháp", icon: <EditOutlined /> },
+      published: { color: "processing", text: "Đã công bố", icon: <SendOutlined /> },
+      finalized: { color: "success", text: "Hoàn tất", icon: <LockOutlined /> },
+      cancelled: { color: "error", text: "Đã hủy", icon: <WarningOutlined /> },
     };
     const config = configs[status as keyof typeof configs] || configs.draft;
     return <Tag color={config.color} icon={config.icon}>{config.text}</Tag>;
@@ -208,15 +263,15 @@ export function WeeklySchedulesManagement() {
 
   const columns = [
     {
-      title: "Tuần",
+      title: "Tuần làm việc",
       key: "week",
       render: (_: any, record: WeeklySchedule) => (
         <div>
-          <div>
-            <strong>Tuần {dayjs(record.week_start).isoWeek()}</strong>
-          </div>
-          <div style={{ fontSize: "12px", color: "#888" }}>
+          <Text strong>
             {dayjs(record.week_start).format("DD/MM/YYYY")} - {dayjs(record.week_end).format("DD/MM/YYYY")}
+          </Text>
+          <div style={{ fontSize: "12px", color: "#888" }}>
+            Tuần {dayjs(record.week_start).isoWeek()} / {dayjs(record.week_start).year()}
           </div>
         </div>
       ),
@@ -229,108 +284,182 @@ export function WeeklySchedulesManagement() {
       render: (status: string) => getStatusTag(status),
     },
     {
-      title: "Công bố lúc",
+      title: "Ngày công bố",
       dataIndex: "published_at",
       key: "published_at",
-      width: 150,
-      render: (date: string) => date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-",
+      width: 180,
+      render: (date: string | null) =>
+        date ? dayjs(date).format("DD/MM/YYYY HH:mm") : <Text type="secondary">-</Text>,
+    },
+    {
+      title: "Ghi chú",
+      dataIndex: "notes",
+      key: "notes",
+      ellipsis: true,
+      render: (notes: string | null) => notes || <Text type="secondary">-</Text>,
     },
     {
       title: "Ngày tạo",
       dataIndex: "created_at",
       key: "created_at",
-      width: 150,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY HH:mm"),
+      width: 180,
+      render: (date: string | null) =>
+        date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-",
     },
     {
       title: "Thao tác",
       key: "action",
-      width: 250,
+      width: 150,
       fixed: "right" as const,
-      render: (_: any, record: WeeklySchedule) => (
-        <Space>
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => {
-              setSelectedSchedule(record);
-              setViewModalOpen(true);
-            }}
-          >
-            Chi tiết
-          </Button>
-          {record.status === "draft" && (
-            <>
-              <Button
-                type="link"
-                size="small"
-                icon={<SendOutlined />}
-                onClick={() => handlePublish(record.id)}
-              >
-                Công bố
-              </Button>
-              <Popconfirm
-                title="Xóa lịch"
-                description="Bạn có chắc muốn xóa lịch tuần này?"
-                onConfirm={() => handleDelete(record.id)}
-                okText="Xóa"
-                cancelText="Hủy"
-              >
-                <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-                  Xóa
-                </Button>
-              </Popconfirm>
-            </>
-          )}
-          {record.status === "published" && (
-            <Button
-              type="link"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => handleFinalize(record.id)}
-            >
-              Hoàn tất
+      render: (_: any, record: WeeklySchedule) => {
+        const menuItems = [
+          {
+            key: "view",
+            icon: <EyeOutlined />,
+            label: "Xem chi tiết",
+            onClick: () => {
+              // TODO: Navigate to schedule detail page
+              message.info("Chức năng xem chi tiết đang được phát triển");
+            },
+          },
+        ];
+
+        if (record.status === "draft") {
+          menuItems.push(
+            {
+              key: "edit",
+              icon: <EditOutlined />,
+              label: "Chỉnh sửa",
+              onClick: () => handleEdit(record),
+            },
+            {
+              key: "publish",
+              icon: <SendOutlined />,
+              label: "Công bố",
+              onClick: () => handlePublish(record.id),
+            },
+            {
+              key: "delete",
+              icon: <DeleteOutlined />,
+              label: "Xóa",
+              onClick: () => {
+                Modal.confirm({
+                  title: "Xóa lịch tuần",
+                  content: "Bạn có chắc muốn xóa lịch tuần này?",
+                  okText: "Xóa",
+                  cancelText: "Hủy",
+                  okButtonProps: { danger: true },
+                  onOk: () => handleDelete(record.id, record.status),
+                });
+              },
+            }
+          );
+        }
+
+        if (record.status === "scheduled") {
+          menuItems.push(
+            {
+              key: "edit",
+              icon: <EditOutlined />,
+              label: "Chỉnh sửa",
+              onClick: () => handleEdit(record),
+            },
+            {
+              key: "finalize",
+              icon: <LockOutlined />,
+              label: "Hoàn tất",
+              onClick: () => {
+                Modal.confirm({
+                  title: "Hoàn tất lịch tuần",
+                  content: "Sau khi hoàn tất, lịch sẽ được khóa và không thể thay đổi. Bạn có chắc chắn?",
+                  okText: "Hoàn tất",
+                  cancelText: "Hủy",
+                  onOk: () => handleFinalize(record.id),
+                });
+              },
+            }
+          );
+        }
+
+        return (
+          <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
+            <Button type="link" icon={<MoreOutlined />}>
+              Thao tác
             </Button>
-          )}
-        </Space>
-      ),
+          </Dropdown>
+        );
+      },
     },
   ];
 
   return (
     <div style={{ padding: "24px" }}>
-      <h1 style={{ marginBottom: "24px" }}>Quản lý Lịch Tuần</h1>
+      {/* Header */}
+      <div style={{ marginBottom: "24px" }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={2} style={{ marginBottom: "8px" }}>
+              <CalendarOutlined /> Quản Lý Lịch Tuần
+            </Title>
+            <Text type="secondary">
+              Tạo và quản lý lịch làm việc theo tuần
+            </Text>
+          </Col>
+          <Col>
+            <Button
+              type="primary"
+              size="large"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingId(null);
+                form.resetFields();
+                setModalOpen(true);
+              }}
+            >
+              Tạo Lịch Tuần
+            </Button>
+          </Col>
+        </Row>
+      </div>
 
+      {/* Info Alert */}
       <Alert
-        message="Hướng dẫn"
-        description="Tạo lịch tuần mới sẽ tự động tạo các ca làm việc theo loại ca đã cấu hình. Sau khi tạo, công bố lịch để nhân viên có thể đăng ký."
+        message="Quy trình làm việc"
+        description={
+          <div>
+            <div>1. <strong>Nháp</strong> - Tạo lịch tuần và thêm ca làm việc</div>
+            <div>2. <strong>Công bố</strong> - Cho phép nhân viên đăng ký ca</div>
+            <div>3. <strong>Hoàn tất</strong> - Khóa lịch và bắt đầu phân công</div>
+          </div>
+        }
         type="info"
         showIcon
+        closable
         style={{ marginBottom: "24px" }}
       />
 
       {/* Statistics */}
-      <Row gutter={16} style={{ marginBottom: "24px" }}>
-        <Col xs={24} sm={6}>
+      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Tổng lịch"
+              title="Tổng lịch tuần"
               value={stats.total}
               prefix={<CalendarOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Nháp"
               value={stats.draft}
               valueStyle={{ color: "#8c8c8c" }}
+              prefix={<EditOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Đã công bố"
@@ -340,7 +469,7 @@ export function WeeklySchedulesManagement() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Hoàn tất"
@@ -352,124 +481,55 @@ export function WeeklySchedulesManagement() {
         </Col>
       </Row>
 
-      {/* Action buttons */}
-      <div style={{ marginBottom: "16px" }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            form.resetFields();
-            setCreateModalOpen(true);
-          }}
-        >
-          Tạo lịch tuần mới
-        </Button>
-      </div>
-
       {/* Table */}
-      <Table
-        {...tableProps}
-        columns={columns}
-        rowKey="id"
-        scroll={{ x: 1000 }}
-      />
+      <Card>
+        <Table
+          {...tableProps}
+          columns={columns}
+          rowKey="id"
+          scroll={{ x: 1200 }}
+        />
+      </Card>
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       <Modal
-        title="Tạo lịch tuần mới"
-        open={createModalOpen}
-        onCancel={() => {
-          setCreateModalOpen(false);
-          form.resetFields();
-        }}
-        onOk={handleCreate}
+        title={
+          <Space>
+            <CalendarOutlined />
+            <span>{editingId ? "Chỉnh Sửa Lịch Tuần" : "Tạo Lịch Tuần Mới"}</span>
+          </Space>
+        }
+        open={modalOpen}
+        onCancel={handleCloseModal}
+        onOk={handleSubmit}
         width={600}
-        okText="Tạo lịch"
+        okText={editingId ? "Cập nhật" : "Tạo"}
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" style={{ marginTop: "24px" }}>
-          <Alert
-            message="Lưu ý"
-            description="Hệ thống sẽ tự động tạo các ca làm việc cho mỗi ngày trong tuần dựa trên loại ca đã cấu hình."
-            type="warning"
-            showIcon
-            style={{ marginBottom: "16px" }}
-          />
-
           <Form.Item
-            label="Chọn tuần"
+            label="Tuần làm việc"
             name="week_range"
-            rules={[{ required: true, message: "Vui lòng chọn tuần" }]}
-            tooltip="Chọn ngày bắt đầu và kết thúc của tuần"
+            rules={[{ required: true, message: "Vui lòng chọn tuần làm việc" }]}
+            extra="Chọn ngày đầu tuần (thứ 2) và ngày cuối tuần (chủ nhật)"
           >
-            <DatePicker.RangePicker
+            <RangePicker
               style={{ width: "100%" }}
+              size="large"
               format="DD/MM/YYYY"
               placeholder={["Ngày bắt đầu", "Ngày kết thúc"]}
             />
           </Form.Item>
 
-          <Form.Item label="Ghi chú" name="notes">
-            <Input.TextArea rows={3} placeholder="Ghi chú về lịch tuần này (không bắt buộc)" />
+          <Form.Item label="Ghi chú (không bắt buộc)" name="notes">
+            <TextArea
+              rows={3}
+              placeholder="Ghi chú về lịch tuần này..."
+              maxLength={500}
+              showCount
+            />
           </Form.Item>
         </Form>
-      </Modal>
-
-      {/* View Modal */}
-      <Modal
-        title="Chi tiết lịch tuần"
-        open={viewModalOpen}
-        onCancel={() => {
-          setViewModalOpen(false);
-          setSelectedSchedule(null);
-        }}
-        footer={
-          selectedSchedule ? (
-            <Space>
-              <Button onClick={() => setViewModalOpen(false)}>Đóng</Button>
-              {selectedSchedule.status === "draft" && (
-                <Button type="primary" icon={<SendOutlined />} onClick={() => handlePublish(selectedSchedule.id)}>
-                  Công bố lịch
-                </Button>
-              )}
-              {selectedSchedule.status === "published" && (
-                <Button type="primary" icon={<CheckCircleOutlined />} onClick={() => handleFinalize(selectedSchedule.id)}>
-                  Hoàn tất
-                </Button>
-              )}
-            </Space>
-          ) : (
-            <Button onClick={() => setViewModalOpen(false)}>Đóng</Button>
-          )
-        }
-        width={700}
-      >
-        {selectedSchedule && (
-          <Descriptions column={1} bordered style={{ marginTop: "24px" }}>
-            <Descriptions.Item label="Tuần">
-              Tuần {dayjs(selectedSchedule.week_start).isoWeek()} - Năm {dayjs(selectedSchedule.week_start).year()}
-            </Descriptions.Item>
-            <Descriptions.Item label="Thời gian">
-              {dayjs(selectedSchedule.week_start).format("DD/MM/YYYY")} - {dayjs(selectedSchedule.week_end).format("DD/MM/YYYY")}
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              {getStatusTag(selectedSchedule.status)}
-            </Descriptions.Item>
-            {selectedSchedule.published_at && (
-              <Descriptions.Item label="Công bố lúc">
-                {dayjs(selectedSchedule.published_at).format("DD/MM/YYYY HH:mm")}
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="Ngày tạo">
-              {dayjs(selectedSchedule.created_at).format("DD/MM/YYYY HH:mm")}
-            </Descriptions.Item>
-            {selectedSchedule.notes && (
-              <Descriptions.Item label="Ghi chú">
-                {selectedSchedule.notes}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-        )}
       </Modal>
     </div>
   );
