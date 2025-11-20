@@ -2,24 +2,43 @@
 
 import { useTable } from "@refinedev/antd";
 import { useDelete } from "@refinedev/core";
-import { Table, Space, Button, Avatar, Tag, Tooltip, App } from "antd";
+import {
+  Table,
+  Button,
+  Avatar,
+  Tag,
+  Tooltip,
+  App,
+  Input,
+  Row,
+  Col,
+  Card,
+  Statistic,
+} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
   PlusOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { Employee } from "@/types/employee";
 import { formatDate, formatPhoneNumber } from "@/lib/utils";
 import { Mail, Phone, Calendar } from "lucide-react";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
+import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
+import { useState, useMemo } from "react";
 
 export const EmployeeList = () => {
   const { message } = App.useApp();
   const router = useRouter();
   const { mutate: deleteEmployee } = useDelete();
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
+  const [searchText, setSearchText] = useState("");
 
   const { tableProps, sorters, filters } = useTable<Employee>({
     resource: "employees",
@@ -36,6 +55,53 @@ export const EmployeeList = () => {
       ],
     },
   });
+
+  const employees = useMemo(
+    () => tableProps.dataSource || [],
+    [tableProps.dataSource]
+  );
+
+  // Filter employees by search text
+  const filteredEmployees = useMemo(() => {
+    if (!searchText) return employees;
+    const searchLower = searchText.toLowerCase();
+    return employees.filter((emp) => {
+      const fullName = (
+        emp.full_name ||
+        `${emp.first_name} ${emp.last_name}`
+      ).toLowerCase();
+      const email = (emp.email || "").toLowerCase();
+      const phone = (emp.phone || "").toLowerCase();
+      const code = (emp.employee_code || "").toLowerCase();
+      return (
+        fullName.includes(searchLower) ||
+        email.includes(searchLower) ||
+        phone.includes(searchLower) ||
+        code.includes(searchLower)
+      );
+    });
+  }, [employees, searchText]);
+
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = employees.length;
+    const active = employees.filter((e) => e.status === "active").length;
+    const onLeave = employees.filter((e) => e.status === "on_leave").length;
+    const terminated = employees.filter(
+      (e) => e.status === "terminated"
+    ).length;
+    const suspended = employees.filter((e) => e.status === "suspended").length;
+
+    return { total, active, onLeave, terminated, suspended };
+  }, [employees]);
+
+  const handleView = (record: Employee) => {
+    router.push(`/employees/${record.id}`);
+  };
+
+  const handleEdit = (record: Employee) => {
+    router.push(`/employees/${record.id}/edit`);
+  };
 
   const handleDelete = (record: Employee) => {
     openConfirm({
@@ -66,6 +132,28 @@ export const EmployeeList = () => {
       },
     });
   };
+
+  const getActionItems = (record: Employee): ActionItem[] => [
+    {
+      key: "view",
+      label: "Xem chi tiết",
+      icon: <EyeOutlined />,
+      onClick: () => handleView(record),
+    },
+    {
+      key: "edit",
+      label: "Chỉnh sửa",
+      icon: <EditOutlined />,
+      onClick: () => handleEdit(record),
+    },
+    {
+      key: "delete",
+      label: "Xóa",
+      icon: <DeleteOutlined />,
+      onClick: () => handleDelete(record),
+      danger: true,
+    },
+  ];
 
   const columns = [
     {
@@ -161,32 +249,9 @@ export const EmployeeList = () => {
       title: "Thao tác",
       key: "actions",
       fixed: "right" as const,
-      width: 150,
+      width: 100,
       render: (_: any, record: Employee) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => router.push(`/employees/${record.id}`)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => router.push(`/employees/${record.id}/edit`)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-            />
-          </Tooltip>
-        </Space>
+        <ActionPopover actions={getActionItems(record)} />
       ),
     },
   ];
@@ -200,24 +265,94 @@ export const EmployeeList = () => {
           </h1>
           <p className="text-gray-500 mt-1">Quản lý thông tin nhân viên</p>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => router.push("/employees/create")}
-          size="large"
-        >
-          Thêm nhân viên
-        </Button>
+        <div className="flex gap-3">
+          <Input.Search
+            placeholder="Tìm theo tên, email, SĐT..."
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 280 }}
+            size="large"
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => router.push("/employees/create")}
+            size="large"
+          >
+            Thêm nhân viên
+          </Button>
+        </div>
       </div>
+
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]} className="mb-6">
+        <Col xs={12} sm={12} md={6}>
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">
+                  Tổng nhân viên
+                </span>
+              }
+              value={stats.total}
+              prefix={<UserOutlined className="text-blue-500" />}
+              valueStyle={{ color: "#1890ff", fontSize: "24px", fontWeight: "bold" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">
+                  Đang làm việc
+                </span>
+              }
+              value={stats.active}
+              prefix={<CheckCircleOutlined className="text-green-500" />}
+              valueStyle={{ color: "#52c41a", fontSize: "24px", fontWeight: "bold" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">Nghỉ phép</span>
+              }
+              value={stats.onLeave}
+              prefix={<ClockCircleOutlined className="text-orange-500" />}
+              valueStyle={{ color: "#fa8c16", fontSize: "24px", fontWeight: "bold" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={12} sm={12} md={6}>
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <Statistic
+              title={
+                <span className="text-gray-600 font-medium">
+                  Đã nghỉ việc
+                </span>
+              }
+              value={stats.terminated}
+              prefix={<StopOutlined className="text-gray-500" />}
+              valueStyle={{ color: "#8c8c8c", fontSize: "24px", fontWeight: "bold" }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       <div className="bg-white rounded-lg shadow">
         <Table
           {...tableProps}
+          dataSource={filteredEmployees}
           columns={columns}
           rowKey="id"
           scroll={{ x: 1200 }}
           pagination={{
             ...tableProps.pagination,
+            total: filteredEmployees.length,
             showSizeChanger: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} của ${total} nhân viên`,

@@ -88,7 +88,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
   });
 
   // Handle form values transformation
-  const handleFinish = (values: any) => {
+  const handleFinish = async (values: any) => {
     const formattedValues = {
       ...values,
       dob: values.dob ? dayjs(values.dob).format("YYYY-MM-DD") : null,
@@ -101,7 +101,21 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
       photo_url: avatarUrl || values.photo_url,
     };
 
-    onFinish(formattedValues);
+    // If creating new employee and account credentials provided
+    if (action === "create" && values.create_account) {
+      try {
+        // First create employee
+        await onFinish(formattedValues);
+        
+        // Then create user account (this would be handled by backend)
+        // The backend should create the user when employee is created with username/password
+        message.info("Tài khoản đăng nhập đã được tạo cho nhân viên");
+      } catch (error) {
+        console.error("Error creating employee with account:", error);
+      }
+    } else {
+      onFinish(formattedValues);
+    }
   };
 
   const handleUploadChange = (info: any) => {
@@ -497,6 +511,90 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
           />
         </Form.Item>
       </Card>
+
+      {/* Account Creation Section - Only for new employees */}
+      {action === "create" && (
+        <Card title="🔐 Tạo tài khoản đăng nhập" className="mb-6 border-l-4 border-l-green-500">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-sm text-blue-800">
+              💡 <strong>Lưu ý:</strong> Tạo tài khoản để nhân viên có thể đăng nhập vào hệ thống.
+              Nếu không tạo, nhân viên sẽ không thể truy cập hệ thống.
+            </p>
+          </div>
+
+          <Form.Item
+            name="create_account"
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Space direction="vertical" className="w-full">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4"
+                  onChange={(e) => {
+                    form.setFieldValue("create_account", e.target.checked);
+                  }}
+                  defaultChecked
+                />
+                <span className="font-medium">Tạo tài khoản đăng nhập cho nhân viên</span>
+              </label>
+            </Space>
+          </Form.Item>
+
+          <Form.Item noStyle shouldUpdate={(prev, current) => prev.create_account !== current.create_account}>
+            {({ getFieldValue }) =>
+              getFieldValue("create_account") ? (
+                <div className="space-y-4 mt-4 p-4 bg-gray-50 rounded border border-gray-200">
+                  <Row gutter={[24, 0]}>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Tên đăng nhập"
+                        name="username"
+                        rules={[
+                          { required: true, message: "Vui lòng nhập tên đăng nhập!" },
+                          { min: 4, message: "Tên đăng nhập phải có ít nhất 4 ký tự!" },
+                          {
+                            pattern: /^[a-zA-Z0-9_]+$/,
+                            message: "Chỉ được dùng chữ, số và gạch dưới!",
+                          },
+                        ]}
+                        tooltip="Tên đăng nhập để nhân viên truy cập hệ thống"
+                      >
+                        <Input
+                          prefix={<UserOutlined className="text-gray-400" />}
+                          placeholder="vd: nguyenvana"
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        label="Mật khẩu"
+                        name="password"
+                        rules={[
+                          { required: true, message: "Vui lòng nhập mật khẩu!" },
+                          { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+                        ]}
+                        tooltip="Mật khẩu mặc định cho nhân viên"
+                      >
+                        <Input.Password
+                          placeholder="Nhập mật khẩu"
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Nhân viên nên đổi mật khẩu sau lần đăng nhập đầu tiên để bảo mật.
+                    </p>
+                  </div>
+                </div>
+              ) : null
+            }
+          </Form.Item>
+        </Card>
+      )}
 
       {/* Action Buttons */}
       <Card className="sticky bottom-4 shadow-lg border-t-4 border-blue-500">

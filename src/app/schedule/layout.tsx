@@ -2,19 +2,36 @@
 
 import { Header } from "@components/header";
 import { ModernSidebar } from "@components/layout";
-import { Menu, Calendar, ClipboardList, BarChart3 } from "lucide-react";
+import { Menu, Calendar, ClipboardList, BarChart3, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useGetIdentity } from "@refinedev/core";
 import { ReactNode, useState } from "react";
+
+import { useCanManageSchedule } from "@/hooks/usePermissions";
 
 export default function ScheduleLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  const scheduleMenuItems = [
+  // RBAC: Dynamic permission check
+  const isManager = useCanManageSchedule();
+
+  // Menu items based on role
+  const scheduleMenuItems = isManager ? [
     { icon: <BarChart3 size={18} />, label: "Dashboard", href: "/schedule/dashboard" },
-    { icon: <Calendar size={18} />, label: "Quản lý lịch", href: "/schedule" },
-    { icon: <ClipboardList size={18} />, label: "Đăng ký ca", href: "/schedule/availability" },
+    { icon: <Calendar size={18} />, label: "Lịch Tuần", href: "/schedule/weekly-schedules" },
+    { icon: <Calendar size={18} />, label: "Quản Lý Ca", href: "/schedule/shifts" },
+    { icon: <ClipboardList size={18} />, label: "Xếp Lịch", href: "/schedule/assignments" },
+    { icon: <ClipboardList size={18} />, label: "Loại Ca", href: "/schedule/shift-types" },
+    { icon: <Users size={18} />, label: "Vị Trí", href: "/schedule/positions" },
+    { icon: <Users size={18} />, label: "Yêu Cầu Vị Trí", href: "/schedule/shift-requirements" },
+    { icon: <ClipboardList size={18} />, label: "Yêu Cầu Đổi Ca", href: "/schedule/change-requests" },
+  ] : [
+    { icon: <BarChart3 size={18} />, label: "Dashboard", href: "/schedule/dashboard" },
+    { icon: <Calendar size={18} />, label: "Lịch Của Tôi", href: "/schedule/my-schedule" },
+    { icon: <ClipboardList size={18} />, label: "Đăng Ký Ca", href: "/schedule/availability" },
+    { icon: <ClipboardList size={18} />, label: "Đổi Ca", href: "/schedule/change-requests" },
   ];
 
   const isActive = (href: string) => {

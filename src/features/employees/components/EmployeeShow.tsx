@@ -16,11 +16,13 @@ import {
   MapPin, 
   Briefcase, 
   FileText, 
-  UserCheck 
+  UserCheck,
+  TrendingUp
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatDate, formatPhoneNumber } from "@/lib/utils";
 import { ContractList } from "./ContractList";
+import { WorkHistoryTab } from "@/features/profile/components/WorkHistoryTab";
 
 interface EmployeeShowProps {
   id: string;
@@ -318,6 +320,16 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                         </span>
                       ),
                       children: <ContractList employeeId={id} />,
+                    },
+                    {
+                      key: "work_history",
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          Quá trình làm việc
+                        </span>
+                      ),
+                      children: <WorkHistoryTab employeeId={id} />,
                     },
                   ]}
                 />

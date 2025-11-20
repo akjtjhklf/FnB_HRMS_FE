@@ -16,7 +16,9 @@ import {
   FileText,
   LogOut,
   X,
+  User,
 } from "lucide-react";
+import { BranchesOutlined } from "@ant-design/icons";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -35,6 +37,11 @@ const sidebarItems: SidebarItem[] = [
     icon: <Users size={24} />,
     label: "Nhân viên",
     href: "/employees",
+  },
+  {
+    icon: <User size={24} />,
+    label: "Thông tin",
+    href: "/profile",
   },
   {
     icon: <Calendar size={24} />,
@@ -66,6 +73,11 @@ const sidebarItems: SidebarItem[] = [
     label: "Thống kê",
     href: "/reports",
   },
+  {
+    icon: <BranchesOutlined size={24} />,
+    label: "Phân quyền",
+    href: "/permissions",
+  },
 ];
 
 const bottomItems: SidebarItem[] = [
@@ -90,14 +102,22 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
-      return pathname === "/dashboard" || pathname === "/" || pathname === "/(dashboard)";
+      return (
+        pathname === "/dashboard" ||
+        pathname === "/" ||
+        pathname === "/(dashboard)"
+      );
     }
     return pathname?.startsWith(href);
   };
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    if (onMobileClose && typeof window !== 'undefined' && window.innerWidth < 1024) {
+    if (
+      onMobileClose &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 1024
+    ) {
       onMobileClose();
     }
   }, [pathname, onMobileClose]);
@@ -129,7 +149,10 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2">
+        <nav
+          className="flex-1 overflow-y-auto py-2 px-2"
+          style={{ scrollbarWidth: "none" }}
+        >
           <div className="space-y-2">
             {sidebarItems.map((item, index) => {
               const active = isActive(item.href);
@@ -150,9 +173,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   )}
 
                   {/* Icon */}
-                  <div className="flex-shrink-0">
-                    {item.icon}
-                  </div>
+                  <div className="flex-shrink-0">{item.icon}</div>
 
                   {/* Label */}
                   <span className="font-medium text-[10px] text-center leading-tight">
@@ -177,7 +198,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
             {bottomItems.map((item, index) => {
               const active = isActive(item.href);
               const isLogout = item.href === "/logout";
-              
+
               if (isLogout) {
                 return (
                   <button
@@ -189,9 +210,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     )}
                   >
                     {/* Icon */}
-                    <div className="flex-shrink-0">
-                      {item.icon}
-                    </div>
+                    <div className="flex-shrink-0">{item.icon}</div>
 
                     {/* Label */}
                     <span className="font-medium text-[10px] text-center leading-tight">
@@ -200,7 +219,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   </button>
                 );
               }
-              
+
               return (
                 <Link
                   key={index}
@@ -213,9 +232,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   )}
                 >
                   {/* Icon */}
-                  <div className="flex-shrink-0">
-                    {item.icon}
-                  </div>
+                  <div className="flex-shrink-0">{item.icon}</div>
 
                   {/* Label */}
                   <span className="font-medium text-[10px] text-center leading-tight">
