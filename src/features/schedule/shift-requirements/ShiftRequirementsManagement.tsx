@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useList, useCreate, useUpdate, useDelete } from "@refinedev/core";
+import { useTable } from "@refinedev/antd";
 import {
   Card,
   Button,
@@ -66,19 +67,21 @@ export function ShiftRequirementsManagement() {
   });
   const positions = positionsQuery.data?.data || [];
 
-  // Fetch requirements for selected schedule's shifts
+  // Fetch requirements for selected schedule's shifts with pagination
   const shiftIds = shifts.map((s: any) => s.id);
-  const { query: requirementsQuery } = useList<ShiftPositionRequirement>({
+  const { tableProps, tableQuery: requirementsQuery } = useTable<ShiftPositionRequirement>({
     resource: "shift-position-requirements",
     queryOptions: { enabled: shiftIds.length > 0 },
-    filters: shiftIds.length > 0
-      ? [{ field: "shift_id", operator: "in", value: shiftIds }]
-      : [],
-    pagination: { mode: "off" },
+    filters: {
+      permanent: shiftIds.length > 0
+        ? [{ field: "shift_id", operator: "in", value: shiftIds }]
+        : [],
+    },
+    pagination: {
+      pageSize: 20,
+    },
     meta: { fields: ["*", "position.*"] },
   });
-  const requirements = requirementsQuery.data?.data || [];
-  const isLoading = requirementsQuery.isLoading;
 
   const { mutate: createRequirement, mutation: createMutation } = useCreate<ShiftPositionRequirement>();
   const { mutate: updateRequirement, mutation: updateMutation } = useUpdate<ShiftPositionRequirement>();
@@ -117,6 +120,7 @@ export function ShiftRequirementsManagement() {
             onSuccess: () => {
               message.success("Cập nhật yêu cầu thành công");
               handleCloseModal();
+              requirementsQuery.refetch();
             },
             onError: (error: any) => {
               message.error(error?.message || "Cập nhật yêu cầu thất bại");
@@ -133,6 +137,7 @@ export function ShiftRequirementsManagement() {
             onSuccess: () => {
               message.success("Tạo yêu cầu thành công");
               handleCloseModal();
+              requirementsQuery.refetch();
             },
             onError: (error: any) => {
               message.error(error?.message || "Tạo yêu cầu thất bại");
@@ -154,6 +159,7 @@ export function ShiftRequirementsManagement() {
       {
         onSuccess: () => {
           message.success("Xóa yêu cầu thành công");
+          requirementsQuery.refetch();
         },
         onError: (error: any) => {
           message.error(error?.message || "Xóa yêu cầu thất bại");
@@ -288,14 +294,14 @@ export function ShiftRequirementsManagement() {
       {selectedSchedule ? (
         <Card>
           <Table
+            {...tableProps}
             columns={columns}
-            dataSource={requirements}
-            loading={isLoading}
             rowKey="id"
             pagination={{
-              pageSize: 20,
+              ...tableProps.pagination,
               showSizeChanger: true,
               showTotal: (total) => `Tổng ${total} yêu cầu`,
+              pageSizeOptions: ["10", "20", "50", "100"],
             }}
           />
         </Card>

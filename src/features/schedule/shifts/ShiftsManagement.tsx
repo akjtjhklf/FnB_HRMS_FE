@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useList, useCreate, useUpdate, useDelete, useCustomMutation } from "@refinedev/core";
 import {
   Card,
@@ -61,6 +62,7 @@ const DAYS_OF_WEEK = [
 
 export function ShiftsManagement() {
   const canManage = useCanManageSchedule();
+  const searchParams = useSearchParams();
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
@@ -74,6 +76,14 @@ export function ShiftsManagement() {
   const [singleShiftPositionRequirements, setSingleShiftPositionRequirements] =
     useState<Array<{ position_id: string; required_count: number }>>([]);
 
+  // Auto-select schedule from URL params (e.g., from detail page)
+  useEffect(() => {
+    const scheduleIdFromUrl = searchParams.get("schedule_id");
+    if (scheduleIdFromUrl && !selectedSchedule) {
+      setSelectedSchedule(scheduleIdFromUrl);
+    }
+  }, [searchParams, selectedSchedule]);
+
   // Fetch data
   const { query: schedulesQuery } = useList<WeeklySchedule>({
     resource: "weekly-schedules",
@@ -85,11 +95,12 @@ export function ShiftsManagement() {
   const { query: shiftTypesQuery } = useList<ShiftType>({
     resource: "shift-types",
     pagination: { pageSize: 100 },
+    meta: { fields: ["*"] },
   });
 
   const { query: positionsQuery } = useList<Position>({
     resource: "positions",
-    pagination: { mode: "off" },
+    pagination: { pageSize: 1000 },
     meta: { fields: ["id", "name"] },
   });
 
@@ -103,15 +114,25 @@ export function ShiftsManagement() {
       fields: ["*", "shift_type.*"],
     },
   });
-  const shiftsData = shiftsQuery.data?.data;
+  const shiftsData = shiftsQuery.data?.data || [];
   const isLoading = shiftsQuery.isLoading;
-
+  
+  // Get shift IDs from current schedule's shifts
+  const shiftIds = shiftsData.map((s: any) => s.id);
+  
+  // Query requirements filtered by shift IDs (only when we have shifts)
   const { query: requirementsQuery } = useList<ShiftPositionRequirement>({
     resource: "shift-position-requirements",
-    pagination: { mode: "off" },
+    pagination: { pageSize: 1000 }, // Need high limit for all requirements (shifts * positions)
+    filters: shiftIds.length > 0
+      ? [{ field: "shift_id", operator: "in", value: shiftIds }]
+      : [],
     meta: { fields: ["*", "shift_id", "position_id"] },
+    queryOptions: {
+      enabled: shiftIds.length > 0,
+    },
   });
-  const requirementsData = requirementsQuery.data?.data;
+  const requirementsData = requirementsQuery.data?.data || [];
 
   const { mutate: createShift, mutation: createMutation } = useCreate<Shift>();
   const isCreating = createMutation.isPending;
@@ -125,6 +146,14 @@ export function ShiftsManagement() {
   const shifts = shiftsData || [];
   const requirements = requirementsData || [];
   const positions = positionsQuery.data?.data || [];
+
+  // DEBUG: Log shifts data
+  console.log("🔍 Shifts Management State:", {
+    selectedSchedule,
+    totalShifts: shifts.length,
+    shiftsForThisSchedule: shifts.filter((s: any) => s.schedule_id === selectedSchedule).length,
+    firstShift: shifts[0],
+  });
 
   // Memoize select options to avoid re-render
   const scheduleOptions = schedules.map((s: any) => ({
@@ -165,7 +194,7 @@ export function ShiftsManagement() {
 
   // Group shifts by day with actual dates
   const shiftsByDay = DAYS_OF_WEEK.map((day, index) => {
-    // Tính ngày thực tế: startDate + số ngày (0-6)
+    // Calculate actual date: startDate + day offset (0-6)
     const actualDate = scheduleStartDate
       ? scheduleStartDate.add(index, "day")
       : null;
@@ -174,8 +203,9 @@ export function ShiftsManagement() {
       date: actualDate,
       shifts: shifts.filter((s: any) => {
         if (!actualDate) return false;
-        // So sánh ngày chính xác (YYYY-MM-DD)
-        return s.shift_date === actualDate.format("YYYY-MM-DD");
+        // Compare exact date (YYYY-MM-DD)
+        const shiftDate = s.shift_date?.split('T')[0] || s.shift_date; // Handle ISO datetime format
+        return shiftDate === actualDate.format("YYYY-MM-DD");
       }),
     };
   });
@@ -183,10 +213,29 @@ export function ShiftsManagement() {
   const handleOpenModal = (shift?: Shift, dayOfWeek?: number) => {
     if (shift) {
       setEditingShift(shift);
+      
+      // Get shift_type to fill missing times
+      const shiftType = typeof shift.shift_type === "object"
+        ? shift.shift_type
+        : shiftTypes.find((st: any) => st.id === shift.shift_type_id);
+      
+      console.log("🔍 Edit shift modal:", { 
+        shift, 
+        shiftType,
+        shift_start: shift.start_at, 
+        shift_end: shift.end_at,
+        type_start: shiftType?.start_time,
+        type_end: shiftType?.end_time 
+      });
+      
       form.setFieldsValue({
         ...shift,
-        start_at: shift.start_at ? dayjs(shift.start_at, "HH:mm:ss") : null,
-        end_at: shift.end_at ? dayjs(shift.end_at, "HH:mm:ss") : null,
+        start_at: shift.start_at 
+          ? dayjs(shift.start_at, "HH:mm:ss") 
+          : (shiftType?.start_time ? dayjs(shiftType.start_time, "HH:mm:ss") : null),
+        end_at: shift.end_at 
+          ? dayjs(shift.end_at, "HH:mm:ss") 
+          : (shiftType?.end_time ? dayjs(shiftType.end_time, "HH:mm:ss") : null),
         shift_date: dayjs(shift.shift_date),
       });
       // Load existing requirements for this shift
@@ -385,38 +434,55 @@ export function ShiftsManagement() {
       0
     );
 
-    // Generate shifts for each day of week (7 days from start date)
-    for (let i = 0; i < 7; i++) {
-      const shiftDate = startDate.add(i, "day");
+    // Generate shifts for each day of week (7 consecutive days from start date)
+    for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+      const shiftDate = startDate.add(dayOffset, "day");
+      const dayOfWeek = shiftDate.day(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      // Map dayjs day (0=Sun) to our DAYS_OF_WEEK array (0=Mon)
+      const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
       // Create shift for each selected shift type
       selectedShiftTypes.forEach((shiftTypeId) => {
-        const dayIndex = shiftDate.day();
+        const shiftType = shiftTypes.find((st: any) => st.id === shiftTypeId);
         shiftsToCreate.push({
           schedule_id: selectedSchedule,
           shift_type_id: shiftTypeId,
           shift_date: shiftDate.format("YYYY-MM-DD"),
+          start_at: shiftType?.start_time,
+          end_at: shiftType?.end_time,
           total_required: totalRequired,
           notes: `Tự động tạo cho ${
-            DAYS_OF_WEEK[dayIndex].label
-          } (${shiftDate.format("DD/MM")})`,
+            DAYS_OF_WEEK[dayIndex]?.label || "N/A"
+          } (${shiftDate.format("DD/MM/YYYY")})`,
         });
       });
     }
 
-    console.log("📅 Shifts to create:", shiftsToCreate);
-    console.log("👥 Position requirements:", defaultPositionRequirements);
+    console.log("📅 Shifts to create:", shiftsToCreate.length, "shifts");
+    console.log("📝 First shift sample:", shiftsToCreate[0]);
+    console.log("📝 Last shift sample:", shiftsToCreate[shiftsToCreate.length - 1]);
+    console.log("👥 Position requirements:", defaultPositionRequirements.length, "positions");
 
     try {
       // Step 1: Create shifts
+      console.log("🚀 Calling createBulkShifts with", shiftsToCreate.length, "shifts...");
       const response = await createBulkShifts(shiftsToCreate);
-      console.log("✅ Shifts created:", response);
+      console.log("✅ Shifts created:", response.shifts?.length || 0, "shifts");
+      console.log("📊 Full response:", JSON.stringify(response, null, 2));
       console.log("📊 Response structure:", {
         hasResponse: !!response,
         hasShifts: !!(response && response.shifts),
         isArray: !!(response && response.shifts && Array.isArray(response.shifts)),
         shiftsLength: response?.shifts?.length || 0,
+        totalField: response?.total,
       });
+      
+      if (!response || !response.shifts || response.shifts.length === 0) {
+        throw new Error("Backend không trả về shifts hoặc response rỗng");
+      }
+      
+      console.log("🔍 First shift in response:", response.shifts[0]);
+      console.log("🔍 Last shift in response:", response.shifts[response.shifts.length - 1]);
 
       // Step 2: Create position requirements for each shift
       if (response && response.shifts && Array.isArray(response.shifts)) {
@@ -424,7 +490,12 @@ export function ShiftsManagement() {
 
         console.log(`🔄 Processing ${response.shifts.length} shifts with ${defaultPositionRequirements.length} position requirements`);
 
-        response.shifts.forEach((shift: any) => {
+        response.shifts.forEach((shift: any, index: number) => {
+          console.log(`  📌 Shift #${index + 1}:`, {
+            id: shift.id,
+            date: shift.shift_date,
+            type: shift.shift_type_id
+          });
           defaultPositionRequirements.forEach((req) => {
             requirementsToCreate.push({
               shift_id: shift.id,
@@ -434,39 +505,58 @@ export function ShiftsManagement() {
           });
         });
 
-        console.log("👥 Creating position requirements:", requirementsToCreate);
+        console.log("👥 Total requirements to create:", requirementsToCreate.length);
+        console.log("📝 First requirement:", requirementsToCreate[0]);
+        console.log("📝 Last requirement:", requirementsToCreate[requirementsToCreate.length - 1]);
+        const uniqueShiftIds = Array.from(new Set(requirementsToCreate.map(r => r.shift_id)));
+        console.log("🔍 Unique shift IDs:", uniqueShiftIds.length, "shifts:", uniqueShiftIds);
         console.log(`🚀 About to call API: /api/shift-position-requirements/bulk with ${requirementsToCreate.length} items`);
+        console.log(`📝 Sample requirements:`, requirementsToCreate.slice(0, 3));
 
         // Create all requirements using bulk API and WAIT for it to complete
-        await new Promise<void>((resolve, reject) => {
-          createBulkRequirements(
-            {
-              url: `/shift-position-requirements/bulk`,
-              method: "post",
-              values: requirementsToCreate,
-            },
-            {
-              onSuccess: (data) => {
-                console.log("✅ Requirements created successfully:", data);
-                message.success(
-                  `Đã tạo ${response.shifts.length} ca và ${requirementsToCreate.length} yêu cầu vị trí`
-                );
-                // Refetch data
-                shiftsQuery.refetch();
-                requirementsQuery.refetch();
-                resolve();
+        try {
+          await new Promise<void>((resolve, reject) => {
+            createBulkRequirements(
+              {
+                url: `/shift-position-requirements/bulk`,
+                method: "post",
+                values: requirementsToCreate,
               },
-              onError: (error: any) => {
-                console.error("❌ Error creating requirements:", error);
-                console.error("❌ Error details:", JSON.stringify(error, null, 2));
-                message.warning(
-                  `Đã tạo ${response.shifts.length} ca nhưng có lỗi khi tạo yêu cầu vị trí: ${error?.message || 'Unknown error'}`
-                );
-                reject(error);
-              },
-            }
-          );
-        });
+              {
+                onSuccess: (data) => {
+                  console.log("✅ Requirements created successfully:", data);
+                  console.log("📊 Response data structure:", {
+                    hasData: !!data,
+                    dataKeys: data ? Object.keys(data) : [],
+                    dataLength: Array.isArray(data) ? data.length : 'not array',
+                  });
+                  message.success(
+                    `Đã tạo ${response.shifts.length} ca và ${requirementsToCreate.length} yêu cầu vị trí`
+                  );
+                  // Refetch data
+                  shiftsQuery.refetch();
+                  requirementsQuery.refetch();
+                  resolve();
+                },
+                onError: (error: any) => {
+                  console.error("❌ Error creating requirements:", error);
+                  console.error("❌ Error details:", JSON.stringify(error, null, 2));
+                  console.error("❌ Error stack:", error?.stack);
+                  message.error(
+                    `Đã tạo ${response.shifts.length} ca nhưng LỖI khi tạo yêu cầu vị trí: ${error?.message || 'Unknown error'}`
+                  );
+                  // Still refetch to see current state
+                  shiftsQuery.refetch();
+                  requirementsQuery.refetch();
+                  reject(error);
+                },
+              }
+            );
+          });
+        } catch (err) {
+          console.error("❌ Exception in bulk requirements create:", err);
+          message.error("Có lỗi nghiêm trọng khi tạo yêu cầu vị trí");
+        }
       } else {
         console.warn("⚠️ Cannot create requirements - invalid response structure");
       }
@@ -560,7 +650,7 @@ export function ShiftsManagement() {
               {/* Shifts */}
               <div className="space-y-2">
                 {day.shifts.length > 0 ? (
-                  day.shifts.map((shift: any) => {
+                  day.shifts.map((shift: Shift) => {
                     const shiftReqs = getShiftRequirements(shift.id);
                     const shiftType =
                       typeof shift.shift_type === "object"
@@ -578,8 +668,8 @@ export function ShiftsManagement() {
                         <div className="space-y-2">
                           {/* Shift Type */}
                           <div className="flex items-center justify-between">
-                            <Tag color={shiftType?.color_code || "blue"}>
-                              {shiftType?.name || shiftType?.type_name || "N/A"}
+                            <Tag color={shiftType?.cross_midnight ? "red" : "blue"}>
+                              {shiftType?.name  ||"N/A"}
                             </Tag>
                             <Space size="small">
                               <Tooltip title="Chỉnh sửa">
@@ -612,8 +702,15 @@ export function ShiftsManagement() {
                           <div className="flex items-center gap-1 text-xs text-gray-600">
                             <ClockCircleOutlined className="text-blue-500" />
                             <span>
-                              {shift.start_at || "N/A"} -{" "}
-                              {shift.end_at || "N/A"}
+                              {(() => {
+                                const startTime = shift.start_at 
+                                  ? (shift.start_at.includes('T') ? dayjs(shift.start_at).format('HH:mm') : shift.start_at.substring(0, 5))
+                                  : (shiftType?.start_time ? (shiftType.start_time.includes('T') ? dayjs(shiftType.start_time).format('HH:mm') : shiftType.start_time.substring(0, 5)) : "N/A");
+                                const endTime = shift.end_at
+                                  ? (shift.end_at.includes('T') ? dayjs(shift.end_at).format('HH:mm') : shift.end_at.substring(0, 5))
+                                  : (shiftType?.end_time ? (shiftType.end_time.includes('T') ? dayjs(shiftType.end_time).format('HH:mm') : shiftType.end_time.substring(0, 5)) : "N/A");
+                                return `${startTime} - ${endTime}`;
+                              })()}
                             </span>
                           </div>
 

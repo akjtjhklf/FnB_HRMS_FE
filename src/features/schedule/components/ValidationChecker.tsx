@@ -16,9 +16,10 @@ import { useScheduleValidation } from "@/hooks/useScheduleWorkflow";
 interface ValidationCheckerProps {
   scheduleId: string;
   onValidated: () => void;
+  onCancel?: () => void;
 }
 
-export function ValidationChecker({ scheduleId, onValidated }: ValidationCheckerProps) {
+export function ValidationChecker({ scheduleId, onValidated, onCancel }: ValidationCheckerProps) {
   const { validation, isLoading, canPublish, errors, warnings } = useScheduleValidation(scheduleId);
 
   if (isLoading) {
@@ -94,13 +95,15 @@ export function ValidationChecker({ scheduleId, onValidated }: ValidationChecker
       )}
 
       {/* Summary */}
-      {validation && (
+      {validation && validation.totalShifts > 0 && (
         <Alert
           message="Tổng quan"
           description={
             <Space direction="vertical">
-              <div>Tổng số ca: {validation.totalShifts}</div>
-              <div>Tổng yêu cầu vị trí: {validation.totalRequirements}</div>
+              <div>✅ Tổng số ca làm việc: <strong>{validation.totalShifts}</strong></div>
+              {validation.warnings.length === 0 && validation.errors.length === 0 && (
+                <div style={{ color: "#52c41a" }}>✓ Tất cả các ca đã có yêu cầu vị trí</div>
+              )}
             </Space>
           }
           type="info"
@@ -108,8 +111,8 @@ export function ValidationChecker({ scheduleId, onValidated }: ValidationChecker
       )}
 
       {/* Actions */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button onClick={() => window.location.reload()}>Hủy</Button>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "16px", borderTop: "1px solid #f0f0f0" }}>
+        <Button onClick={() => onCancel?.()}>Hủy</Button>
         <Button
           type="primary"
           disabled={!canPublish}

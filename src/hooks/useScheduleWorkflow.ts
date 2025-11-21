@@ -185,7 +185,7 @@ export const usePublishSchedule = () => {
       mutate(
         {
           url: `/weekly-schedules/${scheduleId}/publish`,
-          method: "put",
+          method: "patch",
           values: {},
         },
         {
@@ -220,7 +220,7 @@ export const useFinalizeSchedule = () => {
       mutate(
         {
           url: `/weekly-schedules/${scheduleId}/finalize`,
-          method: "put",
+          method: "patch",
           values: {},
         },
         {

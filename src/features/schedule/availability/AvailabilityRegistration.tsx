@@ -25,6 +25,10 @@ import {
   Typography,
   Tooltip,
   Input,
+  Checkbox,
+  Empty,
+  Tabs,
+  Progress,
 } from "antd";
 
 const { TextArea } = Input;
@@ -36,32 +40,31 @@ import {
   ClockCircleOutlined,
   InfoCircleOutlined,
   CalendarOutlined,
+  UserOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
 import type { BadgeProps } from "antd";
-import type { 
-  EmployeeAvailability, 
-  Shift, 
-  CreateEmployeeAvailabilityDto 
+import type {
+  EmployeeAvailability,
+  CreateEmployeeAvailabilityDto,
+  Shift,
 } from "@/types/schedule";
+import type { CreateEmployeeAvailabilityPositionDto } from "@/types/schedule/employee-availability.types";
+import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
+import { UserIdentity } from "@types";
 
 const { Title, Text } = Typography;
 
-interface User {
-  id: string;
-  employee_id: string;
-  role: string;
-}
-
 /**
  * AvailabilityRegistration - Đăng ký Khả năng Làm việc
- * 
+ *
  * Chức năng:
  * - Xem lịch ca làm việc dưới dạng Calendar
  * - Click vào ngày để đăng ký ca
  * - Priority tự động theo role (Manager: 10, Senior: 7, Junior: 5)
  * - Xem trạng thái đăng ký (pending/approved/rejected)
- * 
+ *
  * Luồng:
  * 1. Xem Calendar với các ca đã công bố
  * 2. Click vào ngày → chọn ca
@@ -72,69 +75,93 @@ export function AvailabilityRegistration() {
   const [form] = Form.useForm();
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-  const [selectedAvailability, setSelectedAvailability] = useState<EmployeeAvailability | null>(null);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [selectedAvailability, setSelectedAvailability] =
+    useState<EmployeeAvailability | null>(null);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
 
   // Get current user
-  const { data: user } = useGetIdentity<User>();
+  const { data: user } = useGetIdentity<UserIdentity>();
 
-  // Auto calculate priority based on role
-  const getPriorityByRole = (role: string): number => {
-    const rolePriority: Record<string, number> = {
-      manager: 10,
-      "team_lead": 8,
-      senior: 7,
-      staff: 5,
-      junior: 3,
-    };
-    const roleKey = typeof role === 'string' ? role.toLowerCase() : 'staff';
-    return rolePriority[roleKey] || 5;
-  };
-
-  const userPriority = useMemo(() => {
-    return user?.role ? getPriorityByRole(user.role) : 5;
-  }, [user]);
+  // Debug: log user identity
+  console.log("👤 Current User Identity:", {
+    user,
+    hasEmployee: !!user?.employee,
+    employeeId: user?.employee?.id,
+  });
 
   // Fetch user's availabilities
   const { tableProps } = useTable<EmployeeAvailability>({
     resource: "employee-availability",
+    filters: {
+      permanent: [
+        {
+          field: "employee_id",
+          operator: "eq",
+          value: user?.employee?.id,
+        },
+      ],
+    },
     sorters: {
       initial: [{ field: "created_at", order: "desc" }],
     },
     meta: {
-      fields: ["*", "shift.id", "shift.shift_date", "shift.start_time", "shift.end_time", "shift.shift_type.name"],
+      fields: [
+        "*",
+        "shift.id",
+        "shift.shift_date",
+        "shift.start_time",
+        "shift.end_time",
+        "shift.shift_type.name",
+      ],
     },
   });
 
   const { query: availabilitiesQuery } = useList<EmployeeAvailability>({
     resource: "employee-availability",
+    filters: [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: user?.employee?.id,
+      },
+    ],
     meta: {
       fields: ["*", "shift.id", "shift.shift_date", "shift.shift_type.name"],
     },
   });
 
-  // Fetch published shifts
+  // Fetch availability positions to get registered positions per shift
+  const { query: availabilityPositionsQuery } = useList<any>({
+    resource: "employee-availability-positions",
+    pagination: { pageSize: 1000 },
+    meta: {
+      fields: ["*", "availability_id", "position_id"],
+    },
+  });
+
+  // Fetch published shifts with position requirements
   const { query: shiftsQuery } = useList<Shift>({
     resource: "shifts",
     pagination: { pageSize: 1000 },
     filters: [
-      {
-        field: "weekly_schedule.status",
-        operator: "eq",
-        value: "published",
-      },
+      // {
+      //   field: "weekly_schedules.status",
+      //   operator: "in",
+      //   value: ["scheduled", "published"],
+      // },
     ],
     meta: {
-      fields: [
-        "*",
-        "shift_type.id",
-        "shift_type.name",
-        "shift_type.description",
-        "weekly_schedule.id",
-        "weekly_schedule.status",
-        "weekly_schedule.start_date",
-        "weekly_schedule.end_date",
-      ],
+      fields: ["*", "shift_type_id.*", "schedule_id.*"],
+    },
+  });
+
+  // Fetch shift position requirements
+  const { query: requirementsQuery } = useList<ShiftPositionRequirement>({
+    resource: "shift-position-requirements",
+    pagination: { pageSize: 1000 },
+    meta: {
+      fields: ["*", "position.id", "position.name", "position.description"],
     },
   });
 
@@ -143,18 +170,93 @@ export function AvailabilityRegistration() {
   const { mutate: deleteAvailability } = useDelete();
 
   // Memoized data
-  const availabilities = useMemo(() => availabilitiesQuery.data?.data || [], [availabilitiesQuery.data?.data]);
-  const shifts = useMemo(() => shiftsQuery.data?.data || [], [shiftsQuery.data?.data]);
+  const availabilities = useMemo(
+    () => availabilitiesQuery.data?.data || [],
+    [availabilitiesQuery.data?.data]
+  );
+  const shifts = useMemo(
+    () => shiftsQuery.data?.data || [],
+    [shiftsQuery.data?.data]
+  );
+  const requirements = useMemo(
+    () => requirementsQuery.data?.data || [],
+    [requirementsQuery.data?.data]
+  );
+  const availabilityPositions = useMemo(
+    () => availabilityPositionsQuery.data?.data || [],
+    [availabilityPositionsQuery.data?.data]
+  );
+
+  // Map availability_id to position_ids
+  const positionsByAvailability = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    availabilityPositions.forEach((ap: any) => {
+      if (!map[ap.availability_id]) map[ap.availability_id] = [];
+      map[ap.availability_id].push(ap.position_id);
+    });
+    return map;
+  }, [availabilityPositions]);
+
+  // Map shift_id to availability_id for current user
+  const availabilityByShift = useMemo(() => {
+    const map: Record<string, string> = {};
+    availabilities.forEach((avail) => {
+      map[avail.shift_id] = avail.id;
+    });
+    return map;
+  }, [availabilities]);
 
   // Stats
   const stats = useMemo(() => {
     return {
       total: availabilities.length,
-      pending: availabilities.filter((a) => a.status === "pending").length,
-      approved: availabilities.filter((a) => a.status === "approved").length,
-      rejected: availabilities.filter((a) => a.status === "rejected").length,
+      thisWeek: availabilities.filter((a) => {
+        const shift = shifts.find((s) => s.id === a.shift_id);
+        return shift && dayjs(shift.shift_date).isSame(dayjs(), "week");
+      }).length,
+      upcoming: availabilities.filter((a) => {
+        const shift = shifts.find((s) => s.id === a.shift_id);
+        return shift && dayjs(shift.shift_date).isAfter(dayjs());
+      }).length,
+      totalPositions: availabilityPositions.length,
     };
-  }, [availabilities]);
+  }, [availabilities, shifts, availabilityPositions]);
+
+  // Map requirements to shifts
+  const requirementsByShift = useMemo(() => {
+    const map: Record<string, ShiftPositionRequirement[]> = {};
+    requirements.forEach((req) => {
+      if (!map[req.shift_id]) map[req.shift_id] = [];
+      map[req.shift_id].push(req);
+    });
+    return map;
+  }, [requirements]);
+
+  // Count ALL registered employees by shift and position (not just current user)
+  const registeredCountByShiftPosition = useMemo(() => {
+    const map: Record<string, Record<string, number>> = {};
+    // This should ideally come from a backend endpoint that counts all employee registrations
+    // For now, we're only counting from current user's data (incomplete)
+    availabilities.forEach((avail) => {
+      if (!map[avail.shift_id]) map[avail.shift_id] = {};
+      const positions = positionsByAvailability[avail.id] || [];
+      positions.forEach((posId) => {
+        map[avail.shift_id][posId] = (map[avail.shift_id][posId] || 0) + 1;
+      });
+    });
+    return map;
+  }, [availabilities, positionsByAvailability]);
+
+  // Get user's registered positions for a shift
+  const userRegisteredPositions = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    availabilities.forEach((avail) => {
+      if (!map[avail.shift_id]) map[avail.shift_id] = new Set();
+      const positions = positionsByAvailability[avail.id] || [];
+      positions.forEach((posId) => map[avail.shift_id].add(posId));
+    });
+    return map;
+  }, [availabilities, positionsByAvailability]);
 
   // Group shifts by date for calendar
   const shiftsByDate = useMemo(() => {
@@ -167,52 +269,94 @@ export function AvailabilityRegistration() {
     return map;
   }, [shifts]);
 
-  // Group availabilities by shift_id
-  const registeredShiftIds = useMemo(() => {
-    return new Set(availabilities.map((a) => a.shift_id));
-  }, [availabilities]);
-
-  // Get shifts for selected date
-  const shiftsForSelectedDate = useMemo(() => {
-    if (!selectedDate) return [];
-    const dateKey = selectedDate.format("YYYY-MM-DD");
-    return shiftsByDate[dateKey] || [];
-  }, [selectedDate, shiftsByDate]);
-
-  // Handle create registration
+  // Handle create registration for multiple positions
+  // Flow: Create 1 availability → Create N availability-positions
   const handleRegister = async () => {
     try {
+      if (selectedPositions.length === 0) {
+        message.warning("Vui lòng chọn ít nhất 1 vị trí");
+        return;
+      }
+
+      if (!selectedShift || !user?.id) {
+        message.error("Thiếu thông tin cần thiết");
+        return;
+      }
+
       const values = await form.validateFields();
 
-      createAvailability(
-        {
-          resource: "employee-availability",
-          values: {
-            employee_id: user?.employee_id,
-            shift_id: values.shift_id,
-            priority: userPriority, // Auto set by role
-            note: values.note || null,
+      // Step 1: Create availability record
+      const availabilityData: CreateEmployeeAvailabilityDto = {
+        employee_id: user?.employee?.id || "",
+        shift_id: selectedShift.id,
+        priority: 5,
+        note: values.note || null,
+        positions: selectedPositions,
+      };
+
+      const availabilityResult = await new Promise<any>((resolve, reject) => {
+        createAvailability(
+          {
+            resource: "employee-availability",
+            values: availabilityData,
           },
-        },
-        {
-          onSuccess: () => {
-            message.success("Đăng ký ca làm việc thành công!");
-            setRegisterModalOpen(false);
-            form.resetFields();
-            setSelectedDate(null);
-            availabilitiesQuery.refetch();
-          },
-          onError: (error: any) => {
-            message.error(error?.message || "Có lỗi xảy ra khi đăng ký");
-          },
-        }
+          {
+            onSuccess: (data) => resolve(data),
+            onError: (error) => reject(error),
+          }
+        );
+      });
+
+      const availabilityId = availabilityResult?.data?.id;
+
+      if (!availabilityId) {
+        throw new Error("Không tạo được availability");
+      }
+
+      // Step 2: Create availability-position records for each selected position
+      const positionPromises = selectedPositions.map((positionId, index) => {
+        const positionData: CreateEmployeeAvailabilityPositionDto = {
+          availability_id: availabilityId,
+          position_id: positionId,
+          preference_order: index + 1, // Order based on selection
+        };
+
+        return new Promise((resolve, reject) => {
+          createAvailability(
+            {
+              resource: "employee-availability-positions",
+              values: positionData,
+            },
+            {
+              onSuccess: resolve,
+              onError: reject,
+            }
+          );
+        });
+      });
+
+      await Promise.all(positionPromises);
+
+      message.success(
+        `Đăng ký thành công ${selectedPositions.length} vị trí cho ca làm việc!`
       );
-    } catch (error) {
-      console.error("Validation error:", error);
+      setRegisterModalOpen(false);
+      setSelectedShift(null);
+      setSelectedPositions([]);
+      form.resetFields();
+
+      // Refetch both lists
+      availabilitiesQuery.refetch();
+      availabilityPositionsQuery.refetch();
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      message.error(
+        error?.message || "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại."
+      );
     }
   };
 
-  // Handle delete
+  // Handle delete - deletes availability and cascade deletes positions
   const handleDelete = (id: string) => {
     deleteAvailability(
       {
@@ -223,42 +367,138 @@ export function AvailabilityRegistration() {
         onSuccess: () => {
           message.success("Xóa đăng ký thành công");
           availabilitiesQuery.refetch();
+          availabilityPositionsQuery.refetch();
         },
         onError: (error: any) => {
-          message.error(error?.message || "Có lỗi xảy ra");
+          message.error(error?.message || "Có lỗi xảy ra khi xóa đăng ký");
         },
       }
     );
   };
 
-  // Calendar cell render
-  const dateCellRender = (value: Dayjs) => {
-    const dateKey = value.format("YYYY-MM-DD");
-    const dayShifts = shiftsByDate[dateKey] || [];
+  // Render shift card
+  const renderShiftCard = (shift: Shift) => {
+    const shiftRequirements = requirementsByShift[shift.id] || [];
+    const userRegistered = userRegisteredPositions[shift.id] || new Set();
 
-    if (dayShifts.length === 0) return null;
+    if (shiftRequirements.length === 0) return null;
 
-    const registered = dayShifts.filter((s) => registeredShiftIds.has(s.id)).length;
-    const total = dayShifts.length;
+    // Get shift_type object (Directus populates shift_type_id as object)
+    const shiftType =
+      typeof shift.shift_type_id === "object"
+        ? shift.shift_type_id
+        : shift.shift_type;
 
     return (
-      <div style={{ fontSize: "12px" }}>
-        <Badge
-          status={registered > 0 ? "success" : "default"}
-          text={`${registered}/${total} ca`}
-        />
-      </div>
+      <Card
+        key={shift.id}
+        size="small"
+        style={{ marginBottom: 12 }}
+        hoverable
+        onClick={() => {
+          if (userRegistered.size === shiftRequirements.length) {
+            message.info("Bạn đã đăng ký tất cả vị trí trong ca này");
+            return;
+          }
+          setSelectedShift(shift);
+          setSelectedPositions([]);
+          setRegisterModalOpen(true);
+        }}
+      >
+        <Row gutter={16} align="middle">
+          <Col flex="auto">
+            <Space direction="vertical" size={4} style={{ width: "100%" }}>
+              <Text strong style={{ fontSize: 16 }}>
+                {dayjs(shift.shift_date).format("dddd, DD/MM/YYYY")}
+              </Text>
+              <Space>
+                {shiftType && (
+                  <Tag color={shiftType.color || "blue"}>{shiftType.name}</Tag>
+                )}
+                <Text type="secondary">
+                  {shiftType?.start_time || shift.start_at || "N/A"} -{" "}
+                  {shiftType?.end_time || shift.end_at || "N/A"}
+                </Text>
+              </Space>
+              <Space size={8} wrap>
+                {shiftRequirements.map((req) => {
+                  const registered =
+                    registeredCountByShiftPosition[shift.id]?.[
+                      req.position_id
+                    ] || 0;
+                  const isUserRegistered = userRegistered.has(req.position_id);
+                  const isFull = registered >= req.required_count;
+
+                  return (
+                    <Tag
+                      key={req.id}
+                      color={
+                        isUserRegistered
+                          ? "success"
+                          : isFull
+                          ? "default"
+                          : "processing"
+                      }
+                      icon={<TeamOutlined />}
+                    >
+                      {req.position?.name}: {registered}/{req.required_count}
+                      {isUserRegistered && " ✓"}
+                    </Tag>
+                  );
+                })}
+              </Space>
+            </Space>
+          </Col>
+          <Col>
+            {userRegistered.size > 0 &&
+            userRegistered.size === shiftRequirements.length ? (
+              <Tag color="success" icon={<CheckCircleOutlined />}>
+                Đã đăng ký đủ
+              </Tag>
+            ) : userRegistered.size > 0 ? (
+              <Tag color="warning" icon={<ClockCircleOutlined />}>
+                Đã đăng ký {userRegistered.size}/{shiftRequirements.length}
+              </Tag>
+            ) : (
+              <Button type="primary" icon={<PlusOutlined />}>
+                Đăng ký
+              </Button>
+            )}
+          </Col>
+        </Row>
+      </Card>
     );
+  };
+
+  const getDateTimeDisplay = (isoDateTime: string | null | undefined) => {
+    return isoDateTime ? dayjs(isoDateTime).format("DD/MM/YYYY HH:mm") : "N/A";
   };
 
   const getStatusTag = (status: string) => {
     const configs = {
-      pending: { color: "processing", icon: <ClockCircleOutlined />, text: "Chờ duyệt" },
-      approved: { color: "success", icon: <CheckCircleOutlined />, text: "Đã duyệt" },
+      pending: {
+        color: "processing",
+        icon: <ClockCircleOutlined />,
+        text: "Chờ duyệt",
+      },
+      approved: {
+        color: "success",
+        icon: <CheckCircleOutlined />,
+        text: "Đã duyệt",
+      },
       rejected: { color: "error", icon: <DeleteOutlined />, text: "Từ chối" },
     };
     const config = configs[status as keyof typeof configs] || configs.pending;
-    return <Tag color={config.color} icon={config.icon}>{config.text}</Tag>;
+    return (
+      <Tag color={config.color} icon={config.icon}>
+        {config.text}
+      </Tag>
+    );
+  };
+
+  // Get shift details for an availability
+  const getShiftForAvailability = (avail: EmployeeAvailability) => {
+    return shifts.find((s) => s.id === avail?.shift_id);
   };
 
   const columns = [
@@ -266,17 +506,36 @@ export function AvailabilityRegistration() {
       title: "Ca làm việc",
       key: "shift",
       render: (_: any, record: EmployeeAvailability) => {
-        const shift = record.shift;
+        const shift = getShiftForAvailability(record);
         if (!shift) return "N/A";
         return (
           <div>
             <div>
-              <strong>{shift.shift_type?.name || "Ca làm việc"}</strong>
+              <strong>Ca làm việc</strong>
             </div>
             <div style={{ fontSize: "12px", color: "#888" }}>
-              {dayjs(shift.shift_date).format("DD/MM/YYYY")} • {shift.start_time} - {shift.end_time}
+              {dayjs(shift.shift_date).format("DD/MM/YYYY")} •{" "}
+              {shift.start_at || "N/A"} - {shift.end_at || "N/A"}
             </div>
           </div>
+        );
+      },
+    },
+    {
+      title: "Vị trí đăng ký",
+      key: "positions",
+      render: (_: any, record: EmployeeAvailability) => {
+        const positions = positionsByAvailability[record.id] || [];
+        return positions.length > 0 ? (
+          <Space wrap>
+            {positions.map((posId, idx) => (
+              <Tag key={posId} color="blue">
+                Vị trí {idx + 1}
+              </Tag>
+            ))}
+          </Space>
+        ) : (
+          <Text type="secondary">Chưa có</Text>
         );
       },
     },
@@ -292,18 +551,11 @@ export function AvailabilityRegistration() {
       ),
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      width: 120,
-      render: (status: string) => getStatusTag(status),
-    },
-    {
       title: "Ngày đăng ký",
       dataIndex: "created_at",
       key: "created_at",
       width: 150,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY HH:mm"),
+      render: (date: string) => getDateTimeDisplay(date),
     },
     {
       title: "Thao tác",
@@ -323,19 +575,17 @@ export function AvailabilityRegistration() {
           >
             Chi tiết
           </Button>
-          {record.status === "pending" && (
-            <Popconfirm
-              title="Hủy đăng ký"
-              description="Bạn có chắc muốn hủy đăng ký này?"
-              onConfirm={() => handleDelete(record.id)}
-              okText="Hủy đăng ký"
-              cancelText="Không"
-            >
-              <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-                Hủy
-              </Button>
-            </Popconfirm>
-          )}
+          <Popconfirm
+            title="Hủy đăng ký"
+            description="Bạn có chắc muốn hủy đăng ký này?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Hủy đăng ký"
+            cancelText="Không"
+          >
+            <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+              Hủy
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -349,7 +599,8 @@ export function AvailabilityRegistration() {
           <CalendarOutlined /> Đăng ký Ca Làm Việc
         </Title>
         <Text type="secondary">
-          Chọn ngày trên lịch để xem và đăng ký ca làm việc. Độ ưu tiên được tự động thiết lập theo vị trí của bạn.
+          Chọn ngày trên lịch để xem và đăng ký ca làm việc. Độ ưu tiên được tự
+          động thiết lập theo vị trí của bạn.
         </Text>
       </div>
 
@@ -364,33 +615,33 @@ export function AvailabilityRegistration() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
-              title="Chờ duyệt"
-              value={stats.pending}
+              title="Tuần này"
+              value={stats.thisWeek}
               valueStyle={{ color: "#1890ff" }}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
-              title="Đã duyệt"
-              value={stats.approved}
+              title="Sắp tới"
+              value={stats.upcoming}
               valueStyle={{ color: "#3f8600" }}
               prefix={<CheckCircleOutlined />}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
-              title="Từ chối"
-              value={stats.rejected}
-              valueStyle={{ color: "#cf1322" }}
-              prefix={<DeleteOutlined />}
+              title="Tổng vị trí"
+              value={stats.totalPositions}
+              valueStyle={{ color: "#722ed1" }}
+              prefix={<TeamOutlined />}
             />
           </Card>
         </Col>
@@ -401,8 +652,7 @@ export function AvailabilityRegistration() {
         message={
           <Space>
             <InfoCircleOutlined />
-            <Text strong>Độ ưu tiên của bạn: {userPriority}/10</Text>
-            {user?.role && <Tag color="blue">{typeof user.role === 'string' ? user.role.toUpperCase() : String(user.role)}</Tag>}
+            <Text strong>Độ ưu tiên của bạn</Text>
           </Space>
         }
         description="Độ ưu tiên được tự động xác định dựa trên vai trò của bạn. Manager (10), Senior (7), Staff (5), Junior (3)."
@@ -411,7 +661,10 @@ export function AvailabilityRegistration() {
         style={{ marginBottom: "24px" }}
       />
 
-      {/* Calendar */}
+      {/* Available Shifts Calendar */}
+      {/* ... Các phần code khác giữ nguyên ... */}
+
+      {/* Available Shifts Calendar */}
       <Card
         title={
           <Space>
@@ -422,16 +675,147 @@ export function AvailabilityRegistration() {
         style={{ marginBottom: "24px" }}
       >
         <Calendar
-          cellRender={dateCellRender}
-          onSelect={(date) => {
+          dateCellRender={(date: Dayjs) => {
             const dateKey = date.format("YYYY-MM-DD");
             const dayShifts = shiftsByDate[dateKey] || [];
-            if (dayShifts.length > 0) {
-              setSelectedDate(date);
-              setRegisterModalOpen(true);
-            } else {
-              message.info("Không có ca làm việc nào trong ngày này");
-            }
+
+            if (dayShifts.length === 0) return null;
+
+            return (
+              <div
+                style={{
+                  // QUAN TRỌNG: Để auto để nó tự giãn theo nội dung
+                  height: "auto",
+                  width: "100%",
+                  padding: "2px 0",
+                }}
+              >
+                <Space direction="vertical" size={4} style={{ width: "100%" }}>
+                  {dayShifts.map((shift) => {
+                    const shiftRequirements =
+                      requirementsByShift[shift.id] || [];
+                    const userRegistered =
+                      userRegisteredPositions[shift.id] || new Set();
+                    const hasRegistered = userRegistered.size > 0;
+                    const isFullyRegistered =
+                      userRegistered.size === shiftRequirements.length &&
+                      shiftRequirements.length > 0;
+
+                    const shiftType =
+                      typeof shift.shift_type_id === "object"
+                        ? shift.shift_type_id
+                        : shift.shift_type;
+
+                    // Màu nền và viền
+                    const bgColor = isFullyRegistered
+                      ? "#f6ffed"
+                      : hasRegistered
+                      ? "#fff7e6"
+                      : "#f0f5ff";
+
+                    const borderColor = isFullyRegistered
+                      ? "#b7eb8f"
+                      : hasRegistered
+                      ? "#ffd591"
+                      : "#adc6ff";
+
+                    return (
+                      <div
+                        key={shift.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedShift(shift);
+                          setSelectedPositions([]);
+                          setRegisterModalOpen(true);
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          fontSize: 11,
+                          padding: "4px 8px", // Tăng padding ngang xíu cho thoáng
+                          borderRadius: 4,
+                          background: bgColor,
+                          border: `1px solid ${borderColor}`,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "2px",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.05)", // Thêm bóng nhẹ cho nổi bật
+                        }}
+                      >
+                        {/* Dòng 1: Tên ca + Icon */}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          {shiftType ? (
+                            <Tag
+                              color={shiftType.color || "blue"}
+                              style={{
+                                margin: 0,
+                                fontSize: 10,
+                                padding: "0 4px",
+                                lineHeight: "16px",
+                                border: "none",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {shiftType.name}
+                            </Tag>
+                          ) : (
+                            <span style={{ fontWeight: 600, fontSize: 10 }}>
+                              Ca làm việc
+                            </span>
+                          )}
+
+                          {/* Icon trạng thái */}
+                          {hasRegistered && (
+                            <Tooltip
+                              title={
+                                isFullyRegistered
+                                  ? "Đã đăng ký đủ"
+                                  : "Đã đăng ký 1 phần"
+                              }
+                            >
+                              <CheckCircleOutlined
+                                style={{
+                                  fontSize: 12,
+                                  color: isFullyRegistered
+                                    ? "#52c41a"
+                                    : "#faad14",
+                                }}
+                              />
+                            </Tooltip>
+                          )}
+                        </div>
+
+                        {/* Dòng 2: Thời gian */}
+                        <div
+                          style={{
+                            color: "#666",
+                            fontSize: 10,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <ClockCircleOutlined
+                            style={{ marginRight: 4, fontSize: 10 }}
+                          />
+                          {shiftType?.start_time || "..."} -{" "}
+                          {shiftType?.end_time || "..."}
+                        </div>
+
+                        {/* Dòng 3 (Optional): Hiển thị số lượng slot nếu cần thiết */}
+                        {/* <div style={{ fontSize: 9, color: '#888', textAlign: 'right' }}>
+                    Slot: {userRegistered.size}/{shiftRequirements.length}
+                </div> */}
+                      </div>
+                    );
+                  })}
+                </Space>
+              </div>
+            );
           }}
         />
       </Card>
@@ -452,70 +836,203 @@ export function AvailabilityRegistration() {
       <Modal
         title={
           <Space>
-            <CalendarOutlined />
-            <span>
-              Đăng ký Ca Làm Việc
-              {selectedDate && ` - ${selectedDate.format("DD/MM/YYYY")}`}
-            </span>
+            <TeamOutlined />
+            <span>Đăng ký Vị trí - Ca Làm Việc</span>
           </Space>
         }
         open={registerModalOpen}
         onCancel={() => {
           setRegisterModalOpen(false);
-          setSelectedDate(null);
+          setSelectedShift(null);
+          setSelectedPositions([]);
           form.resetFields();
         }}
         onOk={handleRegister}
-        width={600}
-        okText="Đăng ký"
+        width={700}
+        okText={`Đăng ký ${selectedPositions.length} vị trí`}
         cancelText="Hủy"
+        okButtonProps={{ disabled: selectedPositions.length === 0 }}
       >
-        <Form form={form} layout="vertical" style={{ marginTop: "24px" }}>
-          <Alert
-            message="Thông tin đăng ký"
-            description={
-              <Space direction="vertical" style={{ width: "100%" }}>
-                <Text>• Độ ưu tiên: <Tag color="blue">{userPriority}/10</Tag> (Tự động theo vai trò {user?.role})</Text>
-                <Text>• Chọn ca làm việc từ danh sách bên dưới</Text>
-              </Space>
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: "16px" }}
-          />
-
-          <Form.Item
-            label="Chọn ca làm việc"
-            name="shift_id"
-            rules={[{ required: true, message: "Vui lòng chọn ca" }]}
-          >
-            <Select
-              placeholder="Chọn ca làm việc"
-              loading={shiftsQuery.isLoading}
-            >
-              {shiftsForSelectedDate.map((shift) => {
-                const isRegistered = registeredShiftIds.has(shift.id);
-                return (
-                  <Select.Option
-                    key={shift.id}
-                    value={shift.id}
-                    disabled={isRegistered}
+        {selectedShift &&
+          (() => {
+            const shiftType =
+              typeof selectedShift.shift_type_id === "object"
+                ? selectedShift.shift_type_id
+                : selectedShift.shift_type;
+            return (
+              <div style={{ marginTop: 16 }}>
+                {/* Shift Info */}
+                <Card
+                  size="small"
+                  style={{ marginBottom: 16, background: "#f0f5ff" }}
+                >
+                  <Space
+                    direction="vertical"
+                    size={4}
+                    style={{ width: "100%" }}
                   >
+                    <Text strong style={{ fontSize: 16 }}>
+                      {dayjs(selectedShift.shift_date).format(
+                        "dddd, DD/MM/YYYY"
+                      )}
+                    </Text>
                     <Space>
-                      <span>{shift.shift_type?.name || "Ca làm việc"}</span>
-                      <span style={{ color: "#888" }}>({shift.start_time} - {shift.end_time})</span>
-                      {isRegistered && <Tag color="green">Đã đăng ký</Tag>}
+                      {shiftType && (
+                        <Tag color={shiftType.color || "blue"}>
+                          {shiftType.name}
+                        </Tag>
+                      )}
+                      <Text type="secondary">
+                        {shiftType?.start_time ||
+                          selectedShift.start_at ||
+                          "N/A"}{" "}
+                        - {shiftType?.end_time || selectedShift.end_at || "N/A"}
+                      </Text>
                     </Space>
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          </Form.Item>
+                  </Space>
+                </Card>
 
-          <Form.Item label="Ghi chú (không bắt buộc)" name="note">
-            <TextArea rows={3} placeholder="Ghi chú về khả năng làm việc của bạn..." />
-          </Form.Item>
-        </Form>
+                <Alert
+                  message="Thông tin đăng ký"
+                  description={
+                    <Space direction="vertical" style={{ width: "100%" }}>
+                      <Text>• Độ ưu tiên: (Tự động theo vai trò )</Text>
+                      <Text>• Bạn có thể chọn nhiều vị trí cùng lúc</Text>
+                      <Text>• Mỗi vị trí sẽ được tạo một đăng ký riêng</Text>
+                    </Space>
+                  }
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+
+                {/* Position Selection */}
+                <div style={{ marginBottom: 16 }}>
+                  <Text strong style={{ marginBottom: 8, display: "block" }}>
+                    Chọn vị trí muốn đăng ký:
+                  </Text>
+                  <Space
+                    direction="vertical"
+                    size={8}
+                    style={{ width: "100%" }}
+                  >
+                    {(requirementsByShift[selectedShift.id] || []).map(
+                      (req) => {
+                        const registered =
+                          registeredCountByShiftPosition[selectedShift.id]?.[
+                            req.position_id
+                          ] || 0;
+                        const userRegistered = userRegisteredPositions[
+                          selectedShift.id
+                        ]?.has(req.position_id);
+                        const isFull = registered >= req.required_count;
+                        const isSelected = selectedPositions.includes(
+                          req.position_id
+                        );
+
+                        return (
+                          <Card
+                            key={req.id}
+                            size="small"
+                            style={{
+                              border: isSelected
+                                ? "2px solid #1890ff"
+                                : undefined,
+                              background: userRegistered
+                                ? "#f6ffed"
+                                : undefined,
+                            }}
+                          >
+                            <Row align="middle" gutter={16}>
+                              <Col flex="auto">
+                                <Checkbox
+                                  checked={isSelected}
+                                  disabled={userRegistered || isFull}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPositions([
+                                        ...selectedPositions,
+                                        req.position_id,
+                                      ]);
+                                    } else {
+                                      setSelectedPositions(
+                                        selectedPositions.filter(
+                                          (id) => id !== req.position_id
+                                        )
+                                      );
+                                    }
+                                  }}
+                                >
+                                  <Space direction="vertical" size={2}>
+                                    <Text strong>{req.position?.name}</Text>
+                                    {req.position?.description && (
+                                      <Text
+                                        type="secondary"
+                                        style={{ fontSize: 12 }}
+                                      >
+                                        {req.position.description}
+                                      </Text>
+                                    )}
+                                  </Space>
+                                </Checkbox>
+                              </Col>
+                              <Col>
+                                <Space
+                                  direction="vertical"
+                                  size={4}
+                                  align="end"
+                                >
+                                  <Progress
+                                    type="circle"
+                                    percent={Math.round(
+                                      (registered / req.required_count) * 100
+                                    )}
+                                    width={50}
+                                    format={() =>
+                                      `${registered}/${req.required_count}`
+                                    }
+                                    status={isFull ? "success" : "normal"}
+                                  />
+                                  {userRegistered && (
+                                    <Tag
+                                      color="success"
+                                      icon={<CheckCircleOutlined />}
+                                    >
+                                      Đã đăng ký
+                                    </Tag>
+                                  )}
+                                  {!userRegistered && isFull && (
+                                    <Tag color="default">Đã đủ người</Tag>
+                                  )}
+                                </Space>
+                              </Col>
+                            </Row>
+                            {req.notes && (
+                              <Alert
+                                message={req.notes}
+                                type="info"
+                                showIcon
+                                style={{ marginTop: 8 }}
+                              />
+                            )}
+                          </Card>
+                        );
+                      }
+                    )}
+                  </Space>
+                </div>
+
+                <Form form={form} layout="vertical">
+                  <Form.Item label="Ghi chú chung (không bắt buộc)" name="note">
+                    <TextArea
+                      rows={3}
+                      placeholder="Ghi chú về khả năng làm việc, kinh nghiệm với các vị trí đã chọn..."
+                    />
+                  </Form.Item>
+                </Form>
+              </div>
+            );
+          })()}
       </Modal>
 
       {/* View Modal */}
@@ -526,30 +1043,54 @@ export function AvailabilityRegistration() {
           setViewModalOpen(false);
           setSelectedAvailability(null);
         }}
-        footer={
-          <Button onClick={() => setViewModalOpen(false)}>Đóng</Button>
-        }
+        footer={<Button onClick={() => setViewModalOpen(false)}>Đóng</Button>}
         width={600}
       >
         {selectedAvailability && (
           <Descriptions column={1} bordered>
             <Descriptions.Item label="Ca làm việc">
               {(() => {
-                const shift = selectedAvailability.shift;
+                const shift = getShiftForAvailability(selectedAvailability);
                 if (!shift) return "N/A";
-                return `${shift.shift_type?.name || "Ca làm việc"} - ${dayjs(shift.shift_date).format("DD/MM/YYYY")} (${shift.start_time} - ${shift.end_time})`;
+                return `Ca làm việc - ${dayjs(shift.shift_date).format(
+                  "DD/MM/YYYY"
+                )} (${shift.start_at || "N/A"} - ${shift.end_at || "N/A"})`;
+              })()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Vị trí đăng ký">
+              {(() => {
+                const positions =
+                  positionsByAvailability[selectedAvailability.id] || [];
+                return positions.length > 0 ? (
+                  <Space wrap>
+                    {positions.map((posId, idx) => (
+                      <Tag key={posId} color="blue">
+                        Vị trí {idx + 1}
+                      </Tag>
+                    ))}
+                  </Space>
+                ) : (
+                  <Text type="secondary">Chưa có</Text>
+                );
               })()}
             </Descriptions.Item>
             <Descriptions.Item label="Độ ưu tiên">
-              <Tag color={selectedAvailability.priority && selectedAvailability.priority >= 8 ? "red" : selectedAvailability.priority && selectedAvailability.priority >= 5 ? "blue" : "default"}>
+              <Tag
+                color={
+                  selectedAvailability.priority &&
+                  selectedAvailability.priority >= 8
+                    ? "red"
+                    : selectedAvailability.priority &&
+                      selectedAvailability.priority >= 5
+                    ? "blue"
+                    : "default"
+                }
+              >
                 {selectedAvailability.priority || 5}/10
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              {getStatusTag(selectedAvailability.status)}
-            </Descriptions.Item>
             <Descriptions.Item label="Ngày đăng ký">
-              {dayjs(selectedAvailability.created_at).format("DD/MM/YYYY HH:mm")}
+              {getDateTimeDisplay(selectedAvailability.created_at)}
             </Descriptions.Item>
             {selectedAvailability.note && (
               <Descriptions.Item label="Ghi chú">

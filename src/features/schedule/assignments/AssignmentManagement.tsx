@@ -127,13 +127,13 @@ export function AssignmentManagement() {
   // Fetch weekly schedules (published only)
   const { query: schedulesQuery } = useList<WeeklySchedule>({
     resource: "weekly-schedules",
-    filters: [
-      {
-        field: "status",
-        operator: "eq",
-        value: "published",
-      },
-    ],
+    // filters: [
+    //   {
+    //     field: "status",
+    //     operator: "eq",
+    //     value: "published",
+    //   },
+    // ],
   });
 
   // Fetch shifts for selected schedule
