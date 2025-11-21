@@ -8,6 +8,8 @@ export interface ShiftType {
   name: string;
   start_time: string; // HH:mm:ss format
   end_time: string; // HH:mm:ss format
+  color: string | null;
+  description: string | null;
   cross_midnight: boolean | null;
   notes: string | null;
   created_at: string | null;

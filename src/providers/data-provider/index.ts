@@ -8,8 +8,10 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
     const url = `/${resource}`;
 
     // Refine v5 pagination API
-    const current = (pagination as any)?.current ?? (pagination as any)?.page ?? 1;
-    const pageSize = (pagination as any)?.pageSize ?? (pagination as any)?.limit ?? 10;
+    const current =
+      (pagination as any)?.current ?? (pagination as any)?.page ?? 1;
+    const pageSize =
+      (pagination as any)?.pageSize ?? (pagination as any)?.limit ?? 10;
 
     const params: any = {
       page: current,
@@ -32,14 +34,37 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
       params.sort = `${sortOrder}${sortField}`;
     }
 
+    // Handle meta.fields - for Directus field selection
+    if (meta?.fields && Array.isArray(meta.fields)) {
+      params.fields = meta.fields.join(',');
+    }
+
     try {
-      const response = await axiosClient.get<ListResponseAPI<any>>(url, { params });
+      const response = await axiosClient.get<ListResponseAPI<any>>(url, {
+        params,
+      });
       const data = response.data;
 
+      console.log(`[DataProvider] getList ${resource}:`, {
+        responseData: data,
+        items: data.data?.items,
+        total: data.data?.total,
+      });
+
       // BE returns: { statusCode, message, data: { items, total, page, limit, total_pages }, is_success }
+      // Or wrapped in success: { success: true, data: {...}, message }
+      const actualData =
+        (data as any).success !== undefined ? (data as any).data : data.data;
+
       return {
-        data: data.data?.items || [],
-        total: data.data?.total || 0,
+        data: actualData?.items || [],
+        total: actualData?.total || 0,
+        // ⚠️ Quan trọng: cần để refine hiểu pagination
+        meta: {
+          current: actualData?.page ?? current,
+          pageSize: actualData?.limit ?? pageSize,
+          totalPages: actualData?.total_pages,
+        },
       };
     } catch (error: any) {
       console.error("getList error:", error);
@@ -84,7 +109,10 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
     const url = `/${resource}/${id}`;
 
     try {
-      const response = await axiosClient.patch<ResponseAPI<any>>(url, variables);
+      const response = await axiosClient.patch<ResponseAPI<any>>(
+        url,
+        variables
+      );
       const data = response.data;
 
       return {
@@ -114,7 +142,15 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
 
   getApiUrl: () => apiUrl,
 
-  custom: async ({ url, method, filters, sorters, payload, query, headers }) => {
+  custom: async ({
+    url,
+    method,
+    filters,
+    sorters,
+    payload,
+    query,
+    headers,
+  }) => {
     let requestUrl = url.startsWith("/") ? url : `/${url}`;
 
     try {

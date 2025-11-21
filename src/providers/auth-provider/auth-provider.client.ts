@@ -3,7 +3,8 @@
 import { AuthProvider } from "@refinedev/core";
 import axiosClient from "@/axios-config/apiClient";
 import { tokenManager } from "@/axios-config/utils/token-manager";
-import { User } from "../../types/auth";
+import { User, UserIdentity } from "../../types/auth";
+import { get, post } from "@axios-config";
 
 export const authProviderClient: AuthProvider = {
   login: async ({ email, password, username }) => {
@@ -14,11 +15,13 @@ export const authProviderClient: AuthProvider = {
       }
 
       // Gọi API login của HRMS_BE
-      const response = await axiosClient.post<ResponseAPI<{
-        token: string;
-        refresh_token: string;
-        user?: User;
-      }>>("/auth/login", {
+      const response = await axiosClient.post<
+        ResponseAPI<{
+          token: string;
+          refresh_token: string;
+          user?: User;
+        }>
+      >("/auth/login", {
         email: loginIdentifier,
         password,
       });
@@ -61,17 +64,23 @@ export const authProviderClient: AuthProvider = {
         throw new Error("Email và password là bắt buộc");
       }
 
-      const response = await axiosClient.post<ResponseAPI<User>>("/auth/register", {
-        email,
-        password,
-        first_name,
-        last_name,
-        ...otherFields,
-      });
+      const response = await post<
+        ResponseAPI<User>,
+        { email: string; password: string; first_name?: string; last_name?: string; [key: string]: any }
+      >(
+        "/auth/register",
+        {
+          email,
+          password,
+          first_name,
+          last_name,
+          ...otherFields,
+        }
+      );
 
       const data = response.data;
 
-      if (data.is_success) {
+      if (response.is_success) {
         return {
           success: true,
           redirectTo: "/login",
@@ -79,7 +88,9 @@ export const authProviderClient: AuthProvider = {
       }
 
       throw new Error(
-        Array.isArray(data?.message) ? data.message.join(", ") : data?.message || "Đăng ký thất bại"
+        Array.isArray(response?.message)
+          ? response.message.join(", ")
+          : response?.message || "Đăng ký thất bại"
       );
     } catch (error: any) {
       console.error("Register error:", error);
@@ -94,7 +105,7 @@ export const authProviderClient: AuthProvider = {
       // Gọi API logout của HRMS_BE
       if (tokenManager.isAuthenticated()) {
         try {
-          await axiosClient.post("/auth/logout");
+          await post("/auth/logout");
         } catch (error) {
           console.error("Logout API error:", error);
         }
@@ -122,9 +133,12 @@ export const authProviderClient: AuthProvider = {
         throw new Error("Email bắt buộc");
       }
 
-      const response = await axiosClient.post<ResponseAPI<any>>("/auth/forgot-password", {
-        email,
-      });
+      const response = await post<ResponseAPI<any>, { email: string }>(
+        "/auth/forgot-password",
+        {
+          email,
+        }
+      );
       const data = response.data;
 
       if (data.is_success) {
@@ -132,7 +146,9 @@ export const authProviderClient: AuthProvider = {
       }
 
       throw new Error(
-        Array.isArray(data?.message) ? data.message.join(", ") : data?.message || "Quên mật khẩu thất bại"
+        Array.isArray(data?.message)
+          ? data.message.join(", ")
+          : data?.message || "Quên mật khẩu thất bại"
       );
     } catch (error: any) {
       console.error("Forgot password error:", error);
@@ -150,7 +166,10 @@ export const authProviderClient: AuthProvider = {
         throw new Error("Password bắt buộc");
       }
 
-      const response = await axiosClient.post<ResponseAPI<any>>("/auth/reset-password", {
+      const response = await post<
+        ResponseAPI<any>,
+        { token: string; password: string }
+      >("/auth/reset-password", {
         token,
         password,
       });
@@ -162,7 +181,9 @@ export const authProviderClient: AuthProvider = {
       }
 
       throw new Error(
-        Array.isArray(data?.message) ? data.message.join(", ") : data?.message || "Đổi mật khẩu thất bại"
+        Array.isArray(data?.message)
+          ? data.message.join(", ")
+          : data?.message || "Đổi mật khẩu thất bại"
       );
     } catch (error: any) {
       console.error("Update password error:", error);
@@ -184,9 +205,9 @@ export const authProviderClient: AuthProvider = {
       }
 
       // Kiểm tra token với BE
-      const res = await axiosClient.get<ResponseAPI<User>>("/users/me");
+      const res = await get<ResponseAPI<User>>("/users/me");
 
-      const user = res.data?.data;
+      const user = res.data;
       if (user && user.id) {
         return { authenticated: true };
       }
@@ -207,9 +228,9 @@ export const authProviderClient: AuthProvider = {
     try {
       if (!tokenManager.isAuthenticated()) return null;
 
-      const res = await axiosClient.get<ResponseAPI<User>>("/users/me");
+      const res = await get<ResponseAPI<UserIdentity>>("/users/me");
 
-      const roles = [res?.data?.data?.role?.name?.toLowerCase()];
+      const roles = [res?.data.role?.name];
       return roles || [];
     } catch {
       return [];
@@ -222,22 +243,22 @@ export const authProviderClient: AuthProvider = {
         throw new Error("No token found");
       }
 
+      // Call /users/me endpoint which now returns full identity
+      // Including: User + Employee + Role + Policies + Permissions
       const response = await axiosClient.get<ResponseAPI<User>>("/users/me");
 
-      const data = response.data?.data;
-      if (!data) {
+      const identity = response.data?.data;
+      if (!identity) {
         throw new Error("No user data found");
       }
 
-      // Populate role with full data if needed
-      // TODO: Backend should return populated role with permissions
-      return {
-        ...data,
-        name:
-          data.first_name && data.last_name
-            ? `${data.first_name} ${data.last_name}`
-            : data.email,
-      };
+      // Backend already returns full identity with:
+      // - employee: Employee object (if linked)
+      // - role: RoleWithPermissions (với policies và permissions)
+      // - permissions: Permission[] (flattened từ role → policies → permissions)
+      // - is_admin: boolean
+      // - can_access_app: boolean
+      return identity;
     } catch (error) {
       console.error("Get identity error:", error);
       throw error;
