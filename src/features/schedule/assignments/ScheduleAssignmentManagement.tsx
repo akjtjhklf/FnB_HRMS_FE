@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useList, useCreate, useUpdate, useDelete, useGetIdentity } from "@refinedev/core";
+import { useSelect } from "@refinedev/antd";
 import {
   Card,
   Button,
@@ -19,6 +20,8 @@ import {
   Alert,
   Progress,
   List,
+  Drawer,
+  Divider,
 } from "antd";
 import {
   UserOutlined,
@@ -30,6 +33,8 @@ import {
   DragOutlined,
   WarningOutlined,
   InfoCircleOutlined,
+  PlusOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
@@ -39,6 +44,7 @@ import type {
   CreateScheduleAssignmentDto,
   AutoScheduleDto,
 } from "@/types/schedule/schedule-assignment.types";
+import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
 // Employee and Position will be typed as any for now
 type Employee = any;
 type Position = any;
@@ -64,9 +70,15 @@ export function ScheduleAssignmentManagement() {
   const [draggedEmployee, setDraggedEmployee] = useState<Employee | null>(null);
 
   // Fetch data
-  const { query: schedulesQuery } = useList<WeeklySchedule>({
+  const { selectProps: schedulesSelectProps } = useSelect<WeeklySchedule>({
     resource: "weekly-schedules",
-    filters: [{ field: "status", operator: "in", value: ["published"] }],
+    optionLabel: (record: any) => `Tuần ${dayjs(record.week_start).format("DD/MM")} - ${dayjs(record.week_end).format("DD/MM")}`,
+  });
+  
+  const { query: shiftTypesQuery } = useList({
+    resource: "shift-types",
+    pagination: { pageSize: 100 },
+    meta: { fields: ["*"] },
   });
 
   const { query: shiftsQuery } = useList<Shift>({
@@ -103,13 +115,24 @@ export function ScheduleAssignmentManagement() {
     pagination: { mode: "off" },
   });
 
+  // Extract data from queries first
+  const schedules = schedulesSelectProps.options?.map((opt: any) => opt.value) || [];
+  const shifts = shiftsQuery.data?.data || [];
+  const shiftTypes = shiftTypesQuery.data?.data || [];
+  
+  // Get shift IDs from current schedule's shifts (needed for availabilities query)
+  const shiftIds = shifts.map((s: any) => s.id);
+
   const { query: availabilitiesQuery } = useList<EmployeeAvailability>({
     resource: "employee-availability",
-    filters: selectedSchedule
-      ? [{ field: "schedule_id", operator: "eq", value: selectedSchedule }]
+    filters: shiftIds.length > 0
+      ? [{ field: "shift_id", operator: "in", value: shiftIds }]
       : [],
+    pagination: {
+      pageSize: 1000, // Increase to ensure we get all records
+    },
     queryOptions: {
-      enabled: !!selectedSchedule,
+      enabled: shiftIds.length > 0,
     },
   });
 
@@ -120,23 +143,33 @@ export function ScheduleAssignmentManagement() {
   // Workflow hooks
   const { readiness, canPublish, coverageRate, issues, refetch: refetchReadiness } = useScheduleReadiness(selectedSchedule);
   const { autoSchedule } = useAutoSchedule();
-
-  const schedules = schedulesQuery.data?.data || [];
-  const shifts = shiftsQuery.data?.data || [];
   const assignments = assignmentsQuery.data?.data || [];
   const employees = employeesQuery.data?.data || [];
   const positions = positionsQuery.data?.data || [];
   const availabilities = availabilitiesQuery.data?.data || [];
 
+  // Debug logging
+  console.log("🔍 Admin Schedule Assignment Debug:", {
+    selectedSchedule,
+    shiftsCount: shifts.length,
+    shiftIds,
+    availabilitiesCount: availabilities.length,
+    availabilitiesQueryEnabled: shiftIds.length > 0,
+    availabilitiesQueryLoading: availabilitiesQuery.isLoading,
+    availabilitiesQueryError: availabilitiesQuery.error,
+    availabilitiesData: availabilities.slice(0, 2), // First 2 records
+  });
+
   // Group shifts by day
   const shiftsByDay = useMemo(() => {
+    const shiftsData = shiftsQuery.data?.data || [];
     return DAYS_OF_WEEK.map((day) => ({
       ...day,
-      shifts: shifts
+      shifts: shiftsData
         .filter((s: any) => dayjs(s.shift_date).day() === day.value)
         .sort((a: any, b: any) => (a.start_at || "").localeCompare(b.start_at || "")),
     }));
-  }, [shifts]);
+  }, [shiftsQuery.data?.data]);
 
   // Get assignments for a shift
   const getShiftAssignments = (shiftId: string) => {
@@ -146,7 +179,7 @@ export function ScheduleAssignmentManagement() {
   // Get available employees for a shift (registered availability)
   const getAvailableEmployees = (shiftId: string) => {
     const shiftAvailabilities = availabilities.filter(
-      (av: any) => av.shift_id === shiftId && av.status === "registered"
+      (av: any) => av.shift_id === shiftId
     );
     return employees.filter((emp: any) =>
       shiftAvailabilities.some((av: any) => av.employee_id === emp.id)
@@ -178,10 +211,9 @@ export function ScheduleAssignmentManagement() {
 
     // Check if employee registered for this shift
     const hasAvailability = availabilities.some(
-      (av: any) =>
+      (av: EmployeeAvailability) =>
         av.shift_id === shift.id &&
-        av.employee_id === draggedEmployee.id &&
-        av.status === "registered"
+        av.employee_id === draggedEmployee.id
     );
 
     if (!hasAvailability) {
@@ -192,7 +224,7 @@ export function ScheduleAssignmentManagement() {
 
     // Get employee's position from availability
     const availability = availabilities.find(
-      (av: any) => av.shift_id === shift.id && av.employee_id === draggedEmployee.id
+      (av: EmployeeAvailability) => av.shift_id === shift.id && av.employee_id === draggedEmployee.id
     );
 
     if (!availability) {
@@ -307,14 +339,13 @@ export function ScheduleAssignmentManagement() {
         <div className="mt-4">
           <Select
             placeholder="Chọn lịch tuần"
-            value={selectedSchedule}
-            onChange={setSelectedSchedule}
             className="w-full md:w-96"
             size="large"
-            options={schedules.map((s: any) => ({
-              label: `${s.schedule_name} (${dayjs(s.start_date).format("DD/MM")} - ${dayjs(s.end_date).format("DD/MM")})`,
-              value: s.id,
-            }))}
+            value={selectedSchedule || undefined}
+            onChange={(value) => setSelectedSchedule(value as string)}
+            options={schedulesSelectProps.options}
+            loading={schedulesSelectProps.loading}
+            onSearch={schedulesSelectProps.onSearch}
           />
         </div>
       </Card>
@@ -475,12 +506,12 @@ export function ScheduleAssignmentManagement() {
                                   color={
                                     typeof shift.shift_type === "object"
                                       ? shift.shift_type.color_code
-                                      : "default"
+                                      : shiftTypes.find((st: any) => st.id === shift.shift_type_id)?.color_code || "default"
                                   }
                                 >
                                   {typeof shift.shift_type === "object"
                                     ? shift.shift_type.type_name
-                                    : "N/A"}
+                                    : shiftTypes.find((st: any) => st.id === shift.shift_type_id)?.type_name || "N/A"}
                                 </Tag>
                                 <Badge
                                   count={`${assignedCount}/${requiredCount}`}
@@ -496,7 +527,18 @@ export function ScheduleAssignmentManagement() {
                               </div>
 
                               <div className="text-xs text-gray-600">
-                                {shift.start_at} - {shift.end_at}
+                                {(() => {
+                                  const shiftType = typeof shift.shift_type === "object"
+                                    ? shift.shift_type
+                                    : shiftTypes.find((st: any) => st.id === shift.shift_type_id);
+                                  const startTime = shift.start_at 
+                                    ? (shift.start_at.includes('T') ? dayjs(shift.start_at).format('HH:mm') : shift.start_at.substring(0, 5))
+                                    : (shiftType?.start_at ? (shiftType.start_at.includes('T') ? dayjs(shiftType.start_at).format('HH:mm') : shiftType.start_at.substring(0, 5)) : "N/A");
+                                  const endTime = shift.end_at
+                                    ? (shift.end_at.includes('T') ? dayjs(shift.end_at).format('HH:mm') : shift.end_at.substring(0, 5))
+                                    : (shiftType?.end_at ? (shiftType.end_at.includes('T') ? dayjs(shiftType.end_at).format('HH:mm') : shiftType.end_at.substring(0, 5)) : "N/A");
+                                  return `${startTime} - ${endTime}`;
+                                })()}
                               </div>
 
                               {/* Assigned Employees */}

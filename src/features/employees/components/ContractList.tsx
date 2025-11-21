@@ -27,12 +27,14 @@ import {
 import { useState } from "react";
 import { formatDate } from "@/lib/utils";
 import dayjs from "dayjs";
+import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface ContractListProps {
   employeeId: string;
 }
 
 export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
+  const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [form] = Form.useForm();
@@ -84,29 +86,33 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
   };
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
+    openConfirm({
       title: "Xác nhận xóa hợp đồng",
       content: "Bạn có chắc chắn muốn xóa hợp đồng này?",
       okText: "Xóa",
-      okType: "danger",
       cancelText: "Hủy",
-      onOk: () => {
-        deleteContract(
-          {
-            resource: "contracts",
-            id,
-          },
-          {
-            onSuccess: () => {
-              message.success("Xóa hợp đồng thành công!");
+      type: "danger",
+      onConfirm: async () => {
+        await new Promise((resolve, reject) => {
+          deleteContract(
+            {
+              resource: "contracts",
+              id,
             },
-            onError: (error: any) => {
-              message.error(
-                error?.message || "Có lỗi xảy ra khi xóa hợp đồng!"
-              );
-            },
-          }
-        );
+            {
+              onSuccess: () => {
+                message.success("Xóa hợp đồng thành công!");
+                resolve(true);
+              },
+              onError: (error: any) => {
+                message.error(
+                  error?.message || "Có lỗi xảy ra khi xóa hợp đồng!"
+                );
+                reject(error);
+              },
+            }
+          );
+        });
       },
     });
   };

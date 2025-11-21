@@ -240,13 +240,13 @@ export const ProfileShow = () => {
                                 <p className="text-gray-500 text-sm">Địa chỉ</p>
                                 <p className="font-medium">{employeeData.address || "-"}</p>
                               </div>
-                              <div>
+                              {/* <div>
                                 <p className="text-gray-500 text-sm">Liên hệ khẩn cấp</p>
                                 <p className="font-medium">
                                   {employeeData.emergency_contact_phone ? 
                                     formatPhoneNumber(employeeData.emergency_contact_phone) : "-"}
                                 </p>
-                              </div>
+                              </div> */}
                             </Space>
                           </Card>
 

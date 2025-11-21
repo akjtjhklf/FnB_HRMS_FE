@@ -1,6 +1,8 @@
 "use client";
 
-import { ScheduleAssignmentManagement } from "@features/schedule/assignments/ScheduleAssignmentManagement";
+import ScheduleAssignmentManagement from "@features/schedule/assignments/ScheduleAssignmentManagementNew";
+
+// import { ScheduleAssignmentManagement } from "@features/schedule/assignments/ScheduleAssignmentManagement";
 
 export default function AssignmentsPage() {
   return <ScheduleAssignmentManagement />;

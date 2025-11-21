@@ -30,6 +30,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
             routerProvider={routerProvider}
             dataProvider={dataProvider(API_URL)}
             authProvider={authProvider}
+            
             resources={[
               // ========== HR CORE ==========
               {
@@ -212,6 +213,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
               projectId: "hrms-frontend",
+              
             }}
           >
             {children}

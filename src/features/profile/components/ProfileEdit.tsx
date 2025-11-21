@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, useGetIdentity } from "@refinedev/core";
+import { Link, useForm, useGetIdentity } from "@refinedev/core";
 import { Employee } from "@/types/employee";
 import {
   Form,
@@ -23,6 +23,7 @@ import {
   UploadOutlined,
   SaveOutlined,
   CloseOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
 import React, { useState } from "react";
 import dayjs from "dayjs";
@@ -116,6 +117,15 @@ export const ProfileEdit: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="mb-6">
+          <Link
+            href={`/profile`}
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <ArrowLeftOutlined className="mr-2" />
+            Quay lại
+          </Link>
+        </div>
       <div className="max-w-5xl mx-auto">
         <Form
           {...formProps}
@@ -275,7 +285,7 @@ export const ProfileEdit: React.FC = () => {
           </Card>
 
           {/* Emergency Contact */}
-          <Card title="🚨 Liên hệ khẩn cấp" className="mb-6">
+          {/* <Card title="🚨 Liên hệ khẩn cấp" className="mb-6">
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12}>
                 <Form.Item label="Tên người liên hệ" name="emergency_contact_name">
@@ -300,7 +310,7 @@ export const ProfileEdit: React.FC = () => {
                 </Form.Item>
               </Col>
             </Row>
-          </Card>
+          </Card> */}
 
           {/* Additional Notes */}
           <Card title="📝 Ghi chú" className="mb-6">

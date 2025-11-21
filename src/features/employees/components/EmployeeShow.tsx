@@ -2,12 +2,11 @@
 
 import { useShow, useDelete, useList } from "@refinedev/core";
 import { Employee, Contract } from "@/types/employee";
-import { Button, Avatar, Tag, Tabs, Card, Space, Modal, message } from "antd";
+import { Button, Avatar, Tag, Tabs, Card, Space, message } from "antd";
 import { 
   ArrowLeftOutlined, 
   EditOutlined, 
   DeleteOutlined,
-  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { 
   Mail, 
@@ -23,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { formatDate, formatPhoneNumber } from "@/lib/utils";
 import { ContractList } from "./ContractList";
 import { WorkHistoryTab } from "@/features/profile/components/WorkHistoryTab";
+import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface EmployeeShowProps {
   id: string;
@@ -30,7 +30,7 @@ interface EmployeeShowProps {
 
 export const EmployeeShow = ({ id }: EmployeeShowProps) => {
   const router = useRouter();
-  const [modal, contextHolder] = Modal.useModal();
+  const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   
   const { query } = useShow<Employee>({
     resource: "employees",
@@ -42,29 +42,32 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
   const { mutate: deleteEmployee } = useDelete();
 
   const handleDelete = () => {
-    modal.confirm({
+    openConfirm({
       title: "Xác nhận xóa nhân viên",
-      icon: <ExclamationCircleOutlined />,
       content: "Bạn có chắc chắn muốn xóa nhân viên này? Hành động này không thể hoàn tác.",
       okText: "Xóa",
-      okType: "danger",
       cancelText: "Hủy",
-      onOk() {
-        deleteEmployee(
-          {
-            resource: "employees",
-            id,
-          },
-          {
-            onSuccess: () => {
-              message.success("Xóa nhân viên thành công!");
-              router.push("/employees");
+      type: "danger",
+      onConfirm: async () => {
+        await new Promise((resolve, reject) => {
+          deleteEmployee(
+            {
+              resource: "employees",
+              id,
             },
-            onError: (error: any) => {
-              message.error(error?.message || "Có lỗi xảy ra khi xóa nhân viên!");
-            },
-          }
-        );
+            {
+              onSuccess: () => {
+                message.success("Xóa nhân viên thành công!");
+                router.push("/employees");
+                resolve(true);
+              },
+              onError: (error: any) => {
+                message.error(error?.message || "Có lỗi xảy ra khi xóa nhân viên!");
+                reject(error);
+              },
+            }
+          );
+        });
       },
     });
   };
@@ -95,7 +98,6 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
 
   return (
     <>
-      {contextHolder}
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
