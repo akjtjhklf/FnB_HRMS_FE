@@ -102,7 +102,7 @@ export function WeeklySchedulesManagement() {
   } = useTable<WeeklySchedule>({
     resource: "weekly-schedules",
     pagination: {
-      currentPage: 1,
+      // currentPage: 1,
       pageSize: 10,
     },
     // sorters: {

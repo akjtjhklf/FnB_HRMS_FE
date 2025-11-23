@@ -116,10 +116,10 @@ export function ShiftsManagement() {
   });
   const shiftsData = shiftsQuery.data?.data || [];
   const isLoading = shiftsQuery.isLoading;
-  
+
   // Get shift IDs from current schedule's shifts
   const shiftIds = shiftsData.map((s: any) => s.id);
-  
+
   // Query requirements filtered by shift IDs (only when we have shifts)
   const { query: requirementsQuery } = useList<ShiftPositionRequirement>({
     resource: "shift-position-requirements",
@@ -187,9 +187,9 @@ export function ShiftsManagement() {
   );
   const scheduleStartDate = selectedScheduleInfo
     ? dayjs(
-        (selectedScheduleInfo as any).week_start ||
-          (selectedScheduleInfo as any).start_date
-      )
+      (selectedScheduleInfo as any).week_start ||
+      (selectedScheduleInfo as any).start_date
+    )
     : null;
 
   // Group shifts by day with actual dates
@@ -213,28 +213,28 @@ export function ShiftsManagement() {
   const handleOpenModal = (shift?: Shift, dayOfWeek?: number) => {
     if (shift) {
       setEditingShift(shift);
-      
+
       // Get shift_type to fill missing times
       const shiftType = typeof shift.shift_type === "object"
         ? shift.shift_type
         : shiftTypes.find((st: any) => st.id === shift.shift_type_id);
-      
-      console.log("🔍 Edit shift modal:", { 
-        shift, 
+
+      console.log("🔍 Edit shift modal:", {
+        shift,
         shiftType,
-        shift_start: shift.start_at, 
+        shift_start: shift.start_at,
         shift_end: shift.end_at,
         type_start: shiftType?.start_time,
-        type_end: shiftType?.end_time 
+        type_end: shiftType?.end_time
       });
-      
+
       form.setFieldsValue({
         ...shift,
-        start_at: shift.start_at 
-          ? dayjs(shift.start_at, "HH:mm:ss") 
+        start_at: shift.start_at
+          ? dayjs(shift.start_at, "HH:mm:ss")
           : (shiftType?.start_time ? dayjs(shiftType.start_time, "HH:mm:ss") : null),
-        end_at: shift.end_at 
-          ? dayjs(shift.end_at, "HH:mm:ss") 
+        end_at: shift.end_at
+          ? dayjs(shift.end_at, "HH:mm:ss")
           : (shiftType?.end_time ? dayjs(shiftType.end_time, "HH:mm:ss") : null),
         shift_date: dayjs(shift.shift_date),
       });
@@ -254,9 +254,9 @@ export function ShiftsManagement() {
         const schedule = schedules.find((s: any) => s.id === selectedSchedule);
         if (schedule) {
           const startDate = dayjs(
-            (schedule as any).start_date || schedule.week_start
+            (schedule as any).week_start || (schedule as any).start_date
           );
-          const shiftDate = startDate.day(dayOfWeek);
+          const shiftDate = startDate.add(dayOfWeek, 'day');
           form.setFieldsValue({ shift_date: shiftDate });
         }
       }
@@ -274,20 +274,26 @@ export function ShiftsManagement() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       // Calculate total_required from position requirements
       const totalRequired = singleShiftPositionRequirements.reduce(
         (sum, req) => sum + req.required_count,
         0
       );
-      
+
+      const shiftDateStr = values.shift_date.format("YYYY-MM-DD");
+
       const data: CreateShiftDto | UpdateShiftDto = {
         ...values,
         schedule_id: selectedSchedule,
-        shift_date: values.shift_date.format("YYYY-MM-DD"),
-        start_at: values.start_at?.format("HH:mm:ss") || null,
-        end_at: values.end_at?.format("HH:mm:ss") || null,
-        total_required: totalRequired > 0 ? totalRequired : values.total_required,
+        shift_date: shiftDateStr,
+        start_at: values.start_at
+          ? `${shiftDateStr}T${values.start_at.format("HH:mm:ss")}`
+          : null,
+        end_at: values.end_at
+          ? `${shiftDateStr}T${values.end_at.format("HH:mm:ss")}`
+          : null,
+        total_required: totalRequired > 0 ? totalRequired : (values.total_required || 0),
       };
 
       if (editingShift) {
@@ -451,9 +457,8 @@ export function ShiftsManagement() {
           start_at: shiftType?.start_time,
           end_at: shiftType?.end_time,
           total_required: totalRequired,
-          notes: `Tự động tạo cho ${
-            DAYS_OF_WEEK[dayIndex]?.label || "N/A"
-          } (${shiftDate.format("DD/MM/YYYY")})`,
+          notes: `Tự động tạo cho ${DAYS_OF_WEEK[dayIndex]?.label || "N/A"
+            } (${shiftDate.format("DD/MM/YYYY")})`,
         });
       });
     }
@@ -476,11 +481,11 @@ export function ShiftsManagement() {
         shiftsLength: response?.shifts?.length || 0,
         totalField: response?.total,
       });
-      
+
       if (!response || !response.shifts || response.shifts.length === 0) {
         throw new Error("Backend không trả về shifts hoặc response rỗng");
       }
-      
+
       console.log("🔍 First shift in response:", response.shifts[0]);
       console.log("🔍 Last shift in response:", response.shifts[response.shifts.length - 1]);
 
@@ -656,8 +661,8 @@ export function ShiftsManagement() {
                       typeof shift.shift_type === "object"
                         ? shift.shift_type
                         : shiftTypes.find(
-                            (st: any) => st.id === shift.shift_type_id
-                          );
+                          (st: any) => st.id === shift.shift_type_id
+                        );
 
                     return (
                       <Card
@@ -669,7 +674,7 @@ export function ShiftsManagement() {
                           {/* Shift Type */}
                           <div className="flex items-center justify-between">
                             <Tag color={shiftType?.cross_midnight ? "red" : "blue"}>
-                              {shiftType?.name  ||"N/A"}
+                              {shiftType?.name || "N/A"}
                             </Tag>
                             <Space size="small">
                               <Tooltip title="Chỉnh sửa">
@@ -703,7 +708,7 @@ export function ShiftsManagement() {
                             <ClockCircleOutlined className="text-blue-500" />
                             <span>
                               {(() => {
-                                const startTime = shift.start_at 
+                                const startTime = shift.start_at
                                   ? (shift.start_at.includes('T') ? dayjs(shift.start_at).format('HH:mm') : shift.start_at.substring(0, 5))
                                   : (shiftType?.start_time ? (shiftType.start_time.includes('T') ? dayjs(shiftType.start_time).format('HH:mm') : shiftType.start_time.substring(0, 5)) : "N/A");
                                 const endTime = shift.end_at
@@ -800,15 +805,24 @@ export function ShiftsManagement() {
             <Select
               placeholder="Chọn loại ca"
               options={shiftTypeOptions}
+              onChange={(value) => {
+                const selectedType = shiftTypes.find((st: any) => st.id === value);
+                if (selectedType) {
+                  form.setFieldsValue({
+                    start_at: selectedType.start_time ? dayjs(selectedType.start_time, "HH:mm:ss") : null,
+                    end_at: selectedType.end_time ? dayjs(selectedType.end_time, "HH:mm:ss") : null,
+                  });
+                }
+              }}
             />
           </Form.Item>
 
-          <Form.Item
-            name="shift_date"
-            label="Ngày"
-            rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
-          >
-            <Input type="date" />
+          <Form.Item name="shift_date" label="Ngày">
+            <Input
+              disabled
+              value={form.getFieldValue('shift_date') ? dayjs(form.getFieldValue('shift_date')).format('DD/MM/YYYY (dddd)') : ''}
+              className="bg-gray-50"
+            />
           </Form.Item>
 
           <div className="grid grid-cols-2 gap-4">
@@ -821,9 +835,7 @@ export function ShiftsManagement() {
             </Form.Item>
           </div>
 
-          <Form.Item name="total_required" label="Tổng số người cần">
-            <InputNumber min={0} className="w-full" placeholder="Số người" />
-          </Form.Item>
+          {/* Total required is auto-calculated from position requirements */}
 
           {/* Position Requirements Section */}
           <div className="space-y-3 border-t pt-4">
@@ -944,7 +956,7 @@ export function ShiftsManagement() {
         }}
         okText={
           selectedShiftTypes.length > 0 &&
-          defaultPositionRequirements.length > 0 ? (
+            defaultPositionRequirements.length > 0 ? (
             <>
               <SaveOutlined /> Tạo {selectedShiftTypes.length * 7} ca
             </>

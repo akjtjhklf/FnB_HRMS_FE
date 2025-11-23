@@ -7,9 +7,11 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
   getList: async ({ resource, pagination, filters, sorters, meta }) => {
     const url = `/${resource}`;
 
-    // Refine v5 pagination API
+    // Refine v5 pagination API - support multiple field names
     const current =
-      (pagination as any)?.current ?? (pagination as any)?.page ?? 1;
+      (pagination as any)?.currentPage ?? 
+      (pagination as any)?.current ?? 
+      (pagination as any)?.page ?? 1;
     const pageSize =
       (pagination as any)?.pageSize ?? (pagination as any)?.limit ?? 10;
 
