@@ -1,3 +1,4 @@
+export { EmployeeList } from "./EmployeeList";
+export { EmployeeShow } from "./EmployeeShow";
 export { EmployeeForm } from './EmployeeForm';
-export { EmployeeDetail } from './EmployeeDetail';
 export { ContractList } from './ContractList';

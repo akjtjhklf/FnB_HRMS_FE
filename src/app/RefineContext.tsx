@@ -9,6 +9,7 @@ import { App as AntdApp } from "antd";
 
 import { ColorModeContextProvider } from "@contexts/color-mode";
 import { authProvider, dataProvider } from "@providers";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -29,6 +30,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
             routerProvider={routerProvider}
             dataProvider={dataProvider(API_URL)}
             authProvider={authProvider}
+            
             resources={[
               // ========== HR CORE ==========
               {
@@ -211,12 +213,14 @@ export const RefineContext: React.FC<RefineContextProps> = ({
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
               projectId: "hrms-frontend",
+              
             }}
           >
             {children}
             <RefineKbar />
           </Refine>
         </ColorModeContextProvider>
+        <ConfirmModal />
       </AntdApp>
     </RefineKbarProvider>
   );

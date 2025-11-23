@@ -6,6 +6,8 @@ export interface ShiftType {
   name: string;
   start_time: string; // HH:mm:ss
   end_time: string; // HH:mm:ss
+  color?: string | null;
+  description?: string | null;
   cross_midnight?: boolean | null;
   notes?: string | null;
   created_at?: string;
@@ -16,20 +18,19 @@ export interface ShiftType {
 export interface Shift {
   id: string;
   schedule_id?: string | null;
-  shift_type_id: string | ShiftType;
+  shift_type_id: string | ShiftType; // Can be ID or populated object from Directus
   shift_date: string; // ISO date
-  day_of_week: number; // 0 (Sunday) to 6 (Saturday)
-  name: string; // Shift name
-  description?: string; // Optional shift description
-  start_at: string; // Non-nullable start time
-  end_at: string; // Non-nullable end time
+  start_at?: string | null; // start_at from Shift or from ShiftType
+  end_at?: string | null; // end_at from Shift or from ShiftType
   total_required?: number | null;
   notes?: string | null;
   metadata?: Record<string, unknown> | null;
   created_by?: string | null;
   created_at?: string;
   updated_at?: string;
-  is_active: boolean; // Indicates if the shift is active
+  
+  // Deprecated: Use shift_type_id instead (it contains the full object when populated)
+  shift_type?: ShiftType;
 }
 
 // DTOs for Shift
@@ -63,8 +64,6 @@ export interface Position {
   id: string;
   name: string;
   description?: string;
-  department?: string;
-  level?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -73,18 +72,22 @@ export interface Position {
 export interface ShiftPositionRequirement {
   id: string;
   shift_id: string;
-  position_id: string | Position;
+  position_id: string;
   required_count: number;
+  notes?: string | null;
   created_at?: string;
   updated_at?: string;
+  
+  // Populated fields
+  position?: Position;
 }
 
 // Employee Availability
 export interface EmployeeAvailability {
   id: string;
   employee_id: string;
-  shift_id: string | Shift;
-  priority: number; // 1-10
+  shift_id: string;
+  priority?: number | null; // 1-10
   expires_at?: string | null;
   note?: string | null;
   created_at?: string;
@@ -95,7 +98,7 @@ export interface EmployeeAvailability {
 export interface EmployeeAvailabilityPosition {
   id: string;
   availability_id: string;
-  position_id: string | Position;
+  position_id: string;
   preference_order?: number | null;
   created_at?: string;
   updated_at?: string;
@@ -139,7 +142,7 @@ export interface CreateEmployeeAvailabilityDto {
   priority?: number;
   expires_at?: string | null;
   note?: string | null;
-  positions: string[]; // Array of position IDs
+  positions?: string[]; // Added positions property
 }
 
 export interface CreateScheduleAssignmentDto {
@@ -229,4 +232,21 @@ export interface EmployeeAnalytic {
   activeEmployees: number;
   onLeaveEmployees: number;
   inactiveEmployees: number;
+}
+
+// Schedule Change Request types
+export interface ScheduleChangeRequest {
+  id: string;
+  requester_id: string;
+  type: "shift_swap" | "pass_shift" | "day_off";
+  from_shift_id?: string | null;
+  to_shift_id?: string | null;
+  target_employee_id?: string | null;
+  replacement_employee_id?: string | null;
+  reason?: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }

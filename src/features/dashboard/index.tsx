@@ -50,9 +50,8 @@ const Dashboard: React.FC = () => {
               icon={<RefreshCw size={16} />}
               onClick={refresh}
               loading={loading}
-            >
-              Làm mới
-            </Button>
+              title="Làm mới"
+            />
             <Button type="primary" icon={<Zap size={16} />}>
               Thao tác nhanh
             </Button>

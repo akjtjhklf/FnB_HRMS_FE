@@ -52,19 +52,19 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
   ];
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-40">
+    <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-6 pl-16 lg:pl-6 flex items-center justify-between sticky top-0 z-20">
       {/* Left Side - Search */}
       <div className="flex items-center gap-4 flex-1">
         <div className="relative max-w-md w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <Input
-            placeholder="Search anything..."
+            placeholder="Tìm kiếm..."
             className="pl-10 h-10 border-gray-200 rounded-lg"
-            suffix={
-              <kbd className="px-2 py-0.5 text-xs bg-gray-100 rounded border border-gray-200">
-                ⌘F
-              </kbd>
-            }
+            // suffix={
+            //   <kbd className="px-2 py-0.5 text-xs bg-gray-100 rounded border border-gray-200">
+            //     ⌘F
+            //   </kbd>
+            // }
           />
         </div>
       </div>
@@ -72,12 +72,12 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
       {/* Right Side - Actions */}
       <Space size="large">
         {/* Dark Mode Toggle */}
-        <Switch
+        {/* <Switch
           checkedChildren="🌛"
           unCheckedChildren="🔆"
           onChange={() => setMode(mode === "light" ? "dark" : "light")}
           defaultChecked={mode === "dark"}
-        />
+        /> */}
 
         {/* Notifications */}
         <Badge count={3} size="small">

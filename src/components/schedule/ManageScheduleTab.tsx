@@ -286,9 +286,8 @@ export function ManageScheduleTab() {
               icon={<ReloadOutlined />}
               onClick={() => refetchAssignments()}
               loading={assignmentsLoading}
-            >
-              Làm mới
-            </Button>
+              title="Làm mới"
+            />
             <Button
               type="primary"
               icon={<ThunderboltOutlined />}

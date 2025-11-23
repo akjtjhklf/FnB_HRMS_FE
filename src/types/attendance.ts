@@ -26,6 +26,81 @@ export interface CreateAttendanceLogDto {
 
 export interface UpdateAttendanceLogDto extends Partial<CreateAttendanceLogDto> {}
 
+// Monthly Timesheet types for comprehensive attendance management
+export interface MonthlyTimesheet {
+  id: string;
+  employee_id: string | Employee;
+  month: string; // format: YYYY-MM
+  total_work_hours: number;
+  total_days: number;
+  absent_days: number;
+  late_days: number;
+  current_salary_rate: number;
+  estimated_salary: number;
+  is_locked: boolean;
+  locked_by?: string;
+  locked_at?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Salary Advance Request
+export interface SalaryAdvanceRequest {
+  id: string;
+  employee_id: string | Employee;
+  month: string; // format: YYYY-MM
+  estimated_salary: number;
+  requested_amount: number;
+  request_date: string;
+  status: "pending" | "approved" | "rejected";
+  approved_by?: string;
+  approved_at?: string;
+  reason?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateSalaryAdvanceRequestDto {
+  employee_id: string;
+  month: string;
+  estimated_salary: number;
+  requested_amount: number;
+  reason?: string;
+}
+
+// Attendance Adjustment Request
+export interface AttendanceAdjustmentRequest {
+  id: string;
+  attendance_log_id?: string;
+  employee_id: string | Employee;
+  date: string;
+  adjustment_type: "add" | "modify" | "delete";
+  original_check_in?: string;
+  original_check_out?: string;
+  requested_check_in?: string;
+  requested_check_out?: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  approved_by?: string;
+  approved_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateAttendanceAdjustmentRequestDto {
+  attendance_log_id?: string;
+  employee_id: string;
+  date: string;
+  adjustment_type: "add" | "modify" | "delete";
+  original_check_in?: string;
+  original_check_out?: string;
+  requested_check_in?: string;
+  requested_check_out?: string;
+  reason: string;
+}
+
 // Attendance Shift types
 export interface AttendanceShift {
   id: string;
