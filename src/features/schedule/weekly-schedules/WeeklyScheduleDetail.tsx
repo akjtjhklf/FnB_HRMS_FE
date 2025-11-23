@@ -77,7 +77,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
     resource: "shifts",
     filters: [{ field: "schedule_id", operator: "eq", value: id }],
     meta: {
-      fields: ["*", "shift_type.*"],
+      fields: ["*", "shift_type_id.*"],
     },
     pagination: {
       pageSize: 1000,

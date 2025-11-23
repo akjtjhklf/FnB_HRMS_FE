@@ -2,19 +2,7 @@ import { Card, Divider, Avatar, Button, Popconfirm, Empty } from "antd";
 import { UserOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";
-
-interface Employee {
-  id: string;
-  full_name: string;
-  employee_id: string;
-  [key: string]: any;
-}
-
-interface Position {
-  id: string;
-  name: string;
-  [key: string]: any;
-}
+import { Employee, Position } from "@types";
 
 interface PositionAssignmentCardProps {
   requirement: ShiftPositionRequirement;
@@ -86,7 +74,7 @@ export function PositionAssignmentCard({
                         <Avatar size="small" icon={<UserOutlined />} />
                         <div>
                           <div className="text-sm font-medium">{emp.full_name}</div>
-                          <div className="text-xs text-gray-500">{emp.employee_id}</div>
+                          <div className="text-xs text-gray-500">{emp.id}</div>
                         </div>
                       </div>
                       <Button
