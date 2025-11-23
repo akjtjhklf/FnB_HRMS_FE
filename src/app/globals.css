@@ -72,6 +72,7 @@ html {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -83,22 +84,23 @@ html {
     opacity: 1;
     transform: translateY(0);
   }
+
   to {
     opacity: 0;
     transform: translateY(10px);
   }
 }
-.ant-picker-calendar-date-content {
-  height: auto !important;
-  overflow-y: visible !important; /* Cho phép tràn xuống */
-  min-height: 100px; /* Giữ chiều cao tối thiểu cho đẹp */
-}
 
-/* Xử lý container bao ngoài để nó không bị cắt */
-.ant-picker-cell-inner {
+/* .ant-picker-calendar-date-content {
+  height: auto !important;
+  overflow-y: visible !important; 
+  min-height: 100px; 
+} */
+
+/* .ant-picker-cell-inner {
   height: auto !important;
   min-height: 100px;
-}
+} */
 
 /* Ẩn thanh cuộn thừa nếu còn sót lại */
 ::-webkit-scrollbar {

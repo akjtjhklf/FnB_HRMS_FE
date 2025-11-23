@@ -141,7 +141,7 @@ export function ManageScheduleTab() {
             : shifts.find((s) => s.id === record.shift_id);
         return (
           <div>
-            <p className="font-medium text-gray-800">{shift?.name || "N/A"}</p>
+            <p className="font-medium text-gray-800">{shift?. || "N/A"}</p>
             <p className="text-xs text-gray-500">
               {shift?.start_at} - {shift?.end_at}
             </p>
