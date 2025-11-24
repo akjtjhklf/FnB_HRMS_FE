@@ -2,12 +2,9 @@
 
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { EmployeeForm } from "@features/employees/components/EmployeeForm";
+import { EmployeeWizard } from "@/features/employees/components/EmployeeWizard";
 
 export default function CreateEmployeePage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-5xl mx-auto">
@@ -20,12 +17,8 @@ export default function CreateEmployeePage() {
             Quay lại danh sách nhân viên
           </Link>
         </div>
-        
-        <EmployeeForm
-          action="create"
-          onSuccess={() => router.push("/employees")}
-          onCancel={() => router.back()}
-        />
+
+        <EmployeeWizard />
       </div>
     </div>
   );

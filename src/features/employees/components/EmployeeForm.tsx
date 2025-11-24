@@ -106,7 +106,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
       try {
         // First create employee
         await onFinish(formattedValues);
-        
+
         // Then create user account (this would be handled by backend)
         // The backend should create the user when employee is created with username/password
         message.info("Tài khoản đăng nhập đã được tạo cho nhân viên");

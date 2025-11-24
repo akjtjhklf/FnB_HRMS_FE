@@ -1,7 +1,8 @@
 "use client";
 
-import { useCreate, useUpdate } from "@refinedev/core";
-import { Modal, Form, Input, App } from "antd";
+import { useCreate, useUpdate, useCustomMutation } from "@refinedev/core";
+import { Modal, Form, Input, App, Select } from "antd";
+import { useSelect } from "@refinedev/antd";
 import { useEffect } from "react";
 
 interface RoleFormProps {
@@ -15,45 +16,72 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
     const [form] = Form.useForm();
     const { mutateAsync: createRole } = useCreate();
     const { mutateAsync: updateRole } = useUpdate();
+    const { mutateAsync: updatePolicies } = useCustomMutation();
 
+    // Fetch Policies for Select
+    const { selectProps: policySelectProps } = useSelect({
+        resource: 'policies',
+        optionLabel: 'name',
+        optionValue: 'id',
+    });
+
+    // Fetch existing policies if editing
     useEffect(() => {
         if (open) {
             if (initialValues) {
                 form.setFieldsValue(initialValues);
+                // Fetch policies for this role
+                const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
+                fetch(`${apiUrl}/api/access/role/${initialValues.id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const policyIds = data.data.map((p: any) => p.id);
+                            form.setFieldValue('policyIds', policyIds);
+                        }
+                    })
+                    .catch(err => console.error("Failed to fetch role policies", err));
             } else {
                 form.resetFields();
             }
         }
     }, [open, initialValues, form]);
 
-    const onFinish = (values: any) => {
-        if (initialValues) {
-            updateRole(
-                {
+    const onFinish = async (values: any) => {
+        const { policyIds, ...roleData } = values;
+
+        try {
+            let roleId = initialValues?.id;
+
+            if (initialValues) {
+                await updateRole({
                     resource: "roles",
                     id: initialValues.id,
-                    values,
-                },
-                {
-                    onSuccess: () => {
-                        message.success("Cập nhật role thành công");
-                        onCancel();
-                    },
-                }
-            );
-        } else {
-            createRole(
-                {
+                    values: roleData,
+                });
+                message.success("Cập nhật role thành công");
+            } else {
+                const response = await createRole({
                     resource: "roles",
-                    values,
-                },
-                {
-                    onSuccess: () => {
-                        message.success("Tạo role thành công");
-                        onCancel();
-                    },
-                }
-            );
+                    values: roleData,
+                });
+                // Assuming response.data.id exists. Directus returns the created object.
+                roleId = response.data.id;
+                message.success("Tạo role thành công");
+            }
+
+            // Update Policies
+            if (roleId && policyIds) {
+                updatePolicies({
+                    url: `access/role/${roleId}`,
+                    method: 'post',
+                    values: { policyIds }
+                });
+            }
+
+            onCancel();
+        } catch (error) {
+            message.error("Có lỗi xảy ra");
         }
     };
 
@@ -63,7 +91,6 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
             open={open}
             onCancel={onCancel}
             onOk={() => form.submit()}
-        // confirmLoading={isCreating || isUpdating}
         >
             <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Form.Item
@@ -79,6 +106,14 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
                     label="Mô tả"
                 >
                     <Input.TextArea rows={3} placeholder="Mô tả về vai trò này..." />
+                </Form.Item>
+
+                <Form.Item
+                    name="policyIds"
+                    label="Policies (Quyền hạn)"
+                    help="Chọn các chính sách áp dụng cho vai trò này"
+                >
+                    <Select {...policySelectProps} placeholder="Chọn policies" mode="multiple" />
                 </Form.Item>
             </Form>
         </Modal>
