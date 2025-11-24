@@ -9,26 +9,30 @@ interface PolicyFormProps {
     open: boolean;
     onCancel: () => void;
     initialValues?: any;
+    icon?: string;
 }
 
-export const PolicyForm = ({ open, onCancel, initialValues }: PolicyFormProps) => {
+export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: PolicyFormProps) => {
     const { message } = App.useApp();
     const [form] = Form.useForm();
     const { mutate: createPolicy } = useCreate();
     const { mutate: updatePolicy } = useUpdate();
     const [activeTab, setActiveTab] = useState("info");
 
-    // Reset tab when modal opens/closes
     useEffect(() => {
         if (open) {
             setActiveTab("info");
             if (initialValues) {
-                form.setFieldsValue(initialValues);
+                form.setFieldsValue({
+                    icon,
+                    ...initialValues,
+                });
             } else {
                 form.resetFields();
+                form.setFieldsValue({ icon });
             }
         }
-    }, [open, initialValues, form]);
+    }, [open, initialValues, form, icon]);
 
     const onFinish = (values: any) => {
         if (initialValues) {
@@ -76,8 +80,8 @@ export const PolicyForm = ({ open, onCancel, initialValues }: PolicyFormProps) =
                     >
                         <Input placeholder="Ví dụ: Quản lý nhân sự" />
                     </Form.Item>
-
-                    {/* <Form.Item
+                    {/* 
+                    <Form.Item
                         name="icon"
                         label="Icon"
                     >
