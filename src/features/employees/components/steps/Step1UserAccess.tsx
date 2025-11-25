@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Form, Input, Select, Card, Row, Col, Typography } from 'antd';
-import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, SafetyOutlined, VerifiedOutlined } from '@ant-design/icons';
 import { useSelect } from '@refinedev/antd';
 import { useEmployeeWizardStore } from '../../stores/employeeWizardStore';
 
@@ -15,6 +15,13 @@ export const Step1UserAccess: React.FC = () => {
     // Fetch roles
     const { selectProps: roleSelectProps } = useSelect({
         resource: 'roles',
+        optionLabel: 'name',
+        optionValue: 'id',
+    });
+
+    // Fetch policies
+    const { selectProps: policySelectProps } = useSelect({
+        resource: 'policies',
         optionLabel: 'name',
         optionValue: 'id',
     });
@@ -153,12 +160,32 @@ export const Step1UserAccess: React.FC = () => {
                         />
                     </Form.Item>
 
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded mt-4">
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded mt-4 mb-4">
                         <Text className="text-sm text-gray-600">
                             📌 <strong>Lưu ý:</strong> Chính sách (policies) được quản lý tại cấp độ vai trò.
-                            Để cấu hình chính sách cho vai trò, vui lòng truy cập trang <strong>Quản lý Vai trò</strong>.
+                            Tuy nhiên, bạn có thể gán thêm các chính sách bổ sung cho nhân viên này bên dưới.
                         </Text>
                     </div>
+
+                    {/* Policy Select */}
+                    <Form.Item
+                        label="Chính sách bổ sung (Extra Policies)"
+                        name="policyIds"
+                        tooltip="Gán thêm các quyền cụ thể cho nhân viên này (ngoài quyền từ Role)"
+                    >
+                        <Select
+                            {...policySelectProps}
+                            mode="multiple"
+                            placeholder="Chọn thêm chính sách (nếu cần)"
+                            size="large"
+                            suffixIcon={<VerifiedOutlined />}
+                            showSearch
+                            filterOption={(input, option) =>
+                                String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            allowClear
+                        />
+                    </Form.Item>
                 </Card>
             </Form>
         </div>

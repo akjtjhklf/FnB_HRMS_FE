@@ -1,6 +1,6 @@
 "use client";
 
-import { useCreate, useUpdate, useCustomMutation } from "@refinedev/core";
+import { useCreate, useUpdate } from "@refinedev/core";
 import { Modal, Form, Input, App, Select } from "antd";
 import { useSelect } from "@refinedev/antd";
 import { useEffect } from "react";
@@ -16,7 +16,6 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
     const [form] = Form.useForm();
     const { mutateAsync: createRole } = useCreate();
     const { mutateAsync: updateRole } = useUpdate();
-    const { mutateAsync: updatePolicies } = useCustomMutation();
 
     // Fetch Policies for Select
     const { selectProps: policySelectProps } = useSelect({
@@ -30,13 +29,13 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
         if (open) {
             if (initialValues) {
                 form.setFieldsValue(initialValues);
-                // Fetch policies for this role
+                // Fetch policies for this role from new endpoint
                 const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
-                fetch(`${apiUrl}/api/access/role/${initialValues.id}`)
+                fetch(`${apiUrl}/api/roles/${initialValues.id}/policies`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            const policyIds = data.data.map((p: any) => p.id);
+                            const policyIds = data.data?.map((p: any) => p.id) || [];
                             form.setFieldValue('policyIds', policyIds);
                         }
                     })
@@ -59,23 +58,26 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
                     id: initialValues.id,
                     values: roleData,
                 });
+                roleId = initialValues.id;
                 message.success("Cập nhật role thành công");
             } else {
                 const response = await createRole({
                     resource: "roles",
                     values: roleData,
                 });
-                // Assuming response.data.id exists. Directus returns the created object.
                 roleId = response.data.id;
                 message.success("Tạo role thành công");
             }
 
-            // Update Policies
+            // Update Policies using new endpoint
             if (roleId && policyIds) {
-                updatePolicies({
-                    url: `access/role/${roleId}`,
-                    method: 'post',
-                    values: { policyIds }
+                const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
+                await fetch(`${apiUrl}/api/roles/${roleId}/policies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ policyIds })
                 });
             }
 
