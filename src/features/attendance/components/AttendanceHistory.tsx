@@ -1,11 +1,14 @@
 "use client";
 
-import { Table, Badge, Card, Row, Col, Statistic } from "antd";
-import { useCustom } from "@refinedev/core";
+import { Table, Badge, Card, Row, Col, Statistic, Button, Radio, DatePicker, Modal, Form, Input, TimePicker, App } from "antd";
+import { useTable } from "@refinedev/antd";
+import { useCustomMutation } from "@refinedev/core";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Clock, Calendar, CheckCircle, XCircle, AlertCircle } from "lucide-react";
-import { useMemo } from "react";
+import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
+import { useMemo, useState } from "react";
+import dayjs from "dayjs";
+import { EmployeeAttendanceCalendar } from "./EmployeeAttendanceCalendar";
 
 interface AttendanceShift {
     id: string;
@@ -16,19 +19,37 @@ interface AttendanceShift {
     late_minutes: number | null;
     early_leave_minutes: number | null;
     status: "present" | "absent" | "partial";
+    notes?: string | null;
+    shift_id?: string;
 }
 
 export function AttendanceHistory() {
-    // ✅ Use custom endpoint - backend handles current user automatically
-    const { query } = useCustom<{ data: AttendanceShift[] }>({
-        url: "/attendance/my-attendance",
-        method: "get",
+    const [month, setMonth] = useState(dayjs());
+    const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
+
+    const { tableProps, tableQuery } = useTable<AttendanceShift>({
+        resource: "attendance/my-attendance",
+        syncWithLocation: false,
+        filters: {
+            permanent: [
+                {
+                    field: "start_date",
+                    operator: "eq",
+                    value: month.startOf('month').toISOString(),
+                },
+                {
+                    field: "end_date",
+                    operator: "eq",
+                    value: month.endOf('month').toISOString(),
+                },
+            ],
+        },
+        pagination: {
+            mode: "client",
+        },
     });
 
-    const attendanceData = useMemo(
-        () => query?.data?.data?.data || [],
-        [query]
-    );
+    const attendanceData = tableProps.dataSource || [];
 
     // Calculate statistics
     const stats = useMemo(() => {
@@ -140,6 +161,56 @@ export function AttendanceHistory() {
         },
     ];
 
+    // Request Adjustment state
+    const [requestModalOpen, setRequestModalOpen] = useState(false);
+    const [selectedRecord, setSelectedRecord] = useState<AttendanceShift | null>(null);
+    const [form] = Form.useForm();
+    const { mutate: createRequest, mutation } = useCustomMutation();
+    const isSubmitting = mutation?.isLoading;
+    const { message } = App.useApp();
+
+    const handleRequestAdjustment = (record: AttendanceShift) => {
+        setSelectedRecord(record);
+        form.setFieldsValue({
+            clock_in: record.clock_in ? dayjs(record.clock_in) : null,
+            clock_out: record.clock_out ? dayjs(record.clock_out) : null,
+            reason: "",
+        });
+        setRequestModalOpen(true);
+    };
+
+    const handleSubmitRequest = async () => {
+        try {
+            const values = await form.validateFields();
+
+            createRequest(
+                {
+                    url: "attendance-adjustments",
+                    method: "post",
+                    values: {
+                        attendance_shift_id: selectedRecord?.id,
+                        proposed_value: {
+                            clock_in: values.clock_in?.toISOString(),
+                            clock_out: values.clock_out?.toISOString(),
+                        },
+                        reason: values.reason,
+                    },
+                },
+                {
+                    onSuccess: () => {
+                        message.success("Gửi yêu cầu điều chỉnh thành công");
+                        setRequestModalOpen(false);
+                    },
+                    onError: (error: any) => {
+                        message.error(error?.message || "Có lỗi xảy ra");
+                    }
+                }
+            );
+        } catch (error) {
+            console.error("Validation failed:", error);
+        }
+    };
+
     return (
         <div>
             {/* Statistics Cards */}
@@ -188,22 +259,87 @@ export function AttendanceHistory() {
                 </Col>
             </Row>
 
-            {/* Table */}
-            <div className="bg-white rounded-lg shadow">
-                <Table
-                    columns={columns}
-                    dataSource={attendanceData}
-                    loading={query.isLoading}
-                    rowKey="id"
-                    scroll={{ x: 1000 }}
-                    pagination={{
-                        pageSize: 15,
-                        showSizeChanger: true,
-                        showTotal: (total, range) =>
-                            `${range[0]}-${range[1]} của ${total} bản ghi`,
-                    }}
-                />
+            {/* Header Controls */}
+            <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-lg shadow-sm">
+                <div className="flex items-center gap-4">
+                    <span className="font-medium">Tháng:</span>
+                    <DatePicker
+                        picker="month"
+                        value={month}
+                        onChange={(val) => val && setMonth(val)}
+                        allowClear={false}
+                        format="MM/YYYY"
+                    />
+                </div>
+                <div className="flex items-center gap-4">
+                    <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)}>
+                        <Radio.Button value="table">Bảng</Radio.Button>
+                        <Radio.Button value="calendar">Lịch</Radio.Button>
+                    </Radio.Group>
+                    <Button
+                        icon={<RefreshCcw size={16} />}
+                        onClick={() => tableQuery.refetch()}
+                        loading={tableQuery.isFetching}
+                    >
+                        Làm mới
+                    </Button>
+                </div>
             </div>
+
+            {/* Content */}
+            <div className="bg-white rounded-lg shadow p-4">
+                {viewMode === "table" ? (
+                    <Table
+                        {...tableProps}
+                        columns={columns}
+                        rowKey="id"
+                        scroll={{ x: 1000 }}
+                        pagination={{
+                            ...tableProps.pagination,
+                            pageSize: 15,
+                            showSizeChanger: true,
+                            showTotal: (total, range) =>
+                                `${range[0]}-${range[1]} của ${total} bản ghi`,
+                        }}
+                        onRow={(record) => ({
+                            onClick: () => handleRequestAdjustment(record),
+                            className: "cursor-pointer hover:bg-gray-50",
+                        })}
+                    />
+                ) : (
+                    <EmployeeAttendanceCalendar
+                        records={tableProps.dataSource || []}
+                        month={month}
+                        onEdit={handleRequestAdjustment}
+                    />
+                )}
+            </div>
+
+            <Modal
+                title="Yêu cầu điều chỉnh chấm công"
+                open={requestModalOpen}
+                onCancel={() => setRequestModalOpen(false)}
+                onOk={handleSubmitRequest}
+                confirmLoading={isSubmitting}
+            >
+                <Form form={form} layout="vertical">
+                    <div className="flex gap-4">
+                        <Form.Item label="Giờ vào đề xuất" name="clock_in" className="flex-1">
+                            <TimePicker format="HH:mm" className="w-full" />
+                        </Form.Item>
+                        <Form.Item label="Giờ ra đề xuất" name="clock_out" className="flex-1">
+                            <TimePicker format="HH:mm" className="w-full" />
+                        </Form.Item>
+                    </div>
+                    <Form.Item
+                        label="Lý do điều chỉnh"
+                        name="reason"
+                        rules={[{ required: true, message: "Vui lòng nhập lý do" }]}
+                    >
+                        <Input.TextArea rows={3} placeholder="Nhập lý do..." />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }

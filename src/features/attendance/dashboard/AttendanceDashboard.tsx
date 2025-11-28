@@ -1,42 +1,79 @@
 "use client";
 
+
 import { AttendanceCheckInOut } from "../components/AttendanceCheckInOut";
 import { AttendanceHistory } from "../components/AttendanceHistory";
+import { AttendanceManagement } from "../components/AttendanceManagement";
 import { Tabs } from "antd";
 import { Card } from "@/components/ui/Card";
-import { Clock, History } from "lucide-react";
+import { Clock, History, Users } from "lucide-react";
+import { useGetIdentity } from "@refinedev/core";
+import { UserIdentity } from "@/types/auth";
 
 export function AttendanceDashboard() {
-    const tabItems = [
-        {
-            key: "checkin",
+    const { data: user, isLoading } = useGetIdentity<UserIdentity>();
+    const role = user?.role?.name || "";
+    // Check if user is manager or admin
+    const isManager = ["Manager", "Administrator", "Admin"].includes(role);
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    const tabItems = [];
+
+    // Employees see Check In/Out and History
+    if (!isManager) {
+        tabItems.push(
+            {
+                key: "checkin",
+                label: (
+                    <span className="flex items-center gap-2">
+                        <Clock size={16} />
+                        <span>Check In/Out</span>
+                    </span>
+                ),
+                children: <AttendanceCheckInOut />,
+            },
+            {
+                key: "history",
+                label: (
+                    <span className="flex items-center gap-2">
+                        <History size={16} />
+                        <span>Lịch Sử</span>
+                    </span>
+                ),
+                children: (
+                    <Card className="p-6">
+                        <h2 className="text-xl font-semibold mb-4">Lịch Sử Chấm Công</h2>
+                        <AttendanceHistory />
+                    </Card>
+                ),
+            }
+        );
+    }
+
+    // Managers see Management tab
+    if (isManager) {
+        tabItems.push({
+            key: "management",
             label: (
                 <span className="flex items-center gap-2">
-                    <Clock size={16} />
-                    <span>Check In/Out</span>
-                </span>
-            ),
-            children: <AttendanceCheckInOut />,
-        },
-        {
-            key: "history",
-            label: (
-                <span className="flex items-center gap-2">
-                    <History size={16} />
-                    <span>Lịch Sử</span>
+                    <Users size={16} />
+                    <span>Quản lý chấm công</span>
                 </span>
             ),
             children: (
                 <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Lịch Sử Chấm Công</h2>
-                    <AttendanceHistory />
+                    <h2 className="text-xl font-semibold mb-4">Quản lý chấm công nhân viên</h2>
+                    <AttendanceManagement />
                 </Card>
             ),
-        },
-    ];
+        });
+    }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
             {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Chấm Công</h1>
@@ -44,7 +81,7 @@ export function AttendanceDashboard() {
             </div>
 
             {/* Tabs */}
-            <Tabs defaultActiveKey="checkin" items={tabItems} />
+            <Tabs defaultActiveKey={isManager ? "management" : "checkin"} items={tabItems} />
         </div>
     );
 }
