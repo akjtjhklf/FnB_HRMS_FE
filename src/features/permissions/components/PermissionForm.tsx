@@ -80,7 +80,6 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
       presets: values.presets_json ? JSON.parse(values.presets_json) : null,
     };
 
-    // Remove temporary JSON fields
     delete formattedValues.permissions_json;
     delete formattedValues.validation_json;
     delete formattedValues.presets_json;

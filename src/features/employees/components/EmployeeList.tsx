@@ -24,6 +24,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   StopOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { Employee } from "@/types/employee";
@@ -40,7 +41,7 @@ export const EmployeeList = () => {
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   const [searchText, setSearchText] = useState("");
 
-  const { tableProps, sorters, filters } = useTable<Employee>({
+  const { tableProps, sorters, filters, tableQuery } = useTable<Employee>({
     resource: "employees",
     syncWithLocation: true,
     pagination: {
@@ -274,6 +275,14 @@ export const EmployeeList = () => {
             style={{ width: 280 }}
             size="large"
           />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => tableQuery.refetch()}
+            loading={tableQuery.isFetching}
+            size="large"
+          >
+            Làm mới
+          </Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}

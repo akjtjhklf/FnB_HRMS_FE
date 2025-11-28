@@ -8,15 +8,15 @@ export interface CustomDrawerProps {
   // Basic props
   open: boolean;
   onClose: () => void;
-  title: string;
+  title: React.ReactNode;
   width?: string | number;
-  
+
   // Content
   children: React.ReactNode;
-  
+
   // Loading state
   loading?: boolean;
-  
+
   // Footer actions
   showFooter?: boolean;
   onSave?: () => void;
@@ -25,14 +25,14 @@ export interface CustomDrawerProps {
   cancelText?: string;
   saveLoading?: boolean;
   saveDisabled?: boolean;
-  
+
   // Additional footer content
   footerExtra?: React.ReactNode;
-  
+
   // Style
   className?: string;
   bodyClassName?: string;
-  
+
   // Mode
   mode?: "view" | "edit" | "create";
 }
@@ -96,7 +96,7 @@ export const CustomDrawer: React.FC<CustomDrawerProps> = ({
     <Drawer
       title={
         <div className="flex items-center justify-between pr-8">
-          <span className="text-lg font-semibold text-gray-900">{title}</span>
+          <div className="text-lg font-semibold text-gray-900">{title}</div>
           {mode && (
             <span className="text-xs text-gray-500 uppercase tracking-wide">
               {mode === "view" ? "Xem" : mode === "edit" ? "Chỉnh sửa" : "Thêm mới"}

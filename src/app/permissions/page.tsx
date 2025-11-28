@@ -1,7 +1,7 @@
 "use client";
 
-import { PermissionList } from "@/features/permissions";
+import { PermissionsManagement } from "@/features/permissions/PermissionsManagement";
 
 export default function PermissionsPage() {
-  return <PermissionList />;
+  return <PermissionsManagement />;
 }

@@ -36,6 +36,8 @@ export interface Role {
   icon?: string;
   description?: string;
   parent?: string;
+  admin_access?: boolean;  // ✅ NEW: For backward compatibility with hooks
+  permissions?: Permission[];  // ✅ NEW: Quick access to permissions
 }
 
 // Role with full permissions structure

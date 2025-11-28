@@ -1,7 +1,7 @@
 "use client";
 
-import { AttendanceList } from "@/features/attendance";
+import { AttendanceDashboard } from "@/features/attendance/dashboard/AttendanceDashboard";
 
 export default function AttendancePage() {
-  return <AttendanceList />;
+  return <AttendanceDashboard />;
 }

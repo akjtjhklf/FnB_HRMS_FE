@@ -38,6 +38,7 @@ import {
   SendOutlined,
   LockOutlined,
   EyeOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
@@ -102,7 +103,7 @@ export function WeeklySchedulesManagement() {
   } = useTable<WeeklySchedule>({
     resource: "weekly-schedules",
     pagination: {
-      currentPage: 1,
+      // currentPage: 1,
       pageSize: 10,
     },
     // sorters: {
@@ -480,18 +481,28 @@ export function WeeklySchedulesManagement() {
             <Text type="secondary">Tạo và quản lý lịch làm việc theo tuần</Text>
           </Col>
           <Col>
-            <Button
-              type="primary"
-              size="large"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditingId(null);
-                form.resetFields();
-                setModalOpen(true);
-              }}
-            >
-              Tạo Lịch Tuần
-            </Button>
+            <Space>
+              <Button
+                size="large"
+                icon={<ReloadOutlined />}
+                onClick={() => tableQueryResult.refetch()}
+                loading={tableQueryResult.isFetching}
+              >
+                Làm mới
+              </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEditingId(null);
+                  form.resetFields();
+                  setModalOpen(true);
+                }}
+              >
+                Tạo Lịch Tuần
+              </Button>
+            </Space>
           </Col>
         </Row>
       </div>

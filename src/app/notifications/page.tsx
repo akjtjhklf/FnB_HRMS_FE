@@ -2,6 +2,6 @@
 
 import { NotificationList } from "@/features/notifications";
 
-export default function NotificationsPage() {
+export default function NotificationsListPage() {
   return <NotificationList />;
 }

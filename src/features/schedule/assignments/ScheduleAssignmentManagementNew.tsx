@@ -38,20 +38,8 @@ import {
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 import { DayColumn } from "./components/DayColumn";
 import { AssignmentDrawer } from "./components/AssignmentDrawer";
-
-interface Employee {
-  id: string;
-  full_name: string;
-  employee_id: string;
-  status: string;
-  [key: string]: any;
-}
-
-interface Position {
-  id: string;
-  name: string;
-  [key: string]: any;
-}
+import { Employee } from "@types";
+import { Position } from "@types";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Thứ 2", short: "T2" },
@@ -103,7 +91,7 @@ export function ScheduleAssignmentManagement() {
     filters: selectedSchedule
       ? [{ field: "schedule_id", operator: "eq", value: selectedSchedule }]
       : [],
-    meta: { fields: ["*", "shift_type.*"] },
+    meta: { fields: ["*", "shift_type_id.*"] },
     pagination: { pageSize: 1000 },
     queryOptions: { enabled: !!selectedSchedule },
   });
@@ -120,6 +108,7 @@ export function ScheduleAssignmentManagement() {
       shiftIds.length > 0
         ? [{ field: "shift_id", operator: "in", value: shiftIds }]
         : [],
+    meta: { fields: ["*", "position_id.*"] },
     pagination: { pageSize: 1000 },
     queryOptions: { enabled: shiftIds.length > 0 },
   });
@@ -159,12 +148,12 @@ export function ScheduleAssignmentManagement() {
   const { query: employeesQuery } = useList<Employee>({
     resource: "employees",
     filters: [{ field: "status", operator: "eq", value: "active" }],
-    pagination: { mode: "off" },
+    pagination: { pageSize: 1000 },
   });
 
   const { query: positionsQuery } = useList<Position>({
     resource: "positions",
-    pagination: { mode: "off" },
+    pagination: { pageSize: 1000 },
   });
 
   const requirements = useMemo(() => requirementsQuery.data?.data || [], [requirementsQuery.data?.data]);
@@ -270,24 +259,24 @@ export function ScheduleAssignmentManagement() {
   const availableEmployeesMap = useMemo(() => {
     if (!selectedShift) return new Map();
     const map = new Map<string, Employee[]>();
-    
+
     // Get requirements for the selected shift
     const shiftReqs = requirements.filter((r: any) => r.shift_id === selectedShift.id);
-    
+
     shiftReqs.forEach((req) => {
       // Get employees who registered for this shift
       const shiftAvailabilities = availabilities.filter(
         (av: any) => av.shift_id === selectedShift.id
       );
-      
+
       // Get available employees
       const availableEmps = employees.filter((emp: any) =>
         shiftAvailabilities.some((av: any) => av.employee_id === emp.id)
       );
-      
+
       map.set(req.position_id, availableEmps);
     });
-    
+
     return map;
   }, [selectedShift, requirements, availabilities, employees]);
 
@@ -464,15 +453,15 @@ export function ScheduleAssignmentManagement() {
                   canPublish
                     ? "success"
                     : coverageRate > 50
-                    ? "active"
-                    : "exception"
+                      ? "active"
+                      : "exception"
                 }
                 strokeColor={
                   canPublish
                     ? "#22c55e"
                     : coverageRate > 50
-                    ? "#3b82f6"
-                    : "#ef4444"
+                      ? "#3b82f6"
+                      : "#ef4444"
                 }
               />
             </div>

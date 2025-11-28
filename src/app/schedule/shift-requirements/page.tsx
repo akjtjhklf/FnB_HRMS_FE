@@ -1,5 +1,5 @@
-import { ShiftRequirementsManagement } from "@/features/schedule/shift-requirements/ShiftRequirementsManagement";
+import { ShiftRequirementsMatrixView } from "@/features/schedule/shift-requirements/ShiftRequirementsMatrixView";
 
 export default function ShiftRequirementsPage() {
-  return <ShiftRequirementsManagement />;
+  return <ShiftRequirementsMatrixView />;
 }

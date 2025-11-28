@@ -6,19 +6,7 @@ import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";
 import { PositionAssignmentCard } from "./PositionAssignmentCard";
-
-interface Employee {
-  id: string;
-  full_name: string;
-  employee_id: string;
-  [key: string]: any;
-}
-
-interface Position {
-  id: string;
-  name: string;
-  [key: string]: any;
-}
+import { Employee, Position } from "@types";
 
 interface AssignmentDrawerProps {
   open: boolean;

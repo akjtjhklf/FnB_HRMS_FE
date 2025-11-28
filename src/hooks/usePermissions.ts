@@ -39,46 +39,37 @@ export function usePermissions() {
       };
     }
 
-    // TODO: Load actual permissions from API
-    // For now, use role-based fallback
-    const roleName = role?.name?.toLowerCase() || "";
-    const isManager = roleName.includes("manager") || roleName.includes("administrator");
+    // ✅ NEW: Parse actual Directus permissions
+    const directusPermissions = (role?.permissions || []) as Array<{
+      collection: string;
+      action: string;
+      permissions?: Record<string, any>;
+      fields?: string[];
+    }>;
+    
+    const hasPermission = (collection: string, action: Action) => {
+      return directusPermissions.some((perm) => {
+        return perm.collection === collection && perm.action === action;
+      });
+    };
+
+    // Derive role-based helpers from actual permissions
+    const canManageSchedule = 
+      hasPermission('schedule_assignments', 'create') ||
+      hasPermission('weekly_schedule', 'create');
+    
+    const canRegisterAvailability = 
+      hasPermission('employee_availability', 'create');
 
     return {
       isAdmin: false,
-      hasPermission: (collection: string, action: Action) => {
-        // TODO: Check actual permissions from user.role.permissions
-        // For now, manager can do everything, employee limited
-        if (isManager) return true;
-        
-        // Employee permissions
-        const employeePermissions: Record<string, Action[]> = {
-          "employee-availability": ["create", "read", "update"],
-          "schedule-change-requests": ["create", "read", "update"],
-          "schedule-assignments": ["read"],
-          "shifts": ["read"],
-          "weekly-schedules": ["read"],
-        };
-
-        const allowed = employeePermissions[collection] || [];
-        return allowed.includes(action);
-      },
-      canCreate: (collection: string) => {
-        if (isManager) return true;
-        return ["employee-availability", "schedule-change-requests"].includes(collection);
-      },
-      canRead: (collection: string) => {
-        return true; // Everyone can read their relevant data
-      },
-      canUpdate: (collection: string) => {
-        if (isManager) return true;
-        return ["employee-availability", "schedule-change-requests"].includes(collection);
-      },
-      canDelete: (collection: string) => {
-        return isManager; // Only managers can delete
-      },
-      canManageSchedule: isManager,
-      canRegisterAvailability: !isManager, // Only employees register
+      hasPermission,
+      canCreate: (collection: string) => hasPermission(collection, 'create'),
+      canRead: (collection: string) => hasPermission(collection, 'read'),
+      canUpdate: (collection: string) => hasPermission(collection, 'update'),
+      canDelete: (collection: string) => hasPermission(collection, 'delete'),
+      canManageSchedule,
+      canRegisterAvailability,
     };
   }, [user]);
 

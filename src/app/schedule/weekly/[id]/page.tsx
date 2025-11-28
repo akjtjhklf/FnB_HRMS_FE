@@ -2,11 +2,8 @@
 
 import { WeeklyScheduleDetail } from "@features/schedule/weekly-schedules/WeeklyScheduleDetail";
 
+export default async function WeeklyScheduleDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-export default function WeeklyScheduleDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  return <WeeklyScheduleDetail id={params.id} />;
+  return <WeeklyScheduleDetail id={id} />;
 }
