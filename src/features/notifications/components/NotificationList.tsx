@@ -338,8 +338,8 @@ export const NotificationList = () => {
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Mức độ">
-                <Tag color={getLevelConfig(viewingNotification.level).color}>
-                  {getLevelConfig(viewingNotification.level).text}
+                <Tag color={getLevelConfig(viewingNotification.level || undefined).color}>
+                  {getLevelConfig(viewingNotification.level || undefined).text}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Người nhận">

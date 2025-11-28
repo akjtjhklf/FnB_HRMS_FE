@@ -40,7 +40,7 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
     }
     return pathname?.startsWith(href);
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
