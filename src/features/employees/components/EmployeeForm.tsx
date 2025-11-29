@@ -470,7 +470,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
       </Card>
 
       {/* Emergency Contact */}
-      {/* <Card title="🚨 Liên hệ khẩn cấp" className="mb-6">
+      <Card title="🚨 Liên hệ khẩn cấp" className="mb-6">
         <Row gutter={[24, 0]}>
           <Col xs={24} md={12}>
             <Form.Item label="Tên người liên hệ" name="emergency_contact_name">
@@ -495,7 +495,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
             </Form.Item>
           </Col>
         </Row>
-      </Card> */}
+      </Card>
 
       {/* Additional Notes */}
       <Card title="📝 Ghi chú" className="mb-6">

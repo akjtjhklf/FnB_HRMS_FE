@@ -1,7 +1,7 @@
 "use client";
 
 import { useTable } from "@refinedev/antd";
-import { useCreate } from "@refinedev/core";
+import { useCreate, useCustomMutation, useUpdate } from "@refinedev/core";
 import {
   Table,
   Card,
@@ -19,6 +19,8 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
+  DatePicker,
 } from "antd";
 import {
   DollarOutlined,
@@ -31,15 +33,19 @@ import {
   FileTextOutlined,
   SendOutlined,
   MailOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { formatDate } from "@/lib/utils";
-import { MonthlyPayroll } from "@/types/payroll";
+import { MonthlyPayroll } from "@/features/salary/types";
 import { Employee } from "@/types/employee";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
 import { useRouter } from "next/navigation";
 import { CustomDrawer } from "@/components/common/CustomDrawer";
 import { SalaryForm } from "./SalaryForm";
+import dayjs from "dayjs";
 
 const formatCurrency = (value: number) => {
   if (!value || isNaN(value)) return "0";
@@ -60,8 +66,13 @@ export const SalaryList = () => {
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [editingPayroll, setEditingPayroll] = useState<MonthlyPayroll | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [generateModalOpen, setGenerateModalOpen] = useState(false);
+  const [generateMonth, setGenerateMonth] = useState<dayjs.Dayjs | null>(dayjs());
 
   const { mutate: createRequest } = useCreate();
+  const { mutate: generatePayroll, mutation: generateMutation } = useCustomMutation();
+  const isGenerating = generateMutation?.isLoading;
+  const { mutate: updatePayroll } = useUpdate();
 
   const { tableProps } = useTable<MonthlyPayroll>({
     resource: "monthly-payrolls",
@@ -192,25 +203,22 @@ export const SalaryList = () => {
   const handleSubmitRequest = async () => {
     try {
       const values = await requestForm.validateFields();
-      
-      // Convert to correct types for backend validation
-      const employeeId = typeof currentPayroll?.employee_id === "object" 
-        ? (currentPayroll?.employee_id as Employee).id 
+
+      const employeeId = typeof currentPayroll?.employee_id === "object"
+        ? (currentPayroll?.employee_id as any).id
         : currentPayroll?.employee_id;
-      
-      const currentRate = Number(currentPayroll?.base_salary) || 0;
-      const proposedRate = Number(currentPayroll?.base_salary) || 0;
-      
+
       createRequest(
         {
           resource: "salary-requests",
           values: {
             employee_id: employeeId,
-            current_rate: currentRate,
-            proposed_rate: proposedRate,
+            type: "adjustment",
+            payroll_id: currentPayroll?.id,
+            adjustment_amount: values.adjustment_amount,
+            reason: values.reason,
             request_date: new Date(),
             status: "pending",
-            note: values.reason,
           },
         },
         {
@@ -231,6 +239,110 @@ export const SalaryList = () => {
     }
   };
 
+  const handleLock = (record: MonthlyPayroll) => {
+    updatePayroll(
+      {
+        resource: "monthly-payrolls",
+        id: record.id,
+        values: {}, // No body needed for this custom endpoint usually, but update expects values. 
+        // Actually we should use useCustom for custom endpoints like /lock.
+        // But let's use the custom endpoint via useCustomMutation if possible, or just standard update if we mapped it.
+        // Wait, I mapped PUT /:id/lock. useUpdate calls PATCH /:id by default.
+        // So I must use useCustom.
+      },
+      {
+        onSuccess: () => {
+          // This won't work because useUpdate calls PATCH.
+          // I need to use useCustom for PUT /lock
+        }
+      }
+    );
+  };
+
+  // Correct way to call custom endpoints
+  const { mutate: lockPayroll } = useCustomMutation();
+  const { mutate: unlockPayroll } = useCustomMutation();
+
+  const onLock = (id: string) => {
+    lockPayroll({
+      url: `monthly-payrolls/${id}/lock`,
+      method: "put",
+      values: {},
+      successNotification: (data, values, resource) => {
+        return {
+          message: "Đã khóa bảng lương",
+          description: "Bảng lương đã chuyển sang trạng thái chờ duyệt",
+          type: "success",
+        };
+      },
+      errorNotification: (data, values, resource) => {
+        return {
+          message: "Lỗi khóa bảng lương",
+          description: "Vui lòng thử lại",
+          type: "error",
+        };
+      },
+    }, {
+      onSuccess: () => {
+        (tableProps as any).refetch?.();
+      }
+    });
+  };
+
+  const onUnlock = (id: string) => {
+    unlockPayroll({
+      url: `monthly-payrolls/${id}/unlock`,
+      method: "put",
+      values: {},
+      successNotification: (data, values, resource) => {
+        return {
+          message: "Đã mở khóa bảng lương",
+          description: "Bảng lương đã chuyển sang trạng thái nháp",
+          type: "success",
+        };
+      },
+    }, {
+      onSuccess: () => {
+        (tableProps as any).refetch?.();
+      }
+    });
+  };
+
+  const handleGeneratePayroll = () => {
+    if (!generateMonth) {
+      message.error("Vui lòng chọn tháng");
+      return;
+    }
+
+    generatePayroll({
+      url: "monthly-payrolls/generate",
+      method: "post",
+      values: {
+        month: generateMonth.format("YYYY-MM"),
+      },
+      successNotification: (data, values, resource) => {
+        return {
+          message: "Tạo bảng lương thành công",
+          description: `Đã tạo bảng lương cho tháng ${generateMonth.format("MM/YYYY")}`,
+          type: "success",
+        };
+      },
+      errorNotification: (error) => {
+        return {
+          message: "Lỗi tạo bảng lương",
+          description: error?.response?.data?.message || "Vui lòng thử lại",
+          type: "error",
+        };
+      }
+    }, {
+      onSuccess: () => {
+        setGenerateModalOpen(false);
+        setSelectedMonth(generateMonth.format("YYYY-MM"));
+        (tableProps as any).refetch?.();
+      }
+    });
+  };
+
   const handleExport = () => {
     message.info("Chức năng xuất Excel đang được phát triển");
   };
@@ -243,26 +355,49 @@ export const SalaryList = () => {
     message.info("Chức năng gửi phiếu lương đang được phát triển");
   };
 
-  const getActionItems = (record: MonthlyPayroll): ActionItem[] => [
-    {
-      key: "view",
-      label: "Xem chi tiết",
-      icon: <EyeOutlined />,
-      onClick: () => handleView(record),
-    },
-    {
-      key: "edit",
-      label: "Chỉnh sửa",
-      icon: <EditOutlined />,
-      onClick: () => handleEdit(record),
-    },
-    {
+  const getActionItems = (record: MonthlyPayroll): ActionItem[] => {
+    const items: ActionItem[] = [
+      {
+        key: "view",
+        label: "Xem chi tiết",
+        icon: <EyeOutlined />,
+        onClick: () => handleView(record),
+      },
+    ];
+
+    if (record.status === "draft") {
+      items.push({
+        key: "edit",
+        label: "Chỉnh sửa",
+        icon: <EditOutlined />,
+        onClick: () => handleEdit(record),
+      });
+      items.push({
+        key: "lock",
+        label: "Khóa (Gửi duyệt)",
+        icon: <LockOutlined />,
+        onClick: () => onLock(record.id),
+      });
+    }
+
+    if (record.status === "pending_approval") {
+      items.push({
+        key: "unlock",
+        label: "Mở khóa (Sửa lại)",
+        icon: <UnlockOutlined />,
+        onClick: () => onUnlock(record.id),
+      });
+    }
+
+    items.push({
       key: "request",
       label: "Yêu cầu sửa",
       icon: <SendOutlined />,
       onClick: () => handleRequestEdit(record),
-    },
-  ];
+    });
+
+    return items;
+  };
 
   const columns: any[] = [
     {
@@ -386,19 +521,19 @@ export const SalaryList = () => {
           />
           <Button
             type="primary"
+            icon={<ThunderboltOutlined />}
+            onClick={() => setGenerateModalOpen(true)}
+            size="large"
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            Tính lương
+          </Button>
+          <Button
             icon={<PlusOutlined />}
             onClick={handleCreatePayroll}
             size="large"
           >
-            Tạo bảng lương
-          </Button>
-          <Button
-            type="default"
-            icon={<MailOutlined />}
-            onClick={handleSendPayslips}
-            size="large"
-          >
-            Gửi phiếu lương
+            Tạo thủ công
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
             Xuất Excel
@@ -610,6 +745,17 @@ export const SalaryList = () => {
         </div>
         <Form form={requestForm} layout="vertical">
           <Form.Item
+            name="adjustment_amount"
+            label="Số tiền điều chỉnh (VNĐ)"
+            help="Nhập số dương để tăng, số âm để giảm"
+          >
+            <InputNumber
+              className="w-full"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+              parser={(value) => value!.replace(/\./g, "")}
+            />
+          </Form.Item>
+          <Form.Item
             name="reason"
             label="Lý do yêu cầu chỉnh sửa"
             rules={[
@@ -624,6 +770,40 @@ export const SalaryList = () => {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Generate Payroll Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <ThunderboltOutlined />
+            <span className="text-base md:text-lg">Tính lương tự động</span>
+          </div>
+        }
+        open={generateModalOpen}
+        onCancel={() => setGenerateModalOpen(false)}
+        onOk={handleGeneratePayroll}
+        okText="Bắt đầu tính"
+        cancelText="Hủy"
+        confirmLoading={isGenerating}
+        centered
+      >
+        <div className="py-4">
+          <p className="mb-4 text-gray-600">Chọn tháng để tính lương cho tất cả nhân viên đang hoạt động.</p>
+          <DatePicker
+            picker="month"
+            className="w-full"
+            size="large"
+            value={generateMonth}
+            onChange={setGenerateMonth}
+            format="MM/YYYY"
+          />
+          <p className="mt-4 text-xs text-gray-500">
+            * Hệ thống sẽ dựa trên Hợp đồng lao động và Salary Scheme để tính toán.
+            <br />
+            * Bảng lương sẽ được tạo ở trạng thái "Nháp".
+          </p>
+        </div>
       </Modal>
 
       {/* Edit Drawer */}

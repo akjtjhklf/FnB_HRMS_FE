@@ -1,20 +1,21 @@
 "use client";
 
-import { useShow, useDelete, useList } from "@refinedev/core";
-import { Employee, Contract } from "@/types/employee";
-import { Button, Avatar, Tag, Tabs, Card, Space, message } from "antd";
-import { 
-  ArrowLeftOutlined, 
-  EditOutlined, 
+import { useShow, useDelete } from "@refinedev/core";
+import { Employee } from "@/types/employee";
+import { Button, Avatar, Tag, Tabs, Card, Space, message, Divider } from "antd";
+import {
+  ArrowLeftOutlined,
+  EditOutlined,
   DeleteOutlined,
+  CreditCardOutlined,
 } from "@ant-design/icons";
-import { 
-  Mail, 
-  Phone, 
-  Calendar, 
-  MapPin, 
-  Briefcase, 
-  FileText, 
+import {
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  Briefcase,
+  FileText,
   UserCheck,
   TrendingUp
 } from "lucide-react";
@@ -31,14 +32,14 @@ interface EmployeeShowProps {
 export const EmployeeShow = ({ id }: EmployeeShowProps) => {
   const router = useRouter();
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
-  
+
   const { query } = useShow<Employee>({
     resource: "employees",
     id,
   });
 
   const { data: employee, isLoading } = query;
-  
+
   const { mutate: deleteEmployee } = useDelete();
 
   const handleDelete = () => {
@@ -115,20 +116,20 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
             {/* Left Sidebar */}
             <div className="lg:col-span-1">
               <Card className="text-center">
-                <Avatar 
-                  src={employeeData.photo_url} 
-                  size={100} 
+                <Avatar
+                  src={employeeData.photo_url}
+                  size={100}
                   className="mx-auto mb-4"
                 >
                   {employeeData.first_name?.[0]}
                 </Avatar>
-                
+
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
                   {employeeData.full_name || `${employeeData.first_name} ${employeeData.last_name}`}
                 </h2>
-                
+
                 <p className="text-gray-500 mb-3">{employeeData.employee_code}</p>
-                
+
                 <Tag color={getStatusColor(employeeData.status)} className="mb-4">
                   {getStatusText(employeeData.status)}
                 </Tag>
@@ -231,8 +232,8 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                                 <div>
                                   <p className="text-gray-500 text-sm">Giới tính</p>
                                   <p className="font-medium">
-                                    {employeeData.gender === 'male' ? 'Nam' : 
-                                     employeeData.gender === 'female' ? 'Nữ' : 'Khác'}
+                                    {employeeData.gender === 'male' ? 'Nam' :
+                                      employeeData.gender === 'female' ? 'Nữ' : 'Khác'}
                                   </p>
                                 </div>
                                 <div>
@@ -245,6 +246,48 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                                   <p className="text-gray-500 text-sm">CMND/CCCD</p>
                                   <p className="font-medium">{employeeData.personal_id || "-"}</p>
                                 </div>
+
+                                {employeeData.user ? (
+                                  <>
+                                    <Divider className="my-2" />
+                                    <div>
+                                      <p className="text-gray-500 text-sm">Tài khoản hệ thống</p>
+                                      <p className="font-medium">{employeeData.user.email}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-gray-500 text-sm">Vai trò (Role)</p>
+                                      <Tag color="blue">
+                                        {typeof employeeData.user.role === 'object'
+                                          ? (employeeData.user.role as any)?.name
+                                          : employeeData.user.role || "N/A"}
+                                      </Tag>
+                                    </div>
+                                    {employeeData.user.policies && employeeData.user.policies.length > 0 && (
+                                      <div>
+                                        <p className="text-gray-500 text-sm mb-1">Chính sách (Policies)</p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {employeeData.user.policies.map((policy: any) => (
+                                            <Tag key={policy.id} color="cyan">{policy.name}</Tag>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Divider className="my-2" />
+                                    <div className="bg-gray-50 p-3 rounded border border-gray-200 text-center">
+                                      <p className="text-gray-500 text-sm mb-2">Chưa có tài khoản hệ thống</p>
+                                      <Button
+                                        size="small"
+                                        type="dashed"
+                                        onClick={() => router.push(`/employees/${id}/edit`)}
+                                      >
+                                        Tạo tài khoản
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
                               </Space>
                             </Card>
 
@@ -264,13 +307,6 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                                 <div>
                                   <p className="text-gray-500 text-sm">Địa chỉ</p>
                                   <p className="font-medium">{employeeData.address || "-"}</p>
-                                </div>
-                                <div>
-                                  <p className="text-gray-500 text-sm">Liên hệ khẩn cấp</p>
-                                  <p className="font-medium">
-                                    {employeeData.emergency_contact_phone ? 
-                                      formatPhoneNumber(employeeData.emergency_contact_phone) : "-"}
-                                  </p>
                                 </div>
                               </Space>
                             </Card>
@@ -294,10 +330,66 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                                     {getStatusText(employeeData.status)}
                                   </Tag>
                                 </div>
+
+                                <Divider className="my-2" />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-gray-500 text-sm">Giờ làm/tuần</p>
+                                    <p className="font-medium">
+                                      {employeeData.default_work_hours_per_week || 40} giờ
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-500 text-sm">Tối đa/tuần</p>
+                                    <p className="font-medium">
+                                      {employeeData.max_hours_per_week || 48} giờ
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-500 text-sm">Ngày liên tiếp tối đa</p>
+                                    <p className="font-medium">
+                                      {employeeData.max_consecutive_days || 7} ngày
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-500 text-sm">Nghỉ giữa ca</p>
+                                    <p className="font-medium">
+                                      {employeeData.min_rest_hours_between_shifts || 8} giờ
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {(employeeData as any).rfid_cards && (employeeData as any).rfid_cards.length > 0 && (
+                                  <>
+                                    <Divider className="my-2" />
+                                    <div>
+                                      <p className="text-gray-500 text-sm">Thẻ RFID</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {(employeeData as any).rfid_cards.map((card: any, index: number) => (
+                                          <Tag key={index} icon={<CreditCardOutlined />} color="purple">
+                                            {card.card_number}
+                                          </Tag>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                              </Space>
+                            </Card>
+
+                            {/* Emergency Contact */}
+                            <Card type="inner" title="Liên hệ khẩn cấp" size="small">
+                              <Space direction="vertical" className="w-full" size="middle">
                                 <div>
-                                  <p className="text-gray-500 text-sm">Giờ làm/tuần</p>
+                                  <p className="text-gray-500 text-sm">Người liên hệ</p>
+                                  <p className="font-medium">{employeeData.emergency_contact_name || "-"}</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-500 text-sm">Số điện thoại</p>
                                   <p className="font-medium">
-                                    {employeeData.default_work_hours_per_week || 40} giờ
+                                    {employeeData.emergency_contact_phone ?
+                                      formatPhoneNumber(employeeData.emergency_contact_phone) : "-"}
                                   </p>
                                 </div>
                               </Space>

@@ -10,6 +10,7 @@ export interface Role {
 // User type FE
 export interface UserWithRole extends User {
   role?: Role;
+  policies?: any[];
 }
 // Employee types
 export interface Employee {

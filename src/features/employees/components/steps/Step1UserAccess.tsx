@@ -8,7 +8,11 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { Password } = Input;
 
-export const Step1UserAccess: React.FC = () => {
+interface Step1UserAccessProps {
+    isEdit?: boolean;
+}
+
+export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false }) => {
     const { formData, updateFormData } = useEmployeeWizardStore();
     const [form] = Form.useForm();
 
@@ -89,13 +93,13 @@ export const Step1UserAccess: React.FC = () => {
                                 label="Mật khẩu"
                                 name="password"
                                 rules={[
-                                    { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                                    { required: !isEdit, message: 'Vui lòng nhập mật khẩu!' },
                                     { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' }
                                 ]}
                             >
                                 <Password
                                     prefix={<LockOutlined />}
-                                    placeholder="Nhập mật khẩu"
+                                    placeholder={isEdit ? "Để trống nếu không đổi" : "Nhập mật khẩu"}
                                     size="large"
                                 />
                             </Form.Item>
@@ -106,10 +110,13 @@ export const Step1UserAccess: React.FC = () => {
                                 name="confirmPassword"
                                 dependencies={['password']}
                                 rules={[
-                                    { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                                    { required: !isEdit, message: 'Vui lòng xác nhận mật khẩu!' },
                                     ({ getFieldValue }) => ({
                                         validator(_, value) {
                                             if (!value || getFieldValue('password') === value) {
+                                                return Promise.resolve();
+                                            }
+                                            if (isEdit && !value && !getFieldValue('password')) {
                                                 return Promise.resolve();
                                             }
                                             return Promise.reject(new Error('Mật khẩu không khớp!'));
