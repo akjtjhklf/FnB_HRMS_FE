@@ -29,8 +29,20 @@ export const RETRY_CONFIG = {
 } as const;
 
 export const AUTH_CONFIG = {
-  LOGIN_ENDPOINT: `${API_VERSION}/auth/login`,
-  REFRESH_TOKEN_ENDPOINT: `${API_VERSION}/auth/refresh-token`,
-  LOGOUT_ENDPOINT: `${API_VERSION}/auth/logout`,
-  ME_ENDPOINT: `${API_VERSION}/users/me`,
+  LOGIN_ENDPOINT: `/auth/login`,
+  REFRESH_TOKEN_ENDPOINT: `/auth/refresh-token`,
+  LOGOUT_ENDPOINT: `/auth/logout`,
+  ME_ENDPOINT: `/users/me`,
+} as const;
+
+export const ANALYTICS_ENDPOINTS = {
+  OVERVIEW: `/analytics/overview`,
+  EMPLOYEES: `/analytics/employees`,
+  ATTENDANCE: `/analytics/attendance`,
+  SCHEDULE: `/analytics/schedule`,
+  SALARY: `/analytics/salary`,
+  TRENDS: `/analytics/trends`,
+  COMPARISON: `/analytics/comparison`,
+  PERFORMANCE_RANKING: `/analytics/performance-ranking`,
+  EXPORT: `/analytics/export`,
 } as const;

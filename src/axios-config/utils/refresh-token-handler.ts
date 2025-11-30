@@ -37,9 +37,11 @@ async function refreshAccessToken(axiosInstance: AxiosInstance) {
     throw new Error("No refresh token available");
   }
 
+  console.log("🔄 [Refresh Token] Starting refresh process...");
+
   try {
     const response = await axiosInstance.post<RefreshTokenResponse>(
-      AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT,
+      AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT, 
       { refresh_token: refreshToken }
     );
 
@@ -47,9 +49,11 @@ async function refreshAccessToken(axiosInstance: AxiosInstance) {
 
     tokenManager.setTokens(token, refresh_token);
 
+    console.log("✅ [Refresh Token] Successfully refreshed token");
+
     return true;
   } catch (error) {
-    console.error("Refresh token failed:", error);
+    console.error("❌ [Refresh Token] Failed:", error);
     tokenManager.clearTokens();
     throw error;
   }

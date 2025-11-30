@@ -33,9 +33,9 @@ export const ReportPreview = ({
   if (loading) {
     return (
       <Card className="shadow-sm">
-        <div className="flex justify-center items-center py-20">
-          <Spin size="large" tip="Đang tải dữ liệu..." />
-        </div>
+        <Spin size="large" tip="Đang tải dữ liệu...">
+          <div className="flex justify-center items-center py-20" />
+        </Spin>
       </Card>
     );
   }
@@ -60,37 +60,59 @@ export const ReportPreview = ({
               title={<span className="text-gray-600 font-medium">Tổng NV</span>}
               value={report.totalEmployees}
               prefix={<UserOutlined className="text-blue-500" />}
-              valueStyle={{ color: "#1890ff", fontSize: "24px", fontWeight: "bold" }}
+              valueStyle={{
+                color: "#1890ff",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6}>
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
-              title={<span className="text-gray-600 font-medium">Đang làm việc</span>}
+              title={
+                <span className="text-gray-600 font-medium">Đang làm việc</span>
+              }
               value={report.activeEmployees}
               prefix={<CheckCircleOutlined className="text-green-500" />}
-              valueStyle={{ color: "#52c41a", fontSize: "24px", fontWeight: "bold" }}
+              valueStyle={{
+                color: "#52c41a",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6}>
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
-              title={<span className="text-gray-600 font-medium">Nghỉ phép</span>}
+              title={
+                <span className="text-gray-600 font-medium">Nghỉ phép</span>
+              }
               value={report.onLeaveEmployees}
               prefix={<ClockCircleOutlined className="text-orange-500" />}
-              valueStyle={{ color: "#fa8c16", fontSize: "24px", fontWeight: "bold" }}
+              valueStyle={{
+                color: "#fa8c16",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
             />
           </Card>
         </Col>
         <Col xs={12} sm={12} md={6}>
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
-              title={<span className="text-gray-600 font-medium">Đã nghỉ việc</span>}
+              title={
+                <span className="text-gray-600 font-medium">Đã nghỉ việc</span>
+              }
               value={report.inactiveEmployees}
               prefix={<StopOutlined className="text-gray-500" />}
-              valueStyle={{ color: "#8c8c8c", fontSize: "24px", fontWeight: "bold" }}
+              valueStyle={{
+                color: "#8c8c8c",
+                fontSize: "24px",
+                fontWeight: "bold",
+              }}
             />
           </Card>
         </Col>
@@ -100,6 +122,7 @@ export const ReportPreview = ({
         <Card title="📊 Thống kê theo phòng ban" className="shadow-sm mb-4">
           <Table
             dataSource={report.byDepartment}
+            rowKey="department"
             pagination={false}
             size="small"
             columns={[
@@ -163,7 +186,11 @@ export const ReportPreview = ({
             <Card className="shadow-sm">
               <Statistic
                 title="TB giờ làm/ngày"
-                value={report.averageWorkHours.toFixed(1)}
+                value={
+                  report.averageWorkHours
+                    ? report.averageWorkHours.toFixed(1)
+                    : 0
+                }
                 suffix="h"
                 valueStyle={{ fontSize: "20px" }}
               />
@@ -366,9 +393,10 @@ export const ReportPreview = ({
                 render: (_: any, record: any) => {
                   const rate =
                     record.requiredCount > 0
-                      ? ((record.assignedCount / record.requiredCount) * 100).toFixed(
-                          1
-                        )
+                      ? (
+                          (record.assignedCount / record.requiredCount) *
+                          100
+                        ).toFixed(1)
                       : 0;
                   return `${rate}%`;
                 },
@@ -385,11 +413,13 @@ export const ReportPreview = ({
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         3. Xem trước báo cáo
       </h3>
-      {reportType === "employees" && renderEmployeeReport(data as EmployeeReport)}
+      {reportType === "employees" &&
+        renderEmployeeReport(data as EmployeeReport)}
       {reportType === "attendance" &&
         renderAttendanceReport(data as AttendanceReport)}
       {reportType === "payroll" && renderPayrollReport(data as PayrollReport)}
-      {reportType === "schedule" && renderScheduleReport(data as ScheduleReport)}
+      {reportType === "schedule" &&
+        renderScheduleReport(data as ScheduleReport)}
     </div>
   );
 };
