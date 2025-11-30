@@ -42,14 +42,13 @@ import { Employee } from "@types";
 import { Position } from "@types";
 
 const DAYS_OF_WEEK = [
-  { value: 0, label: "Thứ 2", short: "T2" },
-  { value: 1, label: "Thứ 3", short: "T3" },
-  { value: 2, label: "Thứ 4", short: "T4" },
-  { value: 3, label: "Thứ 5", short: "T5" },
-  { value: 4, label: "Thứ 6", short: "T6" },
-  { value: 5, label: "Thứ 7", short: "T7" },
-  { value: 6, label: "Chủ nhật", short: "CN" },
-
+  { value: 1, label: "Thứ 2", short: "T2" },
+  { value: 2, label: "Thứ 3", short: "T3" },
+  { value: 3, label: "Thứ 4", short: "T4" },
+  { value: 4, label: "Thứ 5", short: "T5" },
+  { value: 5, label: "Thứ 6", short: "T6" },
+  { value: 6, label: "Thứ 7", short: "T7" },
+  { value: 0, label: "Chủ nhật", short: "CN" },
 ];
 
 export function ScheduleAssignmentManagement() {
@@ -173,19 +172,30 @@ export function ScheduleAssignmentManagement() {
     return map;
   }, [availabilityPositions]);
 
-  // Count registered employees per shift+position as a nested map: { [shiftId]: { [positionId]: count } }
+  // Count registered employees per shift+position as a flattened map: { [shiftId_posId]: count }
   const registeredCountByShiftPosition = useMemo(() => {
-    const map: Record<string, Record<string, number>> = {};
+    const map: Record<string, number> = {};
     availabilities.forEach((avail: any) => {
       const positions = availabilityToPositions[avail.id] || [];
       const shiftId = avail.shift_id;
-      if (!map[shiftId]) map[shiftId] = {};
       positions.forEach((posId) => {
-        map[shiftId][posId] = (map[shiftId][posId] || 0) + 1;
+        const key = `${shiftId}_${posId}`;
+        map[key] = (map[key] || 0) + 1;
       });
     });
     return map;
   }, [availabilities, availabilityToPositions]);
+
+  // Calculate total shifts assigned per employee for the current schedule
+  const employeeShiftCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    assignments.forEach((a) => {
+      if (a.employee_id) {
+        counts[a.employee_id] = (counts[a.employee_id] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [assignments]);
 
   // Get selected schedule details
   const selectedScheduleData = useMemo(() => {
@@ -367,6 +377,7 @@ export function ScheduleAssignmentManagement() {
       onConfirm: async () => {
         await autoSchedule(selectedSchedule, { overwriteExisting: false });
         refetchReadiness();
+        assignmentsQuery.refetch();
         message.success("✅ Tự động xếp lịch thành công!");
       },
     });
@@ -505,6 +516,7 @@ export function ScheduleAssignmentManagement() {
         employees={employees}
         positions={positions}
         availableEmployeesMap={availableEmployeesMap}
+        employeeShiftCounts={employeeShiftCounts}
         onClose={() => setIsDrawerOpen(false)}
         onRemoveAssignment={handleRemoveAssignment}
         onAssignEmployee={handleAssignEmployee}

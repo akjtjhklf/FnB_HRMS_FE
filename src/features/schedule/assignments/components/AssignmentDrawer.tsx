@@ -17,6 +17,7 @@ interface AssignmentDrawerProps {
   employees: Employee[];
   positions: Position[];
   availableEmployeesMap: Map<string, Employee[]>;
+  employeeShiftCounts: Record<string, number>;
   onClose: () => void;
   onRemoveAssignment: (assignmentId: string) => void;
   onAssignEmployee: (shiftId: string, positionId: string, employeeId: string) => void;
@@ -31,6 +32,7 @@ export function AssignmentDrawer({
   employees,
   positions,
   availableEmployeesMap,
+  employeeShiftCounts,
   onClose,
   onRemoveAssignment,
   onAssignEmployee,
@@ -93,6 +95,7 @@ export function AssignmentDrawer({
                   assignments={positionAssignments}
                   employees={employees}
                   availableEmployees={availableEmployees}
+                  employeeShiftCounts={employeeShiftCounts}
                   onRemoveAssignment={onRemoveAssignment}
                   onAssignEmployee={(employeeId) =>
                     onAssignEmployee(shift.id, req.position_id, employeeId)

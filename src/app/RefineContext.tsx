@@ -30,7 +30,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
             routerProvider={routerProvider}
             dataProvider={dataProvider(API_URL)}
             authProvider={authProvider}
-            
+
             resources={[
               // ========== HR CORE ==========
               {
@@ -127,7 +127,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
               // ========== SCHEDULE ==========
               {
                 name: "weekly-schedule",
-                list: "/schedule/weekly",
+                list: "/schedule/weekly-schedules",
                 create: "/schedule/weekly/create",
                 edit: "/schedule/weekly/:id/edit",
                 meta: {
@@ -213,7 +213,7 @@ export const RefineContext: React.FC<RefineContextProps> = ({
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
               projectId: "hrms-frontend",
-              
+
             }}
           >
             {children}
