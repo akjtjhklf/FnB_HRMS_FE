@@ -25,6 +25,7 @@ import {
   ClockCircleOutlined,
   StopOutlined,
   ReloadOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import { Employee } from "@/types/employee";
@@ -267,11 +268,12 @@ export const EmployeeList = () => {
           <p className="text-gray-500 mt-1">Quản lý thông tin nhân viên</p>
         </div>
         <div className="flex gap-3">
-          <Input.Search
+          <Input
             placeholder="Tìm theo tên, email, SĐT..."
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
+            prefix={<SearchOutlined />}
             style={{ width: 280 }}
             size="large"
           />

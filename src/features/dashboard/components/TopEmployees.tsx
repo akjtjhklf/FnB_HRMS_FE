@@ -2,6 +2,7 @@ import React from "react";
 import { Card } from "@/components/ui/Card";
 import { Typography, Avatar, Progress, Empty, Button } from "antd";
 import { Trophy, TrendingUp } from "lucide-react";
+import { generateColorFromString } from "@/lib/utils";
 
 const { Title, Text } = Typography;
 
@@ -120,9 +121,7 @@ export const TopEmployees: React.FC = () => {
                   size={48}
                   src={employee.avatar}
                   style={{
-                    backgroundColor: `#${Math.floor(
-                      Math.random() * 16777215
-                    ).toString(16)}`,
+                    backgroundColor: generateColorFromString(employee.name),
                   }}
                 >
                   {employee.name.charAt(0)}

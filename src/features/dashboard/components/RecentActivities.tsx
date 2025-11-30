@@ -4,6 +4,7 @@ import { Typography, Avatar, Badge, Button, Empty } from "antd";
 import { Activity, Clock, UserCheck, UserX, AlertCircle } from "lucide-react";
 import { formatDistance } from "date-fns";
 import { vi } from "date-fns/locale";
+import { generateColorFromString } from "@/lib/utils";
 
 const { Title, Text } = Typography;
 
@@ -131,9 +132,7 @@ export const RecentActivities: React.FC = () => {
                 size={40}
                 src={activity.employee.avatar}
                 style={{
-                  backgroundColor: `#${Math.floor(
-                    Math.random() * 16777215
-                  ).toString(16)}`,
+                  backgroundColor: generateColorFromString(activity.employee.name),
                 }}
               >
                 {activity.employee.name.charAt(0)}

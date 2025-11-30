@@ -1,7 +1,20 @@
 "use client";
 
 import { useList, useCreate } from "@refinedev/core";
-import { Card, Statistic, Progress, Button, Tag, Table, Modal, Space, Tooltip, Input, App, Form } from "antd";
+import {
+  Card,
+  Statistic,
+  Progress,
+  Button,
+  Tag,
+  Table,
+  Modal,
+  Space,
+  Tooltip,
+  Input,
+  App,
+  Form,
+} from "antd";
 import {
   DollarOutlined,
   ClockCircleOutlined,
@@ -17,26 +30,30 @@ import dayjs from "dayjs";
 
 interface WorkHistoryTabProps {
   employeeId: string;
+  positionId?: string;
 }
 
-export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) => {
+export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
+  employeeId,
+  positionId,
+}) => {
   const { message } = App.useApp();
   const [bonusDetailVisible, setBonusDetailVisible] = useState(false);
   const [penaltyDetailVisible, setPenaltyDetailVisible] = useState(false);
   const [salaryRequestVisible, setSalaryRequestVisible] = useState(false);
   const [form] = Form.useForm();
-  
+
   const { mutate: createSalaryRequest } = useCreate();
   const [isCreating, setIsCreating] = useState(false);
 
-  // Fetch salary scheme
-  const { query: schemeQuery } = useList({
-    resource: "salary_schemes",
+  // Fetch active contract to get salary scheme
+  const { query: contractQuery } = useList({
+    resource: "contracts",
     filters: [
       {
-        field: "position_id",
+        field: "employee_id",
         operator: "eq",
-        value: "1", // Mock - should be from employee's current position
+        value: employeeId,
       },
       {
         field: "is_active",
@@ -45,10 +62,32 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       },
     ],
   });
+  const activeContract = contractQuery.data?.data?.[0];
+
+  // Fetch salary scheme based on contract OR position
+  const { query: schemeQuery } = useList({
+    resource: "salary-schemes",
+    filters: [
+      activeContract?.salary_scheme_id
+        ? {
+            field: "id",
+            operator: "eq",
+            value: activeContract.salary_scheme_id,
+          }
+        : {
+            field: "position_id",
+            operator: "eq",
+            value: positionId || "unknown",
+          },
+    ],
+    queryOptions: {
+      enabled: !!(activeContract?.salary_scheme_id || positionId),
+    },
+  });
 
   // Fetch schedule assignments (to calculate total shifts)
   const { query: assignmentsQuery } = useList({
-    resource: "schedule_assignments",
+    resource: "schedule-assignments",
     filters: [
       {
         field: "employee_id",
@@ -66,9 +105,9 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     },
   });
 
-  // Fetch monthly payrolls (for bonuses/penalties history)
+  // Fetch monthly payrolls (for bonuses/penalties history and total hours)
   const { query: payrollsQuery } = useList({
-    resource: "monthly_payrolls",
+    resource: "monthly-payrolls",
     filters: [
       {
         field: "employee_id",
@@ -76,6 +115,9 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
         value: employeeId,
       },
     ],
+    pagination: {
+      pageSize: 1000, // Fetch all history
+    },
     sorters: [
       {
         field: "month",
@@ -86,25 +128,46 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
 
   // Calculate statistics
   const currentScheme = schemeQuery.data?.data?.[0] || {
-    id: "1",
-    name: "Cơ bản",
-    rate: 50000,
+    id: "unknown",
+    name: "Chưa thiết lập",
+    rate: 0,
     pay_type: "hourly",
-    min_hours: 160,
+    min_hours: 0,
   };
 
-  const assignments = useMemo(() => assignmentsQuery.data?.data || [], [assignmentsQuery.data?.data]);
-  const payrolls = useMemo(() => payrollsQuery.data?.data || [], [payrollsQuery.data?.data]);
+  const assignments = useMemo(
+    () => assignmentsQuery.data?.data || [],
+    [assignmentsQuery.data?.data]
+  );
+  const payrolls = useMemo(
+    () => payrollsQuery.data?.data || [],
+    [payrollsQuery.data?.data]
+  );
 
-  // Mock data for demo
-  const totalHoursWorked = 1240; // Hours from hire date
-  const requiredHoursForRaise = 1600; // Hours needed for next raise
-  const hoursRemaining = requiredHoursForRaise - totalHoursWorked;
-  const progressPercent = (totalHoursWorked / requiredHoursForRaise) * 100;
+  // Real data calculations
+  const totalHoursWorked = useMemo(() => {
+    return payrolls.reduce(
+      (sum: number, p: any) => sum + (Number(p.total_work_hours) || 0),
+      0
+    );
+  }, [payrolls]);
+
+  const requiredHoursForRaise = 1000; // Threshold for raise eligibility (can be dynamic later)
+  const hoursRemaining = Math.max(0, requiredHoursForRaise - totalHoursWorked);
+  const progressPercent = Math.min(
+    100,
+    (totalHoursWorked / requiredHoursForRaise) * 100
+  );
 
   // Calculate total bonuses and penalties
-  const totalBonuses = payrolls.reduce((sum: number, p: any) => sum + (p.bonuses || 0), 0);
-  const totalPenalties = payrolls.reduce((sum: number, p: any) => sum + (p.penalties || 0), 0);
+  const totalBonuses = payrolls.reduce(
+    (sum: number, p: any) => sum + (Number(p.bonuses) || 0),
+    0
+  );
+  const totalPenalties = payrolls.reduce(
+    (sum: number, p: any) => sum + (Number(p.penalties) || 0),
+    0
+  );
 
   // Calculate shifts by position
   const shiftsByPosition = useMemo(() => {
@@ -116,21 +179,21 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     return positionMap;
   }, [assignments]);
 
-  // Mock bonus/penalty details
+  // Bonus/penalty details
   const bonusDetails = payrolls
-    .filter((p: any) => p.bonuses > 0)
+    .filter((p: any) => Number(p.bonuses) > 0)
     .map((p: any) => ({
       month: p.month,
       amount: p.bonuses,
-      reason: "Hoàn thành xuất sắc KPI",
+      reason: p.notes || "Thưởng hiệu suất/Khác",
     }));
 
   const penaltyDetails = payrolls
-    .filter((p: any) => p.penalties > 0)
+    .filter((p: any) => Number(p.penalties) > 0)
     .map((p: any) => ({
       month: p.month,
       amount: p.penalties,
-      reason: p.notes || "Vi phạm quy định",
+      reason: p.notes || "Vi phạm quy định/Khác",
     }));
 
   const handleSalaryRequest = () => {
@@ -141,15 +204,16 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     try {
       const values = await form.validateFields();
       setIsCreating(true);
-      
+
       createSalaryRequest(
         {
-          resource: "salary_requests",
+          resource: "salary-requests",
           values: {
             employee_id: employeeId,
-            current_scheme_id: currentScheme.id,
+            current_scheme_id:
+              currentScheme.id !== "unknown" ? currentScheme.id : null,
             current_rate: currentScheme.rate,
-            proposed_rate: values.proposed_rate || currentScheme.rate * 1.15, // Default 15% increase
+            proposed_rate: Number(values.proposed_rate),
             request_date: dayjs().toISOString(),
             status: "pending",
             note: values.note,
@@ -168,7 +232,9 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
           onError: (error: any) => {
             setIsCreating(false);
             message.error({
-              content: `❌ Gửi yêu cầu thất bại: ${error?.message || "Có lỗi xảy ra"}`,
+              content: `❌ Gửi yêu cầu thất bại: ${
+                error?.message || "Có lỗi xảy ra"
+              }`,
               duration: 4,
             });
           },
@@ -187,19 +253,19 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       render: (text: string) => dayjs(text).format("MM/YYYY"),
     },
     {
+      title: "Loại / Lý do",
+      dataIndex: "reason",
+      key: "reason",
+    },
+    {
       title: "Số tiền",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => (
         <span className="font-semibold text-green-600">
-          +{amount.toLocaleString()} VNĐ
+          +{Number(amount).toLocaleString()} VNĐ
         </span>
       ),
-    },
-    {
-      title: "Lý do",
-      dataIndex: "reason",
-      key: "reason",
     },
   ];
 
@@ -211,21 +277,34 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       render: (text: string) => dayjs(text).format("MM/YYYY"),
     },
     {
+      title: "Loại / Lý do",
+      dataIndex: "reason",
+      key: "reason",
+    },
+    {
       title: "Số tiền",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => (
         <span className="font-semibold text-red-600">
-          -{amount.toLocaleString()} VNĐ
+          -{Number(amount).toLocaleString()} VNĐ
         </span>
       ),
     },
-    {
-      title: "Lý do",
-      dataIndex: "reason",
-      key: "reason",
-    },
   ];
+
+  const getPayTypeLabel = (type: string) => {
+    switch (type) {
+      case "hourly":
+        return "Theo giờ";
+      case "fixed_shift":
+        return "Theo ca";
+      case "monthly":
+        return "Theo tháng";
+      default:
+        return type;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -239,16 +318,10 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             </h3>
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-blue-600">
-                {currentScheme.rate.toLocaleString()} VNĐ
+                {Number(currentScheme.rate).toLocaleString()} VNĐ
               </span>
               <Tag color="blue">{currentScheme.name}</Tag>
-              <Tag color="cyan">
-                {currentScheme.pay_type === "hourly"
-                  ? "Theo giờ"
-                  : currentScheme.pay_type === "fixed_shift"
-                  ? "Theo ca"
-                  : "Theo tháng"}
-              </Tag>
+              <Tag color="cyan">{getPayTypeLabel(currentScheme.pay_type)}</Tag>
             </div>
           </div>
           <Button
@@ -257,6 +330,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             size="large"
             onClick={handleSalaryRequest}
             className="flex items-center gap-2"
+            disabled={currentScheme.id === "unknown"}
           >
             Yêu cầu tăng lương
           </Button>
@@ -278,6 +352,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             <Statistic
               title="Tổng giờ đã làm"
               value={totalHoursWorked}
+              precision={1}
               suffix="giờ"
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: "#1890ff" }}
@@ -292,16 +367,21 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             <Statistic
               title="Còn lại"
               value={hoursRemaining}
+              precision={1}
               suffix="giờ"
               prefix={<CalendarOutlined />}
-              valueStyle={{ color: hoursRemaining <= 100 ? "#52c41a" : "#faad14" }}
+              valueStyle={{
+                color: hoursRemaining <= 100 ? "#52c41a" : "#faad14",
+              }}
             />
           </div>
 
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Tiến độ hoàn thành</span>
-              <span className="font-semibold">{progressPercent.toFixed(1)}%</span>
+              <span className="font-semibold">
+                {progressPercent.toFixed(1)}%
+              </span>
             </div>
             <Progress
               percent={progressPercent}
@@ -518,28 +598,28 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
         okText="Gửi yêu cầu"
         cancelText="Hủy"
         width={600}
-        okButtonProps={{ 
+        okButtonProps={{
           icon: <RiseOutlined />,
           disabled: isCreating,
         }}
       >
         <div className="space-y-4 mt-4">
           {/* Current Info */}
-          <Card type="inner" size="small" className="bg-blue-50 border-blue-200">
+          <Card
+            type="inner"
+            size="small"
+            className="bg-blue-50 border-blue-200"
+          >
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Số giờ đã làm:</span>
-                <strong>{totalHoursWorked} giờ</strong>
+                <strong>{totalHoursWorked.toFixed(1)} giờ</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Mức lương hiện tại:</span>
                 <strong className="text-blue-600">
-                  {currentScheme.rate.toLocaleString()} VNĐ/
-                  {currentScheme.pay_type === "hourly"
-                    ? "giờ"
-                    : currentScheme.pay_type === "fixed_shift"
-                    ? "ca"
-                    : "tháng"}
+                  {Number(currentScheme.rate).toLocaleString()} VNĐ/
+                  {getPayTypeLabel(currentScheme.pay_type)}
                 </strong>
               </div>
               <div className="flex justify-between">
@@ -590,7 +670,10 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
               label="Ghi chú"
               name="note"
               rules={[
-                { required: true, message: "Vui lòng nhập lý do yêu cầu tăng lương!" },
+                {
+                  required: true,
+                  message: "Vui lòng nhập lý do yêu cầu tăng lương!",
+                },
               ]}
               tooltip="Nêu rõ lý do và thành tích để được xem xét"
             >
@@ -604,8 +687,8 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
 
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
             <p className="text-sm text-yellow-800">
-              💡 <strong>Lưu ý:</strong> Yêu cầu sẽ được gửi đến quản lý để xem xét. 
-              Thời gian phê duyệt thường là 3-7 ngày làm việc.
+              💡 <strong>Lưu ý:</strong> Yêu cầu sẽ được gửi đến quản lý để xem
+              xét. Thời gian phê duyệt thường là 3-7 ngày làm việc.
             </p>
           </div>
         </div>

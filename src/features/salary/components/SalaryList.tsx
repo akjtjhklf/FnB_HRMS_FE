@@ -1,5 +1,6 @@
-"use client";
-
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import dayjs from "dayjs";
 import { useTable } from "@refinedev/antd";
 import { useCreate, useCustomMutation, useUpdate } from "@refinedev/core";
 import {
@@ -21,6 +22,7 @@ import {
   Input,
   InputNumber,
   DatePicker,
+  Tabs,
 } from "antd";
 import {
   DollarOutlined,
@@ -37,15 +39,19 @@ import {
   UnlockOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
-import { useState, useMemo } from "react";
-import { formatDate } from "@/lib/utils";
-import { MonthlyPayroll } from "@/features/salary/types";
-import { Employee } from "@/types/employee";
-import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
-import { useRouter } from "next/navigation";
-import { CustomDrawer } from "@/components/common/CustomDrawer";
+import { Settings } from "lucide-react";
+import { SalarySchemeList } from "./SalarySchemeList";
 import { SalaryForm } from "./SalaryForm";
-import dayjs from "dayjs";
+import { CustomDrawer } from "@/components/common/CustomDrawer";
+import { MonthlyPayroll } from "@/types/monthly-payroll"; // Assuming this type exists or I will define it locally if needed
+import { formatDate } from "@/lib/utils";
+
+interface ActionItem {
+  key: string;
+  label: React.ReactNode;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
 
 const formatCurrency = (value: number) => {
   if (!value || isNaN(value)) return "0";
@@ -488,119 +494,158 @@ export const SalaryList = () => {
     {
       title: "Thao tác",
       key: "actions",
-      width: 100,
       fixed: "right" as const,
+      width: 100,
       render: (_: any, record: MonthlyPayroll) => (
-        <ActionPopover actions={getActionItems(record)} />
+        <Space>
+           {getActionItems(record).map(item => (
+             <Button 
+               key={item.key} 
+               type="text" 
+               icon={item.icon} 
+               onClick={item.onClick} 
+               title={typeof item.label === 'string' ? item.label : undefined}
+             />
+           ))}
+        </Space>
       ),
+    },
+  ];
+
+  const items = [
+    {
+      key: "payroll",
+      label: (
+        <span className="flex items-center gap-2">
+          <FileTextOutlined />
+          Bảng lương
+        </span>
+      ),
+      children: (
+        <>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Bảng lương
+              </h1>
+              <p className="text-gray-500 mt-1">Quản lý lương và thưởng nhân viên</p>
+            </div>
+            <Space>
+              <Input.Search
+                placeholder="Tìm theo tên nhân viên..."
+                allowClear
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ width: 250 }}
+              />
+              <Select
+                value={selectedMonth}
+                onChange={setSelectedMonth}
+                options={monthOptions}
+                style={{ width: 200 }}
+              />
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                onClick={() => setGenerateModalOpen(true)}
+                size="large"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                Tính lương
+              </Button>
+              <Button
+                icon={<PlusOutlined />}
+                onClick={handleCreatePayroll}
+                size="large"
+              >
+                Tạo thủ công
+              </Button>
+              <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
+                Xuất Excel
+              </Button>
+            </Space>
+          </div>
+
+          {/* Statistics Cards */}
+          <Row gutter={[16, 16]} className="mb-6">
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" className="shadow-sm">
+                <Statistic
+                  title="Tổng NV"
+                  value={stats.total}
+                  prefix={<DollarOutlined />}
+                  valueStyle={{ fontSize: "18px" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" className="shadow-sm">
+                <Statistic
+                  title="Tổng lương"
+                  value={stats.totalGross}
+                  formatter={(value) => formatCurrency(Number(value))}
+                  valueStyle={{ color: "#1890ff", fontSize: "18px" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" className="shadow-sm">
+                <Statistic
+                  title="Thực lãnh"
+                  value={stats.totalNet}
+                  formatter={(value) => formatCurrency(Number(value))}
+                  valueStyle={{ color: "#52c41a", fontSize: "18px" }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={12} md={6}>
+              <Card size="small" className="shadow-sm">
+                <Statistic
+                  title="Khấu trừ"
+                  value={stats.totalDeductions}
+                  formatter={(value) => formatCurrency(Number(value))}
+                  valueStyle={{ color: "#ff4d4f", fontSize: "18px" }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Payroll Table */}
+          <div className="bg-white rounded-lg shadow">
+            <Table
+              {...tableProps}
+              dataSource={filteredPayrolls}
+              columns={columns}
+              rowKey="id"
+              scroll={{ x: 1200 }}
+              pagination={{
+                ...tableProps.pagination,
+                total: filteredPayrolls.length,
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} của ${total} bảng lương`,
+              }}
+            />
+          </div>
+        </>
+      ),
+    },
+    {
+      key: "schemes",
+      label: (
+        <span className="flex items-center gap-2">
+          <Settings className="w-4 h-4" />
+          Chế độ lương
+        </span>
+      ),
+      children: <SalarySchemeList />,
     },
   ];
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Bảng lương
-          </h1>
-          <p className="text-gray-500 mt-1">Quản lý lương và thưởng nhân viên</p>
-        </div>
-        <Space>
-          <Input.Search
-            placeholder="Tìm theo tên nhân viên..."
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }}
-          />
-          <Select
-            value={selectedMonth}
-            onChange={setSelectedMonth}
-            options={monthOptions}
-            style={{ width: 200 }}
-          />
-          <Button
-            type="primary"
-            icon={<ThunderboltOutlined />}
-            onClick={() => setGenerateModalOpen(true)}
-            size="large"
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            Tính lương
-          </Button>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={handleCreatePayroll}
-            size="large"
-          >
-            Tạo thủ công
-          </Button>
-          <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
-            Xuất Excel
-          </Button>
-        </Space>
-      </div>
-
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={12} sm={12} md={6}>
-          <Card size="small" className="shadow-sm">
-            <Statistic
-              title="Tổng NV"
-              value={stats.total}
-              prefix={<DollarOutlined />}
-              valueStyle={{ fontSize: "18px" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <Card size="small" className="shadow-sm">
-            <Statistic
-              title="Tổng lương"
-              value={stats.totalGross}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#1890ff", fontSize: "18px" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <Card size="small" className="shadow-sm">
-            <Statistic
-              title="Thực lãnh"
-              value={stats.totalNet}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#52c41a", fontSize: "18px" }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6}>
-          <Card size="small" className="shadow-sm">
-            <Statistic
-              title="Khấu trừ"
-              value={stats.totalDeductions}
-              formatter={(value) => formatCurrency(Number(value))}
-              valueStyle={{ color: "#ff4d4f", fontSize: "18px" }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Payroll Table */}
-      <div className="bg-white rounded-lg shadow">
-        <Table
-          {...tableProps}
-          dataSource={filteredPayrolls}
-          columns={columns}
-          rowKey="id"
-          scroll={{ x: 1200 }}
-          pagination={{
-            ...tableProps.pagination,
-            total: filteredPayrolls.length,
-            showSizeChanger: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} của ${total} bảng lương`,
-          }}
-        />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <Tabs defaultActiveKey="payroll" items={items} />
       </div>
 
       {/* Payroll Detail Drawer */}

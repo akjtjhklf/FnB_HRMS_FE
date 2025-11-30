@@ -204,7 +204,6 @@ export const NotificationForm = ({
               >
                 <Radio.Button value="all">Tất cả nhân viên</Radio.Button>
                 <Radio.Button value="individual">Cá nhân</Radio.Button>
-                <Radio.Button value="group">Nhóm</Radio.Button>
               </Radio.Group>
             </Form.Item>
 
@@ -235,32 +234,6 @@ export const NotificationForm = ({
               </Form.Item>
             )}
 
-            {recipientType === "group" && (
-              <Form.Item
-                label="Chọn nhóm nhân viên"
-                name="recipient_ids"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn ít nhất 1 nhóm",
-                  },
-                ]}
-              >
-                <Select
-                  {...employeeSelectProps}
-                  mode="multiple"
-                  placeholder="Chọn nhiều nhân viên (nhóm)"
-                  showSearch
-                  size="large"
-                  filterOption={(input, option) =>
-                    String(option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  maxTagCount="responsive"
-                />
-              </Form.Item>
-            )}
           </div>
 
           {!onCancel && <Divider className="my-3 md:my-4" />}
