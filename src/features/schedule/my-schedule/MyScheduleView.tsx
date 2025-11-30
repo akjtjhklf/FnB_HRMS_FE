@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useList, useCreate } from "@refinedev/core";
+import { useList, useCreate, useGetIdentity } from "@refinedev/core";
 import {
   Calendar,
   Badge,
@@ -80,15 +80,39 @@ export function MyScheduleView() {
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<ScheduleAssignment | null>(null);
 
-  // Fetch my assignments (filter by current user - would use auth context in real app)
+  const { data: user } = useGetIdentity<any>();
+
+  // Fetch my assignments (filter by current user)
   const { query: assignmentsQuery } = useList<ScheduleAssignment>({
     resource: "schedule-assignments",
-    // In production: add filter for current user's employee_id
+    pagination: { pageSize: 1000 },
+    filters: [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: user?.employee?.id,
+      },
+    ],
+    meta: {
+      fields: [
+        "*",
+        "shift.*",
+        "shift.shift_type.*",
+        "position.*",
+        "shift_id.*",
+        "shift_id.shift_type.*",
+        "position_id.*"
+      ],
+    },
+    queryOptions: {
+      enabled: !!user?.employee?.id,
+    },
   });
 
   // Fetch all employees for swap selection
   const { query: employeesQuery } = useList<Employee>({
     resource: "employees",
+    pagination: { pageSize: 1000 },
     queryOptions: {
       enabled: swapModalOpen,
     },
@@ -100,24 +124,31 @@ export function MyScheduleView() {
   // Mutation for creating swap request
   const { mutate: createSwapRequest } = useCreate();
 
+  // Helper to get shift data safely
+  const getShift = (a: ScheduleAssignment) => a.shift || (a as any).shift_id;
+  const getPosition = (a: ScheduleAssignment) => a.position || (a as any).position_id;
+
   // Stats
   const thisWeekAssignments = assignments.filter((a: ScheduleAssignment) => {
-    if (!a.shift?.date) return false;
-    const shiftDate = dayjs(a.shift.date);
+    const shift = getShift(a);
+    if (!shift?.date) return false;
+    const shiftDate = dayjs(shift.date);
     return shiftDate.isSame(dayjs(), "week");
   });
 
   const thisMonthAssignments = assignments.filter((a: ScheduleAssignment) => {
-    if (!a.shift?.date) return false;
-    const shiftDate = dayjs(a.shift.date);
+    const shift = getShift(a);
+    if (!shift?.date) return false;
+    const shiftDate = dayjs(shift.date);
     return shiftDate.isSame(dayjs(), "month");
   });
 
   // Get assignments for specific date
   const getAssignmentsForDate = (date: Dayjs) => {
     return assignments.filter((a: ScheduleAssignment) => {
-      if (!a.shift?.date) return false;
-      return dayjs(a.shift.date).isSame(date, "day");
+      const shift = getShift(a);
+      if (!shift?.date) return false;
+      return dayjs(shift.date).isSame(date, "day");
     });
   };
 
@@ -129,8 +160,9 @@ export function MyScheduleView() {
     return (
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {dayAssignments.map((assignment: ScheduleAssignment) => {
-          const shiftName = assignment.shift?.shift_type?.name || "Ca làm việc";
-          const startTime = assignment.shift?.start_time || "";
+          const shift = getShift(assignment);
+          const shiftName = shift?.shift_type?.name || "Ca làm việc";
+          const startTime = shift?.start_time || "";
           return (
             <li key={assignment.id} style={{ marginBottom: "4px" }}>
               <Badge
@@ -331,9 +363,8 @@ export function MyScheduleView() {
               message="Ca làm việc của bạn"
               description={`${selectedAssignment.shift.shift_type?.name || "Ca làm việc"} - ${dayjs(
                 selectedAssignment.shift.date
-              ).format("DD/MM/YYYY")} (${selectedAssignment.shift.start_time} - ${
-                selectedAssignment.shift.end_time
-              })`}
+              ).format("DD/MM/YYYY")} (${selectedAssignment.shift.start_time} - ${selectedAssignment.shift.end_time
+                })`}
               type="info"
               style={{ marginBottom: "16px" }}
             />
