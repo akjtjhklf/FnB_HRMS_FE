@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { useTable } from "@refinedev/antd";
 import { useCreate, useCustomMutation, useUpdate, useGetIdentity } from "@refinedev/core";
+// @ts-ignore
 import debounce from "lodash/debounce";
 import {
   Table,
@@ -86,8 +87,16 @@ const formatCurrency = (value: number) => {
 };
 
 export const SalaryList = () => {
-  const { data: user } = useGetIdentity();
-  const isAdminOrManager = user?.role?.name === 'Administrator' || user?.role?.name === 'Manager';
+  const { data: user } = useGetIdentity<any>();
+  
+  // Check role name trực tiếp thay vì dùng usePermissions
+  const roleName = user?.role?.name;
+  const isAdminOrManager = roleName === 'Administrator' || roleName === 'Manager';
+  
+  // Debug log
+  console.log('🔍 User identity:', user);
+  console.log('🔍 Role name:', roleName);
+  console.log('🔍 isAdminOrManager:', isAdminOrManager);
 
   const { message } = App.useApp();
   const router = useRouter();
@@ -186,7 +195,8 @@ export const SalaryList = () => {
 
   // Calculate statistics from current page data
   const stats = useMemo(() => {
-    const total = tableProps.pagination?.total || payrolls.length;
+    const pagination = tableProps.pagination;
+    const total = (pagination && typeof pagination === 'object' && 'total' in pagination) ? pagination.total : payrolls.length;
     const totalGross = payrolls.reduce((sum, p) => {
       const value = parseFloat(p.gross_salary as any) || 0;
       return sum + value;
@@ -202,7 +212,7 @@ export const SalaryList = () => {
     }, 0);
 
     return { total, totalGross, totalNet, totalDeductions };
-  }, [payrolls, tableProps.pagination?.total]);
+  }, [payrolls, tableProps.pagination]);
 
   // Generate month options for last 12 months
   const monthOptions = useMemo(() => {
@@ -380,6 +390,39 @@ export const SalaryList = () => {
     });
   };
 
+  // Hook để duyệt bảng lương
+  const { mutate: approvePayroll } = useCustomMutation();
+
+  const onApprove = (id: string) => {
+    Modal.confirm({
+      title: "Duyệt bảng lương",
+      content: "Bạn có chắc muốn duyệt bảng lương này?",
+      okText: "Duyệt",
+      cancelText: "Hủy",
+      onOk: () => {
+        approvePayroll({
+          url: `monthly-payrolls/${id}/approve`,
+          method: "post",
+          values: {},
+          successNotification: () => ({
+            message: "Đã duyệt bảng lương",
+            description: "Bảng lương đã được duyệt thành công",
+            type: "success",
+          }),
+          errorNotification: (error) => ({
+            message: "Lỗi duyệt bảng lương",
+            description: error?.response?.data?.message || "Vui lòng thử lại",
+            type: "error",
+          }),
+        }, {
+          onSuccess: () => {
+            tableQueryResult?.refetch?.();
+          }
+        });
+      },
+    });
+  };
+
   const handleGeneratePayroll = () => {
     if (!generateMonth) {
       message.error("Vui lòng chọn tháng");
@@ -432,8 +475,71 @@ export const SalaryList = () => {
     router.push("/salary/create");
   };
 
-  const handleSendPayslips = () => {
-    message.info("Chức năng gửi phiếu lương đang được phát triển");
+  // Hook để gửi phiếu lương
+  const { mutate: sendPayslipMutation, mutation: sendPayslipState } = useCustomMutation();
+  const isSendingPayslip = sendPayslipState?.isPending || false;
+
+  const handleSendPayslip = (record: MonthlyPayroll) => {
+    const employeeName = getEmployeeName(record.employee_id);
+    Modal.confirm({
+      title: "Gửi phiếu lương",
+      content: `Bạn có muốn gửi phiếu lương cho ${employeeName}?`,
+      okText: "Gửi",
+      cancelText: "Hủy",
+      onOk: () => {
+        sendPayslipMutation(
+          {
+            url: `monthly-payrolls/${record.id}/send-payslip`,
+            method: "post",
+            values: {},
+            successNotification: () => ({
+              message: "Gửi phiếu lương thành công",
+              description: `Đã gửi phiếu lương cho ${employeeName}`,
+              type: "success",
+            }),
+            errorNotification: (error) => ({
+              message: "Gửi phiếu lương thất bại",
+              description: error?.response?.data?.message || "Vui lòng thử lại",
+              type: "error",
+            }),
+          }
+        );
+      },
+    });
+  };
+
+  const handleSendPayslipsBulk = () => {
+    const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
+    if (approvedPayrolls.length === 0) {
+      message.warning("Không có bảng lương nào ở trạng thái đã duyệt hoặc đã thanh toán");
+      return;
+    }
+    
+    Modal.confirm({
+      title: "Gửi phiếu lương hàng loạt",
+      content: `Bạn có muốn gửi phiếu lương cho ${approvedPayrolls.length} nhân viên?`,
+      okText: "Gửi tất cả",
+      cancelText: "Hủy",
+      onOk: () => {
+        sendPayslipMutation(
+          {
+            url: `monthly-payrolls/send-payslip-bulk`,
+            method: "post",
+            values: { payrollIds: approvedPayrolls.map((p) => p.id) },
+            successNotification: (data) => ({
+              message: "Gửi phiếu lương thành công",
+              description: `Đã gửi ${(data as any)?.data?.sent || 0} phiếu lương`,
+              type: "success",
+            }),
+            errorNotification: (error) => ({
+              message: "Gửi phiếu lương thất bại",
+              description: error?.response?.data?.message || "Vui lòng thử lại",
+              type: "error",
+            }),
+          }
+        );
+      },
+    });
   };
 
   const getActionItems = (record: MonthlyPayroll): ActionItem[] => {
@@ -446,36 +552,56 @@ export const SalaryList = () => {
       },
     ];
 
-    if (record.status === "draft") {
+    // Admin/Manager: Có các quyền quản lý (edit, lock, unlock, send payslip) nhưng KHÔNG có "Yêu cầu sửa"
+    if (isAdminOrManager) {
+      if (record.status === "draft") {
+        items.push({
+          key: "edit",
+          label: "Chỉnh sửa",
+          icon: <EditOutlined />,
+          onClick: () => handleEdit(record),
+        });
+        items.push({
+          key: "lock",
+          label: "Khóa (Gửi duyệt)",
+          icon: <LockOutlined />,
+          onClick: () => onLock(record.id),
+        });
+      }
+
+      if (record.status === "pending_approval") {
+        items.push({
+          key: "approve",
+          label: "Duyệt",
+          icon: <CheckCircleOutlined className="text-green-600" />,
+          onClick: () => onApprove(record.id),
+        });
+        items.push({
+          key: "unlock",
+          label: "Mở khóa (Sửa lại)",
+          icon: <UnlockOutlined />,
+          onClick: () => onUnlock(record.id),
+        });
+      }
+
+      // Cho phép gửi phiếu lương khi đã duyệt hoặc đã thanh toán
+      if (record.status === "approved" || record.status === "paid") {
+        items.push({
+          key: "send-payslip",
+          label: "Gửi phiếu lương",
+          icon: <MailOutlined />,
+          onClick: () => handleSendPayslip(record),
+        });
+      }
+    } else {
+      // Employee: Chỉ có nút "Yêu cầu sửa" cho bảng lương của chính mình
       items.push({
-        key: "edit",
-        label: "Chỉnh sửa",
-        icon: <EditOutlined />,
-        onClick: () => handleEdit(record),
-      });
-      items.push({
-        key: "lock",
-        label: "Khóa (Gửi duyệt)",
-        icon: <LockOutlined />,
-        onClick: () => onLock(record.id),
+        key: "request",
+        label: "Yêu cầu sửa",
+        icon: <SendOutlined />,
+        onClick: () => handleRequestEdit(record),
       });
     }
-
-    if (record.status === "pending_approval") {
-      items.push({
-        key: "unlock",
-        label: "Mở khóa (Sửa lại)",
-        icon: <UnlockOutlined />,
-        onClick: () => onUnlock(record.id),
-      });
-    }
-
-    items.push({
-      key: "request",
-      label: "Yêu cầu sửa",
-      icon: <SendOutlined />,
-      onClick: () => handleRequestEdit(record),
-    });
 
     return items;
   };
@@ -602,20 +728,24 @@ export const SalaryList = () => {
       title: "Thao tác",
       key: "actions",
       fixed: "right" as const,
-      width: 100,
-      render: (_: any, record: MonthlyPayroll) => (
-        <Space>
-          {getActionItems(record).map(item => (
-            <Button
-              key={item.key}
-              type="text"
-              icon={item.icon}
-              onClick={item.onClick}
-              title={typeof item.label === 'string' ? item.label : undefined}
-            />
-          ))}
-        </Space>
-      ),
+      width: 180,
+      render: (_: any, record: MonthlyPayroll) => {
+        const actionItems = getActionItems(record);
+        console.log('🔧 Actions for record:', record.id, 'status:', record.status, 'isAdmin:', isAdminOrManager, 'items:', actionItems.map(i => i.key));
+        return (
+          <Space>
+            {actionItems.map(item => (
+              <Button
+                key={item.key}
+                type="text"
+                icon={item.icon}
+                onClick={item.onClick}
+                title={typeof item.label === 'string' ? item.label : undefined}
+              />
+            ))}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -662,6 +792,15 @@ export const SalaryList = () => {
                     className="bg-purple-600 hover:bg-purple-700"
                   >
                     Tính lương
+                  </Button>
+                  <Button
+                    icon={<MailOutlined />}
+                    onClick={handleSendPayslipsBulk}
+                    size="large"
+                    loading={isSendingPayslip}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Gửi phiếu lương
                   </Button>
                   <Button
                     icon={<PlusOutlined />}
