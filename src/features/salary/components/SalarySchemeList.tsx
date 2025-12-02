@@ -21,7 +21,8 @@ import {
     DeleteOutlined,
     SearchOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import debounce from "lodash/debounce";
 import { SalaryScheme } from "@/features/salary/types";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
 import { useCreate, useUpdate, useDelete } from "@refinedev/core";
@@ -43,11 +44,43 @@ export const SalarySchemeList = () => {
     const { mutate: updateScheme, isLoading: isUpdating } = useUpdate();
     const { mutate: deleteScheme } = useDelete();
 
-    const { tableProps } = useTable<SalaryScheme>({
+    const { tableProps, setFilters } = useTable<SalaryScheme>({
         resource: "salary-schemes",
         syncWithLocation: false,
-        pagination: { pageSize: 20 },
+        pagination: { pageSize: 20, mode: "server" },
     });
+
+    // Debounced search function
+    const debouncedSearch = useMemo(
+        () =>
+            debounce((value: string) => {
+                setFilters([
+                    {
+                        field: "search",
+                        operator: "contains",
+                        value: value || undefined,
+                    },
+                ]);
+            }, 500),
+        [setFilters]
+    );
+
+    // Cleanup debounce on unmount
+    useEffect(() => {
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [debouncedSearch]);
+
+    // Handle search input change
+    const handleSearchChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value;
+            setSearchText(value);
+            debouncedSearch(value);
+        },
+        [debouncedSearch]
+    );
 
     const handleCreate = () => {
         setEditingScheme(null);
@@ -90,13 +123,20 @@ export const SalarySchemeList = () => {
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
+            
+            // Transform values to correct types
+            const payload = {
+                ...values,
+                rate: Number(values.rate),
+                is_active: Boolean(values.is_active),
+            };
 
             if (editingScheme) {
                 updateScheme(
                     {
                         resource: "salary-schemes",
                         id: editingScheme.id,
-                        values,
+                        values: payload,
                     },
                     {
                         onSuccess: () => {
@@ -110,7 +150,7 @@ export const SalarySchemeList = () => {
                 createScheme(
                     {
                         resource: "salary-schemes",
-                        values,
+                        values: payload,
                     },
                     {
                         onSuccess: () => {
@@ -206,7 +246,7 @@ export const SalarySchemeList = () => {
                         placeholder="Tìm kiếm..."
                         prefix={<SearchOutlined />}
                         value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
+                        onChange={handleSearchChange}
                         style={{ width: 250 }}
                     />
                     <Button

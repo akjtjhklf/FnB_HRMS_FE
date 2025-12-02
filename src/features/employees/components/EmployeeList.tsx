@@ -33,7 +33,8 @@ import { formatDate, formatPhoneNumber } from "@/lib/utils";
 import { Mail, Phone, Calendar } from "lucide-react";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { debounce } from "lodash";
 
 export const EmployeeList = () => {
   const { message } = App.useApp();
@@ -41,12 +42,14 @@ export const EmployeeList = () => {
   const { mutate: deleteEmployee } = useDelete();
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const { tableProps, sorters, filters, tableQuery } = useTable<Employee>({
+  const { tableProps, sorters, filters, tableQuery, setFilters, current, setCurrent, pageSize, setPageSize } = useTable<Employee>({
     resource: "employees",
     syncWithLocation: true,
     pagination: {
       pageSize: 15,
+      mode: "server", // Ensure server-side pagination
     },
     sorters: {
       initial: [
@@ -58,35 +61,44 @@ export const EmployeeList = () => {
     },
   });
 
+  // Debounce search text and apply server-side filter
+  const debouncedSetSearch = useCallback(
+    debounce((value: string) => {
+      setDebouncedSearch(value);
+    }, 500),
+    []
+  );
+
+  // Update search filter when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch) {
+      setFilters([
+        {
+          field: "search",
+          operator: "contains",
+          value: debouncedSearch,
+        }
+      ], "replace");
+    } else {
+      setFilters([], "replace");
+    }
+  }, [debouncedSearch, setFilters]);
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    debouncedSetSearch(value);
+  };
+
   const employees = useMemo(
     () => tableProps.dataSource || [],
     [tableProps.dataSource]
   );
 
-  // Filter employees by search text
-  const filteredEmployees = useMemo(() => {
-    if (!searchText) return employees;
-    const searchLower = searchText.toLowerCase();
-    return employees.filter((emp) => {
-      const fullName = (
-        emp.full_name ||
-        `${emp.first_name} ${emp.last_name}`
-      ).toLowerCase();
-      const email = (emp.email || "").toLowerCase();
-      const phone = (emp.phone || "").toLowerCase();
-      const code = (emp.employee_code || "").toLowerCase();
-      return (
-        fullName.includes(searchLower) ||
-        email.includes(searchLower) ||
-        phone.includes(searchLower) ||
-        code.includes(searchLower)
-      );
-    });
-  }, [employees, searchText]);
-
-  // Calculate statistics
+  // Calculate statistics from loaded employees (this is just current page stats)
+  // For accurate stats across all data, consider a separate API call
   const stats = useMemo(() => {
-    const total = employees.length;
+    const total = tableProps.pagination?.total || employees.length;
     const active = employees.filter((e) => e.status === "active").length;
     const onLeave = employees.filter((e) => e.status === "on_leave").length;
     const terminated = employees.filter(
@@ -95,7 +107,7 @@ export const EmployeeList = () => {
     const suspended = employees.filter((e) => e.status === "suspended").length;
 
     return { total, active, onLeave, terminated, suspended };
-  }, [employees]);
+  }, [employees, tableProps.pagination?.total]);
 
   const handleView = (record: Employee) => {
     router.push(`/employees/${record.id}`);
@@ -272,7 +284,7 @@ export const EmployeeList = () => {
             placeholder="Tìm theo tên, email, SĐT..."
             allowClear
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             prefix={<SearchOutlined />}
             style={{ width: 280 }}
             size="large"
@@ -357,13 +369,11 @@ export const EmployeeList = () => {
       <div className="bg-white rounded-lg shadow">
         <Table
           {...tableProps}
-          dataSource={filteredEmployees}
           columns={columns}
           rowKey="id"
           scroll={{ x: 1200 }}
           pagination={{
             ...tableProps.pagination,
-            total: filteredEmployees.length,
             showSizeChanger: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} của ${total} nhân viên`,

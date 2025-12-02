@@ -13,9 +13,9 @@ import {
   Input,
   Select,
   DatePicker,
-  message,
   InputNumber,
   Switch,
+  App,
 } from "antd";
 import { Button } from "@/components/ui/Button";
 import {
@@ -49,6 +49,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
   onSuccess,
 }) => {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const { mutate: createContract } = useCreate();
   const { mutate: updateContract } = useUpdate();
 
@@ -81,7 +82,10 @@ const ContractForm: React.FC<ContractFormProps> = ({
   const handleSchemeChange = (value: unknown) => {
     const scheme = salarySchemes.find((s) => s.id === value);
     if (scheme) {
-      form.setFieldValue("salary", (scheme as any).rate);
+      // Use setTimeout to avoid circular reference warning
+      setTimeout(() => {
+        form.setFieldValue("salary", (scheme as any).rate);
+      }, 0);
     }
   };
 
@@ -284,6 +288,7 @@ const ContractForm: React.FC<ContractFormProps> = ({
 };
 
 export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
+  const { message } = App.useApp();
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
@@ -436,12 +441,17 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       title: "Chế độ lương",
       dataIndex: "salary_scheme_id",
       key: "salary_scheme_id",
-      render: (id: string) => {
-        const scheme = salarySchemes.find((s) => s.id === id);
+      render: (value: string | { id: string; name?: string } | null) => {
+        // Handle case when Directus populates the relation as object
+        if (value && typeof value === "object") {
+          return <Tag color="blue">{value.name || value.id}</Tag>;
+        }
+        // Handle case when it's just a string ID
+        const scheme = salarySchemes.find((s) => s.id === value);
         return scheme ? (
           <Tag color="blue">{scheme.name}</Tag>
-        ) : id ? (
-          <Tag>{id}</Tag>
+        ) : value ? (
+          <Tag>{value}</Tag>
         ) : (
           <span className="text-gray-400">--</span>
         );
@@ -559,7 +569,7 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
         }}
         footer={null}
         width={700}
-        destroyOnClose // Important to reset form state
+        destroyOnHidden // Important to reset form state
       >
         {isModalOpen && (
           <ContractForm

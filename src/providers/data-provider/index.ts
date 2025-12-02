@@ -7,6 +7,10 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
   getList: async ({ resource, pagination, filters, sorters, meta }) => {
     const url = `/${resource}`;
 
+    // Check if pagination mode is "off" - fetch all data
+    const paginationMode = (pagination as any)?.mode;
+    const isPaginationOff = paginationMode === "off";
+
     // Refine v5 pagination API - support multiple field names
     const current =
       (pagination as any)?.currentPage ?? 
@@ -15,16 +19,27 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
     const pageSize =
       (pagination as any)?.pageSize ?? (pagination as any)?.limit ?? 10;
 
-    const params: any = {
-      page: current,
-      limit: pageSize,
-    };
+    const params: any = {};
+
+    // Only add pagination params if pagination is enabled
+    if (!isPaginationOff) {
+      params.page = current;
+      params.limit = pageSize;
+    } else {
+      // When pagination is off, set limit to -1 to get all records
+      params.limit = -1;
+    }
 
     // Handle filters
     if (filters) {
       filters.forEach((filter) => {
         if ("field" in filter && filter.field && filter.value !== undefined) {
-          params[`filter[${filter.field}]`] = filter.value;
+          // Special handling for "search" field - send as direct search param
+          if (filter.field === "search") {
+            params.search = filter.value;
+          } else {
+            params[`filter[${filter.field}]`] = filter.value;
+          }
         }
       });
     }

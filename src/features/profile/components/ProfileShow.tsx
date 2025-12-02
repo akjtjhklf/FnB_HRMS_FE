@@ -2,7 +2,7 @@
 
 import { useShow, useGetIdentity } from "@refinedev/core";
 import { Employee } from "@/types/employee";
-import { Button, Avatar, Tag, Tabs, Card, Space } from "antd";
+import { Button, Avatar, Tag, Tabs, Card, Space, Spin, Empty } from "antd";
 import { 
   ArrowLeftOutlined, 
   EditOutlined,
@@ -25,19 +25,23 @@ import { TrendingUp } from "lucide-react";
 export const ProfileShow = () => {
   const router = useRouter();
   
-  // Get current user's identity to retrieve employee_id
-  const { data: identity } = useGetIdentity<{ employee_id: string }>();
-  const employeeId = identity?.employee_id || "1"; // Fallback to "1" for demo
+  // Get current user's identity to retrieve employee_id and role
+  const { data: identity, isLoading: isIdentityLoading } = useGetIdentity<{ employee_id?: string; employee?: { id: string }; role?: any }>();
+  // Get employee_id from either identity.employee.id (populated) or identity.employee_id (just ID)
+  const employeeId = identity?.employee?.id || identity?.employee_id;
+  
+  // Check if user is Admin or Manager - hide contract and work history tabs
+  const isAdminOrManager = identity?.role?.name === 'Administrator' || identity?.role?.name === 'Manager';
 
   const { query } = useShow<Employee>({
     resource: "employees",
-    id: employeeId,
+    id: employeeId || "",
     queryOptions: {
-      enabled: true, // Always enabled for demo
+      enabled: !!employeeId, // Only fetch when employeeId is available
     },
   });
 
-  const { data: employee, isLoading } = query;
+  const { data: employee, isLoading: isEmployeeLoading } = query;
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -57,27 +61,38 @@ export const ProfileShow = () => {
     return texts[status as keyof typeof texts] || "Không xác định";
   };
 
-  // Mock data for demo if no data available
-  const employeeData = employee?.data || {
-    id: "1",
-    employee_code: "EMP001",
-    first_name: "Nguyễn",
-    last_name: "An",
-    full_name: "Nguyễn Văn An",
-    email: "nguyen.van.an@company.com",
-    phone: "0912345678",
-    gender: "male",
-    dob: "1990-01-15",
-    personal_id: "001234567890",
-    address: "123 Đường ABC, Quận 1, TP.HCM",
-    hire_date: "2020-01-01",
-    status: "active",
-    default_work_hours_per_week: 40,
-    photo_url: "",
-    emergency_contact_name: "Nguyễn Văn B",
-    emergency_contact_phone: "0987654321",
-    notes: "Nhân viên xuất sắc",
-  };
+  // Loading state
+  if (isIdentityLoading || isEmployeeLoading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Spin size="large" tip="Đang tải thông tin..." />
+      </div>
+    );
+  }
+
+  // No employee linked to user
+  if (!employeeId) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Empty
+          description="Tài khoản của bạn chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ quản trị viên."
+        />
+      </div>
+    );
+  }
+
+  // No employee data found
+  if (!employee?.data) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Empty
+          description="Không tìm thấy thông tin nhân viên"
+        />
+      </div>
+    );
+  }
+
+  const employeeData = employee.data;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -98,7 +113,7 @@ export const ProfileShow = () => {
           <div className="lg:col-span-1">
             <Card className="text-center">
               <Avatar 
-                src={employeeData.photo_url} 
+                src={employeeData.photo_url || undefined} 
                 size={100} 
                 className="mx-auto mb-4"
               >
@@ -288,26 +303,29 @@ export const ProfileShow = () => {
                       </div>
                     ),
                   },
-                  {
-                    key: "contracts",
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        Hợp đồng
-                      </span>
-                    ),
-                    children: <ProfileContractList employeeId={employeeId} />,
-                  },
-                  {
-                    key: "work_history",
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" />
-                        Quá trình làm việc
-                      </span>
-                    ),
-                    children: <WorkHistoryTab employeeId={employeeId} />,
-                  },
+                  // Ẩn tab Hợp đồng và Quá trình làm việc nếu là Admin hoặc Manager
+                  ...(!isAdminOrManager ? [
+                    {
+                      key: "contracts",
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <FileText className="w-4 h-4" />
+                          Hợp đồng
+                        </span>
+                      ),
+                      children: <ProfileContractList employeeId={employeeId} />,
+                    },
+                    {
+                      key: "work_history",
+                      label: (
+                        <span className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          Quá trình làm việc
+                        </span>
+                      ),
+                      children: <WorkHistoryTab employeeId={employeeId} isOwnProfile={true} />,
+                    },
+                  ] : []),
                 ]}
               />
             </Card>

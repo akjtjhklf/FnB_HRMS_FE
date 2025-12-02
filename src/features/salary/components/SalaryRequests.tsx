@@ -24,8 +24,10 @@ import {
     EyeOutlined,
     ArrowUpOutlined,
     SwapOutlined,
+    ReloadOutlined,
 } from "@ant-design/icons";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import debounce from "lodash/debounce";
 import { formatDate } from "@/lib/utils";
 import { SalaryRequest } from "@/features/salary/types";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
@@ -52,10 +54,10 @@ export const SalaryRequests = () => {
     const { mutate: approveRequest, isLoading: isApproving } = useCustomMutation();
     const { mutate: rejectRequest, isLoading: isRejecting } = useCustomMutation();
 
-    const { tableProps, tableQueryResult } = useTable<SalaryRequest>({
+    const { tableProps, tableQuery: tableQueryResult, setFilters } = useTable<SalaryRequest>({
         resource: "salary-requests",
         syncWithLocation: false,
-        pagination: { pageSize: 20 },
+        pagination: { pageSize: 20, mode: "server" },
         sorters: {
             initial: [{ field: "created_at", order: "desc" }],
         },
@@ -65,6 +67,76 @@ export const SalaryRequests = () => {
             ],
         },
     });
+
+    // Debounced search function
+    const debouncedSearch = useMemo(
+        () =>
+            debounce((searchValue: string, statusValue: string | undefined, typeValue: string | undefined) => {
+                const filters: any[] = [];
+                
+                if (searchValue) {
+                    filters.push({
+                        field: "search",
+                        operator: "contains",
+                        value: searchValue,
+                    });
+                }
+                
+                if (statusValue) {
+                    filters.push({
+                        field: "status",
+                        operator: "eq",
+                        value: statusValue,
+                    });
+                }
+                
+                if (typeValue) {
+                    filters.push({
+                        field: "type",
+                        operator: "eq",
+                        value: typeValue,
+                    });
+                }
+                
+                setFilters(filters);
+            }, 500),
+        [setFilters]
+    );
+
+    // Cleanup debounce on unmount
+    useEffect(() => {
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [debouncedSearch]);
+
+    // Handle search input change
+    const handleSearchChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value;
+            setSearchText(value);
+            debouncedSearch(value, statusFilter, typeFilter);
+        },
+        [debouncedSearch, statusFilter, typeFilter]
+    );
+
+    // Handle status filter change
+    const handleStatusChange = useCallback(
+        (value: string | undefined) => {
+            setStatusFilter(value);
+            debouncedSearch(searchText, value, typeFilter);
+        },
+        [debouncedSearch, searchText, typeFilter]
+    );
+
+    // Handle type filter change
+    const handleTypeChange = useCallback(
+        (value: string | undefined) => {
+            setTypeFilter(value);
+            debouncedSearch(searchText, statusFilter, value);
+        },
+        [debouncedSearch, searchText, statusFilter]
+    );
 
     const requests = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
 
@@ -76,27 +148,10 @@ export const SalaryRequests = () => {
         return "N/A";
     };
 
-    const filteredRequests = useMemo(() => {
-        return requests.filter((r) => {
-            let matches = true;
-
-            if (searchText) {
-                const searchLower = searchText.toLowerCase();
-                const empName = getEmployeeName(r.employee_id).toLowerCase();
-                matches = matches && empName.includes(searchLower);
-            }
-
-            if (statusFilter) {
-                matches = matches && r.status === statusFilter;
-            }
-
-            if (typeFilter) {
-                matches = matches && r.type === typeFilter;
-            }
-
-            return matches;
-        });
-    }, [requests, searchText, statusFilter, typeFilter]);
+    // Removed client-side filtering - use server-side instead
+    // const filteredRequests = useMemo(() => {
+    //     return requests.filter((r) => {...});
+    // }, [requests, searchText, statusFilter, typeFilter]);
 
     const getStatusTag = (status: string) => {
         const statusMap = {
@@ -112,8 +167,9 @@ export const SalaryRequests = () => {
         );
     };
 
-    const getTypeTag = (type: string) => {
-        if (type === "raise") {
+    const getTypeTag = (type: string, record?: SalaryRequest) => {
+        // Check type or fallback to checking proposed_rate for legacy data
+        if (type === "raise" || (!type && record?.proposed_rate)) {
             return <Tag color="blue" icon={<ArrowUpOutlined />}>Tăng lương</Tag>;
         }
         return <Tag color="orange" icon={<SwapOutlined />}>Điều chỉnh</Tag>;
@@ -156,7 +212,7 @@ export const SalaryRequests = () => {
                 onSuccess: () => {
                     setApproveModalOpen(false);
                     setSelectedRequest(null);
-                    tableQueryResult.refetch();
+                    tableQueryResult?.refetch?.();
                 }
             });
         } catch (error) {
@@ -189,7 +245,7 @@ export const SalaryRequests = () => {
                 onSuccess: () => {
                     setRejectModalOpen(false);
                     setSelectedRequest(null);
-                    tableQueryResult.refetch();
+                    tableQueryResult?.refetch?.();
                 }
             });
         } catch (error) {
@@ -239,14 +295,15 @@ export const SalaryRequests = () => {
             dataIndex: "type",
             key: "type",
             width: 120,
-            render: (value: string) => getTypeTag(value),
+            render: (value: string, record: SalaryRequest) => getTypeTag(value, record),
         },
         {
             title: "Chi tiết",
             key: "details",
             width: 250,
             render: (_: any, record: SalaryRequest) => {
-                if (record.type === "raise") {
+                // Check type or fallback to checking proposed_rate for legacy data
+                if (record.type === "raise" || (!record.type && record.proposed_rate)) {
                     return (
                         <div className="text-sm">
                             <div>Hiện tại: {formatCurrency(record.current_rate || 0)}</div>
@@ -300,18 +357,25 @@ export const SalaryRequests = () => {
                     <p className="text-gray-500 mt-1">Quản lý các yêu cầu tăng lương và điều chỉnh</p>
                 </div>
                 <Space>
+                    <Button
+                        icon={<ReloadOutlined />}
+                        onClick={() => tableQueryResult?.refetch?.()}
+                        loading={tableQueryResult?.isFetching}
+                    >
+                        Làm mới
+                    </Button>
                     <Input
                         placeholder="Tìm nhân viên..."
                         prefix={<SearchOutlined />}
                         value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)}
+                        onChange={handleSearchChange}
                         style={{ width: 200 }}
                     />
                     <Select
                         placeholder="Trạng thái"
                         allowClear
                         value={statusFilter}
-                        onChange={setStatusFilter}
+                        onChange={handleStatusChange}
                         style={{ width: 150 }}
                         options={[
                             { label: "Chờ duyệt", value: "pending" },
@@ -323,7 +387,7 @@ export const SalaryRequests = () => {
                         placeholder="Loại"
                         allowClear
                         value={typeFilter}
-                        onChange={setTypeFilter}
+                        onChange={handleTypeChange}
                         style={{ width: 150 }}
                         options={[
                             { label: "Tăng lương", value: "raise" },
@@ -336,12 +400,10 @@ export const SalaryRequests = () => {
             <div className="bg-white rounded-lg shadow">
                 <Table
                     {...tableProps}
-                    dataSource={filteredRequests}
                     columns={columns}
                     rowKey="id"
                     pagination={{
                         ...tableProps.pagination,
-                        total: filteredRequests.length,
                         showSizeChanger: true,
                         showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} yêu cầu`,
                     }}

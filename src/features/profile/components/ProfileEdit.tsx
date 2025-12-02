@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, useForm, useGetIdentity } from "@refinedev/core";
+import { useGetIdentity } from "@refinedev/core";
+import { useForm } from "@refinedev/antd";
 import { Employee } from "@/types/employee";
 import {
   Form,
@@ -15,6 +16,8 @@ import {
   Space,
   Button as AntButton,
   App,
+  Spin,
+  Empty,
 } from "antd";
 import {
   UserOutlined,
@@ -28,6 +31,7 @@ import {
 import React, { useState } from "react";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export const ProfileEdit: React.FC = () => {
   const { message } = App.useApp();
@@ -35,16 +39,17 @@ export const ProfileEdit: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>("");
 
   // Get current user's identity
-  const { data: identity } = useGetIdentity<{ employee_id: string }>();
-  const employeeId = identity?.employee_id || "1"; // Fallback to "1" for demo
+  const { data: identity, isLoading: isIdentityLoading } = useGetIdentity<{ employee_id?: string; employee?: { id: string } }>();
+  // Get employee_id from either identity.employee.id (populated) or identity.employee_id (just ID)
+  const employeeId = identity?.employee?.id || identity?.employee_id;
 
-  const { formProps, onFinish, form, queryResult } = useForm<Employee>({
+  const { formProps, onFinish, form, query } = useForm<Employee>({
     action: "edit",
     resource: "employees",
-    id: employeeId,
+    id: employeeId || "",
     redirect: false,
     queryOptions: {
-      enabled: true, // Always enabled for demo
+      enabled: !!employeeId, // Only fetch when employeeId is available
     },
     onMutationSuccess: () => {
       message.success("✅ Cập nhật thông tin thành công!");
@@ -57,26 +62,8 @@ export const ProfileEdit: React.FC = () => {
     mutationMode: "pessimistic",
   });
 
-  // Mock data for demo if no data available
-  const employee = queryResult?.data?.data || {
-    id: "1",
-    employee_code: "EMP001",
-    first_name: "Nguyễn",
-    last_name: "An",
-    full_name: "Nguyễn Văn An",
-    email: "nguyen.van.an@company.com",
-    phone: "0912345678",
-    gender: "male",
-    dob: "1990-01-15",
-    personal_id: "001234567890",
-    address: "123 Đường ABC, Quận 1, TP.HCM",
-    hire_date: "2020-01-01",
-    status: "active",
-    photo_url: "",
-    emergency_contact_name: "Nguyễn Văn B",
-    emergency_contact_phone: "0987654321",
-    notes: "Nhân viên xuất sắc",
-  };
+  const isLoading = isIdentityLoading || query?.isLoading;
+  const employee = query?.data?.data;
 
   // Handle form values transformation
   const handleFinish = (values: any) => {
@@ -114,6 +101,37 @@ export const ProfileEdit: React.FC = () => {
       });
     }
   }, [employee, form]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Spin size="large" tip="Đang tải thông tin..." />
+      </div>
+    );
+  }
+
+  // No employee linked to user
+  if (!employeeId) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Empty
+          description="Tài khoản của bạn chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ quản trị viên."
+        />
+      </div>
+    );
+  }
+
+  // No employee data found
+  if (!employee) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <Empty
+          description="Không tìm thấy thông tin nhân viên"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">

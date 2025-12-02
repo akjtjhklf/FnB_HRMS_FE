@@ -1164,7 +1164,7 @@
     tslib "^2.3.1"
     webfontloader "^1.6.28"
 
-"@novu/react@3.11.0":
+"@novu/react@3.11.0", "@novu/react@^3.11.0":
   version "3.11.0"
   resolved "https://registry.yarnpkg.com/@novu/react/-/react-3.11.0.tgz#5c2993bad472a753103cd03dd5624577d640ba4c"
   integrity sha512-VoDh2DNjyP8JuzsLUXc5md9UEWF1MTQamMWjYeEv8WxUtDuYBkYGYjs7x/80kZXZ0wBJDuPsstypYUzjhsOwnw==

@@ -7,6 +7,7 @@ import { Space, Input, theme } from "antd";
 import React, { useContext } from "react";
 import { Search } from "lucide-react";
 import { CustomInbox } from "@/components/notifications/CustomInbox";
+import { AppNovuProvider } from "@/providers/novu-notification/NovuProvider"; // Import Provider mới tạo
 
 type IUser = {
   id: number;
@@ -16,8 +17,7 @@ type IUser = {
 
 export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
   const { data: user } = useGetIdentity<IUser>();
-  const { mode, setMode } = useContext(ColorModeContext);
-  const { token } = theme.useToken();
+  const { mode } = useContext(ColorModeContext);
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-6 pl-16 lg:pl-6 flex items-center justify-between sticky top-0 z-20">
@@ -37,25 +37,20 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
 
       {/* Right Side - Actions */}
       <Space size="large">
-        {/* Notifications - Custom Novu Inbox */}
+        {/* --- WRAP NOVU PROVIDER TẠI ĐÂY (Hoặc bọc toàn bộ App) --- */}
         {user?.id && (
-          <CustomInbox
-            applicationIdentifier="VoHt917w84Br"
-            subscriberId={String(user.id)}
-            colorMode={mode as "light" | "dark"}
-          />
+          <AppNovuProvider user={user}>
+            <CustomInbox colorMode={mode as "light" | "dark"} />
+          </AppNovuProvider>
         )}
 
-        {/* User Info (Name & Role) */}
+        {/* User Info */}
         <div className="pl-3 border-l border-gray-200 flex flex-col items-end">
           <span className="font-semibold text-sm text-gray-900 leading-tight">
             {user?.name || "Admin User"}
           </span>
           <span className="text-xs text-gray-500">
-            {(user as any)?.role?.name ||
-              (typeof (user as any)?.role === "string"
-                ? (user as any)?.role
-                : "Administrator")}
+            {(user as any)?.role?.name || "Administrator"}
           </span>
         </div>
       </Space>

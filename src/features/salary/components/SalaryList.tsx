@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { useTable } from "@refinedev/antd";
 import { useCreate, useCustomMutation, useUpdate, useGetIdentity } from "@refinedev/core";
+import debounce from "lodash/debounce";
 import {
   Table,
   Card,
@@ -38,6 +39,7 @@ import {
   LockOutlined,
   UnlockOutlined,
   ThunderboltOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { Settings } from "lucide-react";
 import { SalarySchemeList } from "./SalarySchemeList";
@@ -107,10 +109,10 @@ export const SalaryList = () => {
   const isGenerating = mutation?.isPending || false;
   const { mutate: updatePayroll } = useUpdate();
 
-  const { tableProps } = useTable<MonthlyPayroll>({
+  const { tableProps, setFilters, tableQuery: tableQueryResult } = useTable<MonthlyPayroll>({
     resource: "monthly-payrolls",
     syncWithLocation: false,
-    pagination: { pageSize: 20 },
+    pagination: { pageSize: 20, mode: "server" },
     sorters: {
       initial: [{ field: "month", order: "desc" }],
     },
@@ -124,6 +126,38 @@ export const SalaryList = () => {
       ],
     },
   });
+
+  // Debounced search function for server-side search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((value: string) => {
+        setFilters([
+          {
+            field: "search",
+            operator: "contains",
+            value: value || undefined,
+          },
+        ]);
+      }, 500),
+    [setFilters]
+  );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Handle search input change
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchText(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
 
   const payrolls = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
 
@@ -140,35 +174,35 @@ export const SalaryList = () => {
     return "N/A";
   };
 
-  // Filter payrolls by search text
-  const filteredPayrolls = useMemo(() => {
-    if (!searchText) return payrolls;
-    const searchLower = searchText.toLowerCase();
-    return payrolls.filter((p) => {
-      const employeeName = getEmployeeName(p.employee_id).toLowerCase();
-      return employeeName.includes(searchLower);
-    });
-  }, [payrolls, searchText]);
+  // Filter payrolls by search text - removed client side, use server-side search instead
+  // const filteredPayrolls = useMemo(() => {
+  //   if (!searchText) return payrolls;
+  //   const searchLower = searchText.toLowerCase();
+  //   return payrolls.filter((p) => {
+  //     const employeeName = getEmployeeName(p.employee_id).toLowerCase();
+  //     return employeeName.includes(searchLower);
+  //   });
+  // }, [payrolls, searchText]);
 
-  // Calculate statistics
+  // Calculate statistics from current page data
   const stats = useMemo(() => {
-    const total = filteredPayrolls.length;
-    const totalGross = filteredPayrolls.reduce((sum, p) => {
+    const total = tableProps.pagination?.total || payrolls.length;
+    const totalGross = payrolls.reduce((sum, p) => {
       const value = parseFloat(p.gross_salary as any) || 0;
       return sum + value;
     }, 0);
-    const totalNet = filteredPayrolls.reduce((sum, p) => {
+    const totalNet = payrolls.reduce((sum, p) => {
       const value = parseFloat(p.net_salary as any) || 0;
       return sum + value;
     }, 0);
-    const totalDeductions = filteredPayrolls.reduce((sum, p) => {
+    const totalDeductions = payrolls.reduce((sum, p) => {
       const ded = parseFloat(p.deductions as any) || 0;
       const pen = parseFloat(p.penalties as any) || 0;
       return sum + ded + pen;
     }, 0);
 
     return { total, totalGross, totalNet, totalDeductions };
-  }, [filteredPayrolls]);
+  }, [payrolls, tableProps.pagination?.total]);
 
   // Generate month options for last 12 months
   const monthOptions = useMemo(() => {
@@ -229,7 +263,7 @@ export const SalaryList = () => {
 
   const handleEditSuccess = () => {
     handleCloseEditDrawer();
-    tableProps.dataSource && (tableProps as any).refetch?.();
+    tableQueryResult?.refetch?.();
   };
 
   const handleRequestEdit = (record: MonthlyPayroll) => {
@@ -322,7 +356,7 @@ export const SalaryList = () => {
       },
     }, {
       onSuccess: () => {
-        (tableProps as any).refetch?.();
+        tableQueryResult?.refetch?.();
       }
     });
   };
@@ -341,7 +375,7 @@ export const SalaryList = () => {
       },
     }, {
       onSuccess: () => {
-        (tableProps as any).refetch?.();
+        tableQueryResult?.refetch?.();
       }
     });
   };
@@ -384,7 +418,7 @@ export const SalaryList = () => {
         // Force refetch with delay to ensure data is saved
         setTimeout(() => {
           console.log('🔄 Refetching payroll list...');
-          (tableProps as any).refetch?.();
+          tableQueryResult?.refetch?.();
         }, 1000);
       }
     });
@@ -604,12 +638,13 @@ export const SalaryList = () => {
               <p className="text-gray-500 mt-1">Quản lý lương và thưởng nhân viên</p>
             </div>
             <Space>
-              <Input.Search
+              <Input
                 placeholder="Tìm theo tên nhân viên..."
                 allowClear
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={handleSearchChange}
                 style={{ width: 250 }}
+                prefix={<SearchOutlined className="text-gray-400" />}
               />
               <Select
                 value={selectedMonth}
@@ -691,13 +726,11 @@ export const SalaryList = () => {
           <div className="bg-white rounded-lg shadow">
             <Table
               {...tableProps}
-              dataSource={filteredPayrolls}
               columns={columns}
               rowKey="id"
               scroll={{ x: 1200 }}
               pagination={{
                 ...tableProps.pagination,
-                total: filteredPayrolls.length,
                 showSizeChanger: true,
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} của ${total} bảng lương`,

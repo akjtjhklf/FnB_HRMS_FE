@@ -1,6 +1,6 @@
 "use client";
 
-import { useTable } from "@refinedev/antd";
+import { useList } from "@refinedev/core";
 import { Table, Tag, Button, Space, Card, Statistic, Row, Col, Tabs, Tooltip } from "antd";
 import {
   CheckCircleOutlined,
@@ -19,6 +19,7 @@ import { formatDate } from "@/lib/utils";
 interface Employee {
   id: string;
   name: string;
+  full_name?: string;
 }
 
 interface ScheduleChangeRequest {
@@ -61,34 +62,36 @@ interface CombinedRequest {
 
 export const RequestList = () => {
   const [activeTab, setActiveTab] = useState<RequestStatus>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
 
-  const { tableProps: scheduleTableProps } = useTable<ScheduleChangeRequest>({
+  // Fetch all schedule change requests (combined data approach - fetch all, paginate client-side)
+  const { data: scheduleData, isLoading: scheduleLoading } = useList<ScheduleChangeRequest>({
     resource: "schedule-change-requests",
-    syncWithLocation: false,
-    pagination: { pageSize: 100 },
-    sorters: {
-      initial: [{ field: "created_at", order: "desc" }],
+    pagination: { 
+      mode: "off" // Get all data for combining
     },
+    sorters: [{ field: "created_at", order: "desc" }],
   });
 
-  const { tableProps: salaryTableProps } = useTable<SalaryRequest>({
+  // Fetch all salary requests
+  const { data: salaryData, isLoading: salaryLoading } = useList<SalaryRequest>({
     resource: "salary-requests",
-    syncWithLocation: false,
-    pagination: { pageSize: 100 },
-    sorters: {
-      initial: [{ field: "request_date", order: "desc" }],
+    pagination: { 
+      mode: "off" // Get all data for combining
     },
+    sorters: [{ field: "request_date", order: "desc" }],
   });
 
   // Combine data
   const combinedRequests = useMemo<CombinedRequest[]>(() => {
-    const scheduleData = scheduleTableProps.dataSource || [];
-    const salaryData = salaryTableProps.dataSource || [];
+    const scheduleItems = scheduleData?.data || [];
+    const salaryItems = salaryData?.data || [];
 
-    const scheduleRequests: CombinedRequest[] = scheduleData.map((req) => {
+    const scheduleRequests: CombinedRequest[] = scheduleItems.map((req) => {
       const employee =
         typeof req.requester_id === "object" ? (req.requester_id as Employee) : null;
-      const employeeName = employee?.name || "N/A";
+      const employeeName = employee?.full_name || employee?.name || "N/A";
       const employeeId =
         employee?.id ||
         (typeof req.requester_id === "string" ? req.requester_id : "");
@@ -119,10 +122,10 @@ export const RequestList = () => {
       };
     });
 
-    const salRequests: CombinedRequest[] = salaryData.map((req) => {
+    const salRequests: CombinedRequest[] = salaryItems.map((req) => {
       const employee =
         typeof req.employee_id === "object" ? (req.employee_id as Employee) : null;
-      const employeeName = employee?.name || "N/A";
+      const employeeName = employee?.full_name || employee?.name || "N/A";
       const employeeId =
         employee?.id || (typeof req.employee_id === "string" ? req.employee_id : "");
 
@@ -150,7 +153,7 @@ export const RequestList = () => {
     return [...scheduleRequests, ...salRequests].sort(
       (a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
     );
-  }, [scheduleTableProps.dataSource, salaryTableProps.dataSource]);
+  }, [scheduleData?.data, salaryData?.data]);
 
   // Filter by tab
   const filteredRequests = useMemo(() => {
@@ -286,7 +289,13 @@ export const RequestList = () => {
     { key: "rejected", label: `Từ chối (${stats.rejected})` },
   ];
 
-  const isLoading = scheduleTableProps.loading || salaryTableProps.loading;
+  const isLoading = scheduleLoading || salaryLoading;
+
+  // Reset to page 1 when tab changes
+  const handleTabChange = (key: string) => {
+    setActiveTab(key as RequestStatus);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -349,7 +358,7 @@ export const RequestList = () => {
       <Card className="shadow-sm border border-gray-200">
         <Tabs
           activeKey={activeTab}
-          onChange={(key) => setActiveTab(key as RequestStatus)}
+          onChange={handleTabChange}
           items={tabItems}
           className="mb-4"
         />
@@ -360,8 +369,18 @@ export const RequestList = () => {
           loading={isLoading}
           scroll={{ x: 1000 }}
           pagination={{
-            pageSize: 15,
+            current: currentPage,
+            pageSize: pageSize,
+            total: filteredRequests.length,
             showSizeChanger: true,
+            pageSizeOptions: ['10', '15', '20', '50'],
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              if (size !== pageSize) {
+                setPageSize(size);
+                setCurrentPage(1);
+              }
+            },
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} của ${total} yêu cầu`,
           }}

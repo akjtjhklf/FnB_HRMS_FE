@@ -90,16 +90,16 @@ export const ProfileContractList: React.FC<ProfileContractListProps> = ({
     },
     {
       title: "Lương",
-      dataIndex: "salary",
-      key: "salary",
-      render: (salary: number) => (
+      dataIndex: "base_salary",
+      key: "base_salary",
+      render: (salary: string | number) => (
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-green-600" />
           <span className="font-medium text-green-600">
             {new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
-            }).format(salary)}
+            }).format(Number(salary) || 0)}
           </span>
         </div>
       ),

@@ -423,7 +423,7 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                           Quá trình làm việc
                         </span>
                       ),
-                      children: <WorkHistoryTab employeeId={id} positionId={employeeData.position_id || undefined} />,
+                      children: <WorkHistoryTab employeeId={id} positionId={employeeData.position_id || undefined} isOwnProfile={false} />,
                     },
                   ]}
                 />

@@ -14,6 +14,7 @@ import {
   Input,
   App,
   Form,
+  Select,
 } from "antd";
 import {
   DollarOutlined,
@@ -31,11 +32,13 @@ import dayjs from "dayjs";
 interface WorkHistoryTabProps {
   employeeId: string;
   positionId?: string;
+  isOwnProfile?: boolean; // Chỉ hiển thị nút yêu cầu tăng lương nếu là profile của chính mình
 }
 
 export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
   employeeId,
   positionId,
+  isOwnProfile = false,
 }) => {
   const { message } = App.useApp();
   const [bonusDetailVisible, setBonusDetailVisible] = useState(false);
@@ -120,15 +123,27 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
   });
   const activeContract = contractQuery.data?.data?.[0];
 
-  // Fetch salary scheme based on contract OR position
+  // Extract salary_scheme_id - handle both object and string cases
+  const salarySchemeId = activeContract?.salary_scheme_id
+    ? typeof activeContract.salary_scheme_id === "object"
+      ? (activeContract.salary_scheme_id as any).id
+      : activeContract.salary_scheme_id
+    : null;
+
+  // If salary_scheme_id is already populated as object, use it directly
+  const populatedScheme = activeContract?.salary_scheme_id && typeof activeContract.salary_scheme_id === "object"
+    ? activeContract.salary_scheme_id as any
+    : null;
+
+  // Fetch salary scheme based on contract OR position (only if not already populated)
   const { query: schemeQuery } = useList({
     resource: "salary-schemes",
     filters: [
-      activeContract?.salary_scheme_id
+      salarySchemeId && !populatedScheme
         ? {
           field: "id",
           operator: "eq",
-          value: activeContract.salary_scheme_id,
+          value: salarySchemeId,
         }
         : {
           field: "position_id",
@@ -137,7 +152,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
         },
     ],
     queryOptions: {
-      enabled: !!(activeContract?.salary_scheme_id || positionId),
+      enabled: !populatedScheme && !!(salarySchemeId || positionId),
     },
   });
 
@@ -201,14 +216,50 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
   });
   const salaryRequests = requestsQuery.data?.data || [];
 
-  // Calculate statistics
-  const currentScheme = schemeQuery.data?.data?.[0] || {
+  // Fetch ALL salary schemes for selection (only active ones)
+  const { query: allSchemesQuery } = useList({
+    resource: "salary-schemes",
+    filters: [
+      {
+        field: "is_active",
+        operator: "eq",
+        value: true,
+      },
+    ],
+    pagination: {
+      pageSize: 100,
+    },
+    sorters: [
+      {
+        field: "rate",
+        order: "asc",
+      },
+    ],
+  });
+  const allSalarySchemes = allSchemesQuery.data?.data || [];
+
+  // Calculate statistics - use populated scheme first, then fetched scheme, then default
+  const currentScheme = populatedScheme || schemeQuery.data?.data?.[0] || {
     id: "unknown",
     name: "Chưa thiết lập",
     rate: 0,
     pay_type: "hourly",
     min_hours: 0,
   };
+
+  // Get base_salary from contract if available (overrides scheme rate)
+  const currentSalary = activeContract?.base_salary 
+    ? Number(activeContract.base_salary) 
+    : Number(currentScheme.rate) || 0;
+
+  // Filter salary schemes that have higher rate than current (for raise request)
+  const availableSchemesForRaise = useMemo(() => {
+    return allSalarySchemes.filter((scheme: any) => {
+      const schemeRate = Number(scheme.rate) || 0;
+      // Only show schemes with higher rate and different from current
+      return schemeRate > currentSalary && scheme.id !== currentScheme.id;
+    });
+  }, [allSalarySchemes, currentSalary, currentScheme.id]);
 
   const assignments = useMemo(
     () => assignmentsQuery.data?.data || [],
@@ -280,6 +331,22 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
       const values = await form.validateFields();
       setIsCreating(true);
 
+      // Get proposed rate - from selected scheme or manual input
+      let proposedRate = 0;
+      let proposedSchemeId = null;
+
+      if (values.proposed_scheme_id) {
+        // Find selected scheme to get the rate
+        const selectedScheme = allSalarySchemes.find(
+          (s: any) => s.id === values.proposed_scheme_id
+        );
+        proposedRate = selectedScheme ? Number(selectedScheme.rate) : 0;
+        proposedSchemeId = values.proposed_scheme_id;
+      } else if (values.proposed_rate) {
+        // Use manual input rate
+        proposedRate = Number(values.proposed_rate);
+      }
+
       createSalaryRequest(
         {
           resource: "salary-requests",
@@ -287,12 +354,13 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
             employee_id: employeeId,
             current_scheme_id:
               currentScheme.id !== "unknown" ? currentScheme.id : null,
-            current_rate: currentScheme.rate,
-            proposed_rate: Number(values.proposed_rate),
+            current_rate: currentSalary,
+            proposed_scheme_id: proposedSchemeId,
+            proposed_rate: proposedRate,
             request_date: dayjs().toISOString(),
             status: "pending",
             note: values.note,
-            type: "raise",
+            type: "raise", // Always "raise" for salary increase request
           },
         },
         {
@@ -304,6 +372,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
             });
             setSalaryRequestVisible(false);
             form.resetFields();
+            requestsQuery.refetch();
           },
           onError: (error: any) => {
             setIsCreating(false);
@@ -393,22 +462,28 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
             </h3>
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-blue-600">
-                {Number(currentScheme.rate).toLocaleString()} VNĐ
+                {currentSalary.toLocaleString()} VNĐ
               </span>
-              <Tag color="blue">{currentScheme.name}</Tag>
+              <Tag color={currentScheme.id !== "unknown" ? "blue" : "default"}>
+                {currentScheme.name}
+              </Tag>
               <Tag color="cyan">{getPayTypeLabel(currentScheme.pay_type)}</Tag>
             </div>
           </div>
-          <Button
-            type="primary"
-            icon={<RiseOutlined />}
-            size="large"
-            onClick={handleSalaryRequest}
-            className="flex items-center gap-2"
-            disabled={currentScheme.id === "unknown"}
-          >
-            Yêu cầu tăng lương
-          </Button>
+          {/* Chỉ hiển thị nút yêu cầu tăng lương trong trang Profile của chính mình */}
+          {isOwnProfile && (
+            <Button
+              type="primary"
+              icon={<RiseOutlined />}
+              size="large"
+              onClick={handleSalaryRequest}
+              className="flex items-center gap-2"
+              disabled={!activeContract}
+              title={!activeContract ? "Bạn cần có hợp đồng đang hoạt động để yêu cầu tăng lương" : ""}
+            >
+              Yêu cầu tăng lương
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -796,15 +871,19 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
           >
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Số giờ đã làm:</span>
-                <strong>{totalHoursWorked.toFixed(1)} giờ</strong>
+                <span className="text-gray-600">Chế độ lương hiện tại:</span>
+                <Tag color="blue">{currentScheme.name}</Tag>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Mức lương hiện tại:</span>
                 <strong className="text-blue-600">
-                  {Number(currentScheme.rate).toLocaleString()} VNĐ/
+                  {currentSalary.toLocaleString()} VNĐ/
                   {getPayTypeLabel(currentScheme.pay_type)}
                 </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Số giờ đã làm:</span>
+                <strong>{totalHoursWorked.toFixed(1)} giờ</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tiến độ:</span>
@@ -819,39 +898,60 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
           <Form
             form={form}
             layout="vertical"
-            initialValues={{
-              proposed_rate: Math.round(currentScheme.rate * 1.15),
-            }}
           >
-            <Form.Item
-              label="Mức lương đề xuất"
-              name="proposed_rate"
-              rules={[
-                { required: true, message: "Vui lòng nhập mức lương đề xuất!" },
-                {
-                  validator: (_, value) => {
-                    if (value && value <= currentScheme.rate) {
-                      return Promise.reject(
-                        "Mức lương đề xuất phải cao hơn mức lương hiện tại!"
-                      );
-                    }
-                    return Promise.resolve();
-                  },
-                },
-              ]}
-              tooltip="Mức lương bạn mong muốn (VNĐ)"
-            >
-              <Input
-                type="number"
-                prefix={<DollarOutlined />}
-                suffix="VNĐ"
-                placeholder="Nhập mức lương đề xuất"
-                size="large"
-              />
-            </Form.Item>
+            {availableSchemesForRaise.length > 0 ? (
+              <Form.Item
+                label="Chế độ lương đề xuất"
+                name="proposed_scheme_id"
+                rules={[
+                  { required: true, message: "Vui lòng chọn chế độ lương mong muốn!" },
+                ]}
+                tooltip="Chọn mức lương bạn mong muốn được xét duyệt"
+              >
+                <Select
+                  size="large"
+                  placeholder="Chọn chế độ lương"
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {availableSchemesForRaise.map((scheme: any) => (
+                    <Select.Option key={scheme.id} value={scheme.id}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{scheme.name}</span>
+                        <span className="text-green-600 ml-2">
+                          {Number(scheme.rate).toLocaleString()} VNĐ
+                          <span className="text-xs text-gray-500 ml-1">
+                            (+{((Number(scheme.rate) - currentSalary) / currentSalary * 100).toFixed(0)}%)
+                          </span>
+                        </span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            ) : (
+              <Form.Item
+                label="Mức lương đề xuất (VNĐ)"
+                name="proposed_rate"
+                rules={[
+                  { required: true, message: "Vui lòng nhập mức lương mong muốn!" },
+                ]}
+                tooltip="Nhập mức lương bạn mong muốn được xét duyệt"
+              >
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    size="large"
+                    type="number"
+                    min={currentSalary}
+                    placeholder={`Ví dụ: ${(currentSalary * 1.1).toLocaleString()}`}
+                  />
+                  <Button size="large" disabled>VNĐ</Button>
+                </Space.Compact>
+              </Form.Item>
+            )}
 
             <Form.Item
-              label="Ghi chú"
+              label="Lý do yêu cầu"
               name="note"
               rules={[
                 {
