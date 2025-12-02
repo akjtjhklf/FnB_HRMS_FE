@@ -53,11 +53,11 @@ const sidebarItems: SidebarItem[] = [
     label: "Chấm công",
     href: "/attendance",
   },
-  {
-    icon: <ClipboardList size={24} />,
-    label: "Yêu cầu",
-    href: "/requests",
-  },
+  // {
+  //   icon: <ClipboardList size={24} />,
+  //   label: "Yêu cầu",
+  //   href: "/requests",
+  // },
   {
     icon: <DollarSign size={24} />,
     label: "Bảng lương",

@@ -96,7 +96,9 @@ const ContractForm: React.FC<ContractFormProps> = ({
       start_date: values.start_date?.toDate(),
       end_date: values.end_date?.toDate(),
       base_salary: values.salary ? Number(values.salary) : null,
-      salary_scheme_id: values.salary_scheme_id,
+      salary_scheme_id: values.salary_scheme_id && typeof values.salary_scheme_id === 'object'
+        ? (values.salary_scheme_id as any).id
+        : values.salary_scheme_id,
       terms: values.terms,
       is_active: !!values.is_active,
     };
@@ -455,9 +457,9 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
           <span className="font-medium text-green-600">
             {base_salary
               ? new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(base_salary)
+                style: "currency",
+                currency: "VND",
+              }).format(base_salary)
               : "Theo chế độ"}
           </span>
         </div>

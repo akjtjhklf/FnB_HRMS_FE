@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { useTable } from "@refinedev/antd";
-import { useCreate, useCustomMutation, useUpdate } from "@refinedev/core";
+import { useCreate, useCustomMutation, useUpdate, useGetIdentity } from "@refinedev/core";
 import {
   Table,
   Card,
@@ -42,9 +42,33 @@ import {
 import { Settings } from "lucide-react";
 import { SalarySchemeList } from "./SalarySchemeList";
 import { SalaryForm } from "./SalaryForm";
+import { SalaryRequests } from "./SalaryRequests";
 import { CustomDrawer } from "@/components/common/CustomDrawer";
-import { MonthlyPayroll } from "@/types/monthly-payroll"; // Assuming this type exists or I will define it locally if needed
 import { formatDate } from "@/lib/utils";
+
+// Define MonthlyPayroll interface locally
+interface MonthlyPayroll {
+  id: string;
+  employee_id: any;
+  month: string;
+  salary_scheme_id?: string | null;
+  base_salary: number | string;
+  allowances: number | string;
+  bonuses: number | string;
+  overtime_pay: number | string;
+  deductions: number | string;
+  penalties: number | string;
+  gross_salary: number | string;
+  net_salary: number | string;
+  total_work_hours?: number | string;
+  status?: string;
+  notes?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  paid_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface ActionItem {
   key: string;
@@ -60,6 +84,9 @@ const formatCurrency = (value: number) => {
 };
 
 export const SalaryList = () => {
+  const { data: user } = useGetIdentity();
+  const isAdminOrManager = user?.role?.name === 'Administrator' || user?.role?.name === 'Manager';
+
   const { message } = App.useApp();
   const router = useRouter();
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -76,8 +103,8 @@ export const SalaryList = () => {
   const [generateMonth, setGenerateMonth] = useState<dayjs.Dayjs | null>(dayjs());
 
   const { mutate: createRequest } = useCreate();
-  const { mutate: generatePayroll, mutation: generateMutation } = useCustomMutation();
-  const isGenerating = generateMutation?.isLoading;
+  const { mutate: generatePayroll, mutation } = useCustomMutation();
+  const isGenerating = mutation?.isPending || false;
   const { mutate: updatePayroll } = useUpdate();
 
   const { tableProps } = useTable<MonthlyPayroll>({
@@ -102,8 +129,13 @@ export const SalaryList = () => {
 
   const getEmployeeName = (employee: any) => {
     if (!employee) return "N/A";
+    // If employee is a string (just ID), return placeholder
+    if (typeof employee === "string") {
+      return `Employee ${employee.slice(0, 8)}...`;
+    }
+    // If employee is an object with name
     if (typeof employee === "object") {
-      return employee.full_name || employee.employee_code || "N/A";
+      return employee.full_name || employee.employee_code || employee.id?.slice(0, 8) || "N/A";
     }
     return "N/A";
   };
@@ -341,10 +373,19 @@ export const SalaryList = () => {
         };
       }
     }, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('✅ Payroll generated:', data);
         setGenerateModalOpen(false);
-        setSelectedMonth(generateMonth.format("YYYY-MM"));
-        (tableProps as any).refetch?.();
+
+        // Switch to the generated month
+        const newMonth = generateMonth.format("YYYY-MM");
+        setSelectedMonth(newMonth);
+
+        // Force refetch with delay to ensure data is saved
+        setTimeout(() => {
+          console.log('🔄 Refetching payroll list...');
+          (tableProps as any).refetch?.();
+        }, 1000);
       }
     });
   };
@@ -415,7 +456,14 @@ export const SalaryList = () => {
       fixed: "left" as const,
       render: (employee: any) => {
         const name = getEmployeeName(employee);
-        return <span className="font-semibold text-gray-900">{name}</span>;
+        const code = typeof employee === 'object' ? employee.employee_code : '';
+
+        return (
+          <div className="flex flex-col">
+            <span className="font-semibold text-gray-900">{name}</span>
+            {code && <span className="text-xs text-gray-500">{code}</span>}
+          </div>
+        );
       },
     },
     {
@@ -442,8 +490,33 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Trừ & Phạt",
-      key: "deductions_penalties",
+      title: "Ngày công",
+      key: "work_days",
+      width: 90,
+      align: "center" as const,
+      render: (_: any, record: any) => (
+        <span className="font-medium">{record.total_work_days || 0} ngày</span>
+      ),
+    },
+    {
+      title: "Phạt",
+      key: "penalties_breakdown",
+      width: 110,
+      align: "right" as const,
+      render: (_: any, record: any) => {
+        const latePenalty = parseFloat(record.late_penalty || 0);
+        const earlyPenalty = parseFloat(record.early_leave_penalty || 0);
+        const total = latePenalty + earlyPenalty;
+        return total > 0 ? (
+          <span className="text-red-600 whitespace-nowrap">-{formatCurrency(total)}</span>
+        ) : (
+          <span className="text-gray-400">0</span>
+        );
+      },
+    },
+    {
+      title: "Trừ & Khấu trừ",
+      key: "deductions",
       width: 110,
       align: "right" as const,
       render: (_: any, record: MonthlyPayroll) => {
@@ -498,15 +571,15 @@ export const SalaryList = () => {
       width: 100,
       render: (_: any, record: MonthlyPayroll) => (
         <Space>
-           {getActionItems(record).map(item => (
-             <Button 
-               key={item.key} 
-               type="text" 
-               icon={item.icon} 
-               onClick={item.onClick} 
-               title={typeof item.label === 'string' ? item.label : undefined}
-             />
-           ))}
+          {getActionItems(record).map(item => (
+            <Button
+              key={item.key}
+              type="text"
+              icon={item.icon}
+              onClick={item.onClick}
+              title={typeof item.label === 'string' ? item.label : undefined}
+            />
+          ))}
         </Space>
       ),
     },
@@ -544,25 +617,29 @@ export const SalaryList = () => {
                 options={monthOptions}
                 style={{ width: 200 }}
               />
-              <Button
-                type="primary"
-                icon={<ThunderboltOutlined />}
-                onClick={() => setGenerateModalOpen(true)}
-                size="large"
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                Tính lương
-              </Button>
-              <Button
-                icon={<PlusOutlined />}
-                onClick={handleCreatePayroll}
-                size="large"
-              >
-                Tạo thủ công
-              </Button>
-              <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
-                Xuất Excel
-              </Button>
+              {isAdminOrManager && (
+                <>
+                  <Button
+                    type="primary"
+                    icon={<ThunderboltOutlined />}
+                    onClick={() => setGenerateModalOpen(true)}
+                    size="large"
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Tính lương
+                  </Button>
+                  <Button
+                    icon={<PlusOutlined />}
+                    onClick={handleCreatePayroll}
+                    size="large"
+                  >
+                    Tạo thủ công
+                  </Button>
+                  <Button icon={<DownloadOutlined />} onClick={handleExport} size="large">
+                    Xuất Excel
+                  </Button>
+                </>
+              )}
             </Space>
           </div>
 
@@ -640,12 +717,22 @@ export const SalaryList = () => {
       ),
       children: <SalarySchemeList />,
     },
+    {
+      key: "requests",
+      label: (
+        <span className="flex items-center gap-2">
+          <SendOutlined className="w-4 h-4" />
+          Yêu cầu lương
+        </span>
+      ),
+      children: <SalaryRequests />,
+    },
   ];
 
   return (
     <div className="p-6">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <Tabs defaultActiveKey="payroll" items={items} />
+        <Tabs defaultActiveKey="payroll" items={isAdminOrManager ? items : items.filter(i => i.key === 'payroll')} />
       </div>
 
       {/* Payroll Detail Drawer */}
@@ -679,7 +766,30 @@ export const SalaryList = () => {
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
-                {getStatusTag(viewingPayroll.status)}
+                {getStatusTag(viewingPayroll.status || 'draft')}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider orientation="left" className="text-sm md:text-base my-3">Chấm công</Divider>
+
+            <Descriptions column={1} bordered size="small" className="text-sm">
+              <Descriptions.Item label="Tổng ngày công">
+                <span className="font-semibold">
+                  {(viewingPayroll as any).total_work_days || 0} ngày
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Tổng giờ làm">
+                {(viewingPayroll as any).total_work_hours || 0} giờ
+              </Descriptions.Item>
+              <Descriptions.Item label="Phút đi muộn">
+                <span className="text-orange-600">
+                  {(viewingPayroll as any).total_late_minutes || 0} phút
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phút về sớm">
+                <span className="text-orange-600">
+                  {(viewingPayroll as any).total_early_leave_minutes || 0} phút
+                </span>
               </Descriptions.Item>
             </Descriptions>
 
@@ -688,32 +798,42 @@ export const SalaryList = () => {
             <Descriptions column={1} bordered size="small" className="text-sm">
               <Descriptions.Item label="Lương cơ bản">
                 <span className="font-semibold">
-                  {formatCurrency(viewingPayroll.base_salary)} VNĐ
+                  {formatCurrency(Number(viewingPayroll.base_salary))} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Phụ cấp">
                 <span className="text-green-600">
-                  +{formatCurrency(viewingPayroll.allowances || 0)} VNĐ
+                  +{formatCurrency(Number(viewingPayroll.allowances || 0))} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Thưởng">
                 <span className="text-green-600">
-                  +{formatCurrency(viewingPayroll.bonuses || 0)} VNĐ
+                  +{formatCurrency(Number(viewingPayroll.bonuses || 0))} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Lương làm thêm">
                 <span className="text-green-600">
-                  +{formatCurrency(viewingPayroll.overtime_pay || 0)} VNĐ
+                  +{formatCurrency(Number(viewingPayroll.overtime_pay || 0))} VNĐ
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phạt đi muộn">
+                <span className="text-red-600">
+                  -{formatCurrency(Number((viewingPayroll as any).late_penalty || 0))} VNĐ
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phạt về sớm">
+                <span className="text-red-600">
+                  -{formatCurrency(Number((viewingPayroll as any).early_leave_penalty || 0))} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Khấu trừ">
                 <span className="text-red-600">
-                  -{formatCurrency(viewingPayroll.deductions || 0)} VNĐ
+                  -{formatCurrency(Number(viewingPayroll.deductions || 0))} VNĐ
                 </span>
               </Descriptions.Item>
-              <Descriptions.Item label="Phạt">
+              <Descriptions.Item label="Phạt khác">
                 <span className="text-red-600">
-                  -{formatCurrency(viewingPayroll.penalties || 0)} VNĐ
+                  -{formatCurrency(Number(viewingPayroll.penalties || 0))} VNĐ
                 </span>
               </Descriptions.Item>
             </Descriptions>
@@ -723,12 +843,12 @@ export const SalaryList = () => {
             <Descriptions column={1} bordered size="middle" className="text-sm md:text-base">
               <Descriptions.Item label="Tổng lương">
                 <span className="font-semibold text-base">
-                  {formatCurrency(viewingPayroll.gross_salary)} VNĐ
+                  {formatCurrency(Number(viewingPayroll.gross_salary))} VNĐ
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Thực lãnh">
                 <span className="font-bold text-lg text-green-600">
-                  {formatCurrency(viewingPayroll.net_salary)} VNĐ
+                  {formatCurrency(Number(viewingPayroll.net_salary))} VNĐ
                 </span>
               </Descriptions.Item>
             </Descriptions>

@@ -44,6 +44,7 @@ interface ScheduleAssignment {
     shift_type?: {
       name: string;
     };
+    shift_type_id?: string | any;
   };
   position?: {
     id: string;
@@ -95,12 +96,14 @@ export function MyScheduleView() {
     // Try to request expanded fields, but we will fallback to manual join if needed
     meta: {
       fields: [
-        "*", 
-        "shift.*", 
-        "shift.shift_type.*", 
+        "*",
+        "shift.*",
+        "shift.shift_type.id",
+        "shift.shift_type.name",
         "position.*",
         "shift_id.*",
-        "shift_id.shift_type.*",
+        "shift_id.shift_type.id",
+        "shift_id.shift_type.name",
         "position_id.*"
       ],
     },
@@ -114,7 +117,7 @@ export function MyScheduleView() {
     resource: "shifts",
     pagination: { pageSize: 1000 },
     meta: {
-      fields: ["*", "shift_type.*"],
+      fields: ["*", "shift_type.id", "shift_type.name"],
     },
   });
 
@@ -122,6 +125,15 @@ export function MyScheduleView() {
   const { query: positionsQuery } = useList<any>({
     resource: "positions",
     pagination: { pageSize: 1000 },
+  });
+
+  // Fetch all shift types for manual join (fallback)
+  const { query: shiftTypesQuery } = useList<any>({
+    resource: "shift-types",
+    pagination: { pageSize: 1000 },
+    meta: {
+      fields: ["id", "name"],
+    },
   });
 
   // Fetch all employees for swap selection
@@ -136,6 +148,7 @@ export function MyScheduleView() {
   const assignments = assignmentsQuery.data?.data || [];
   const shifts = shiftsQuery.data?.data || [];
   const positions = positionsQuery.data?.data || [];
+  const shiftTypes = shiftTypesQuery.data?.data || [];
   const employees = employeesQuery.data?.data || [];
 
   // Mutation for creating swap request
@@ -144,7 +157,7 @@ export function MyScheduleView() {
   // Helper to get shift data safely and normalize it
   const getShift = (a: ScheduleAssignment) => {
     let shift: any = a.shift;
-    
+
     // If shift is not in .shift, check .shift_id
     if (!shift) {
       if (typeof a.shift_id === 'object' && a.shift_id !== null) {
@@ -153,9 +166,27 @@ export function MyScheduleView() {
         shift = shifts.find((s: any) => s.id === a.shift_id);
       }
     }
-    
+
     if (!shift) return null;
-    
+
+    // Enrich shift_type if missing or just an ID
+    if (!shift.shift_type || typeof shift.shift_type !== 'object') {
+      // 1. Try from shifts list (if we have a full shift object there)
+      const fullShift = shifts.find((s: any) => s.id === shift.id);
+      if (fullShift?.shift_type && typeof fullShift.shift_type === 'object') {
+        shift = { ...shift, shift_type: fullShift.shift_type };
+      } else {
+        // 2. Try from shiftTypes list using shift_type_id
+        const shiftTypeId = shift.shift_type_id || shift.shift_type; // shift_type might be the ID
+        if (shiftTypeId && typeof shiftTypeId === 'string') {
+          const foundShiftType = shiftTypes.find((st: any) => st.id === shiftTypeId);
+          if (foundShiftType) {
+            shift = { ...shift, shift_type: foundShiftType };
+          }
+        }
+      }
+    }
+
     // Normalize fields (Directus might return different field names)
     return {
       ...shift,
@@ -168,11 +199,11 @@ export function MyScheduleView() {
 
   const getPosition = (a: ScheduleAssignment) => {
     if (a.position) return a.position;
-    
+
     if (typeof a.position_id === 'object' && a.position_id !== null) {
       return a.position_id;
     }
-    
+
     // Fallback: find in positions list
     return positions.find((p: any) => p.id === a.position_id);
   };
@@ -213,7 +244,9 @@ export function MyScheduleView() {
         {dayAssignments.map((assignment: ScheduleAssignment) => {
           const shift = getShift(assignment);
           const shiftName = shift?.shift_type?.name || "Ca làm việc";
-          const startTime = shift?.start_time || "";
+          const startTime = shift?.start_time ? dayjs(shift.start_time).format("HH:mm") : "";
+          const endTime = shift?.end_time ? dayjs(shift.end_time).format("HH:mm") : "";
+
           return (
             <li key={assignment.id} style={{ marginBottom: "4px" }}>
               <Badge
@@ -227,7 +260,7 @@ export function MyScheduleView() {
                       setViewModalOpen(true);
                     }}
                   >
-                    {shiftName} ({startTime})
+                    {shiftName} ({startTime} - {endTime})
                   </span>
                 }
               />
@@ -292,7 +325,7 @@ export function MyScheduleView() {
           <Space>
             <ClockCircleOutlined />
             <span>
-              {shift.start_time} → {shift.end_time}
+              {dayjs(shift.start_time).format("HH:mm")} - {dayjs(shift.end_time).format("HH:mm")}
             </span>
           </Space>
         </Descriptions.Item>
@@ -397,21 +430,6 @@ export function MyScheduleView() {
         {renderAssignmentDetails()}
       </Modal>
 
-      {/* Debug Info - Temporary */}
-      <Card title="Debug Info" style={{ marginTop: 24, borderColor: 'red' }}>
-        <p><strong>Assignments Loaded:</strong> {assignments.length}</p>
-        <p><strong>Shifts Loaded:</strong> {shifts.length}</p>
-        <p><strong>Positions Loaded:</strong> {positions.length}</p>
-        {assignments.length > 0 && (
-            <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
-                <p><strong>First Assignment:</strong></p>
-                <p>ID: {assignments[0].id}</p>
-                <p>Shift ID Type: {typeof assignments[0].shift_id}</p>
-                <p>Shift ID Value: {typeof assignments[0].shift_id === 'object' ? JSON.stringify(assignments[0].shift_id) : assignments[0].shift_id}</p>
-            </div>
-        )}
-      </Card>
-
       {/* Swap Request Modal */}
       <Modal
         title="Yêu cầu đổi ca"
@@ -444,7 +462,7 @@ export function MyScheduleView() {
                   message="Ca làm việc của bạn"
                   description={`${shift.shift_type?.name || "Ca làm việc"} - ${dayjs(
                     shift.date
-                  ).format("DD/MM/YYYY")} (${shift.start_time} - ${shift.end_time})`}
+                  ).format("DD/MM/YYYY")} (${dayjs(shift.start_time).format("HH:mm")} - ${dayjs(shift.end_time).format("HH:mm")})`}
                   type="info"
                   style={{ marginBottom: "16px" }}
                 />

@@ -8,7 +8,7 @@ import { ReportSelector } from "./ReportSelector";
 import { DateRangeSelector } from "./DateRangeSelector";
 import { ReportPreview } from "./ReportPreview";
 import { ExportButtons } from "./ExportButtons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 
 export const ReportsDashboard = () => {
   const { message } = App.useApp();

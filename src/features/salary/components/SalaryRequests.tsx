@@ -52,7 +52,7 @@ export const SalaryRequests = () => {
     const { mutate: approveRequest, isLoading: isApproving } = useCustomMutation();
     const { mutate: rejectRequest, isLoading: isRejecting } = useCustomMutation();
 
-    const { tableProps } = useTable<SalaryRequest>({
+    const { tableProps, tableQueryResult } = useTable<SalaryRequest>({
         resource: "salary-requests",
         syncWithLocation: false,
         pagination: { pageSize: 20 },
@@ -156,7 +156,7 @@ export const SalaryRequests = () => {
                 onSuccess: () => {
                     setApproveModalOpen(false);
                     setSelectedRequest(null);
-                    (tableProps as any).refetch?.();
+                    tableQueryResult.refetch();
                 }
             });
         } catch (error) {
@@ -189,7 +189,7 @@ export const SalaryRequests = () => {
                 onSuccess: () => {
                     setRejectModalOpen(false);
                     setSelectedRequest(null);
-                    (tableProps as any).refetch?.();
+                    tableQueryResult.refetch();
                 }
             });
         } catch (error) {

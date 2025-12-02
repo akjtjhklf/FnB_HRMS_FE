@@ -1,6 +1,6 @@
 "use client";
 
-import { useList, useCreate } from "@refinedev/core";
+import { useList, useCreate, useGetIdentity, useCustomMutation } from "@refinedev/core";
 import {
   Card,
   Statistic,
@@ -46,6 +46,62 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
   const { mutate: createSalaryRequest } = useCreate();
   const [isCreating, setIsCreating] = useState(false);
 
+  const { data: identity } = useGetIdentity<{ id: string; full_name: string; role: any }>();
+  const isAdminOrManager = identity?.role?.name === 'Administrator' || identity?.role?.name === 'Manager';
+
+  const { mutate: approveRequest } = useCustomMutation();
+  const { mutate: rejectRequest } = useCustomMutation();
+
+  const handleApproveRequest = (id: string) => {
+    Modal.confirm({
+      title: "Duyệt yêu cầu",
+      content: "Bạn có chắc chắn muốn duyệt yêu cầu này?",
+      onOk: () => {
+        approveRequest({
+          url: `salary-requests/${id}/approve`,
+          method: "post",
+          values: {
+            approved_by: identity?.full_name || "Manager",
+          },
+          successNotification: () => ({
+            message: "Đã duyệt yêu cầu",
+            type: "success",
+          }),
+        }, {
+          onSuccess: () => {
+            requestsQuery.refetch();
+          }
+        });
+      }
+    });
+  };
+
+  const handleRejectRequest = (id: string) => {
+    Modal.confirm({
+      title: "Từ chối yêu cầu",
+      content: "Bạn có chắc chắn muốn từ chối yêu cầu này?",
+      okText: "Từ chối",
+      okButtonProps: { danger: true },
+      onOk: () => {
+        rejectRequest({
+          url: `salary-requests/${id}/reject`,
+          method: "post",
+          values: {
+            rejected_by: identity?.full_name || "Manager",
+          },
+          successNotification: () => ({
+            message: "Đã từ chối yêu cầu",
+            type: "success",
+          }),
+        }, {
+          onSuccess: () => {
+            requestsQuery.refetch();
+          }
+        });
+      }
+    });
+  };
+
   // Fetch active contract to get salary scheme
   const { query: contractQuery } = useList({
     resource: "contracts",
@@ -70,15 +126,15 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
     filters: [
       activeContract?.salary_scheme_id
         ? {
-            field: "id",
-            operator: "eq",
-            value: activeContract.salary_scheme_id,
-          }
+          field: "id",
+          operator: "eq",
+          value: activeContract.salary_scheme_id,
+        }
         : {
-            field: "position_id",
-            operator: "eq",
-            value: positionId || "unknown",
-          },
+          field: "position_id",
+          operator: "eq",
+          value: positionId || "unknown",
+        },
     ],
     queryOptions: {
       enabled: !!(activeContract?.salary_scheme_id || positionId),
@@ -125,6 +181,25 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
       },
     ],
   });
+
+  // Fetch salary requests history
+  const { query: requestsQuery } = useList({
+    resource: "salary-requests",
+    filters: [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: employeeId,
+      },
+    ],
+    sorters: [
+      {
+        field: "created_at",
+        order: "desc",
+      },
+    ],
+  });
+  const salaryRequests = requestsQuery.data?.data || [];
 
   // Calculate statistics
   const currentScheme = schemeQuery.data?.data?.[0] || {
@@ -217,6 +292,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
             request_date: dayjs().toISOString(),
             status: "pending",
             note: values.note,
+            type: "raise",
           },
         },
         {
@@ -232,9 +308,8 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
           onError: (error: any) => {
             setIsCreating(false);
             message.error({
-              content: `❌ Gửi yêu cầu thất bại: ${
-                error?.message || "Có lỗi xảy ra"
-              }`,
+              content: `❌ Gửi yêu cầu thất bại: ${error?.message || "Có lỗi xảy ra"
+                }`,
               duration: 4,
             });
           },
@@ -432,6 +507,115 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
           <p className="text-gray-500 text-sm mt-2">
             Tổng {bonusDetails.length} lần nhận thưởng
           </p>
+        </Card>
+
+        {/* Salary Request History */}
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <RiseOutlined className="text-blue-600" />
+              Lịch sử yêu cầu lương
+            </div>
+          }
+          className="border-l-4 border-l-blue-500"
+        >
+          <Table
+            dataSource={salaryRequests}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+            columns={[
+              {
+                title: "Ngày tạo",
+                dataIndex: "created_at",
+                key: "created_at",
+                render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
+              },
+              {
+                title: "Loại",
+                dataIndex: "type",
+                key: "type",
+                render: (type: string) => (
+                  <Tag color={type === "raise" ? "blue" : "orange"}>
+                    {type === "raise" ? "Tăng lương" : "Điều chỉnh"}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Chi tiết",
+                key: "details",
+                render: (_: any, record: any) => {
+                  if (record.type === "raise") {
+                    return (
+                      <div className="text-sm">
+                        <div>HT: {Number(record.current_rate).toLocaleString()}</div>
+                        <div className="font-semibold text-green-600">
+                          ĐX: {Number(record.proposed_rate).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <span className={record.adjustment_amount >= 0 ? "text-green-600" : "text-red-600"}>
+                      {record.adjustment_amount > 0 ? "+" : ""}
+                      {Number(record.adjustment_amount).toLocaleString()}
+                    </span>
+                  );
+                },
+              },
+              {
+                title: "Trạng thái",
+                dataIndex: "status",
+                key: "status",
+                render: (status: string) => {
+                  const colors: Record<string, string> = {
+                    pending: "gold",
+                    approved: "green",
+                    rejected: "red",
+                  };
+                  const texts: Record<string, string> = {
+                    pending: "Chờ duyệt",
+                    approved: "Đã duyệt",
+                    rejected: "Từ chối",
+                  };
+                  return <Tag color={colors[status]}>{texts[status]}</Tag>;
+                },
+              },
+              {
+                title: "Ghi chú",
+                dataIndex: "manager_note",
+                key: "manager_note",
+                render: (text: string, record: any) => text || record.note || "-",
+              },
+              {
+                title: "Thao tác",
+                key: "actions",
+                render: (_: any, record: any) => {
+                  if (isAdminOrManager && record.status === 'pending') {
+                    return (
+                      <Space>
+                        <Button
+                          size="small"
+                          type="primary"
+                          ghost
+                          onClick={() => handleApproveRequest(record.id)}
+                        >
+                          Duyệt
+                        </Button>
+                        <Button
+                          size="small"
+                          danger
+                          onClick={() => handleRejectRequest(record.id)}
+                        >
+                          Từ chối
+                        </Button>
+                      </Space>
+                    );
+                  }
+                  return null;
+                }
+              }
+            ]}
+          />
         </Card>
 
         {/* Penalties */}

@@ -6,6 +6,7 @@ import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { RefineContext } from "./RefineContext";
 import "@refinedev/antd/dist/reset.css";
 import "./globals.css";
+import "@/lib/dayjs";
 
 export const metadata: Metadata = {
   title: "HRMS - Human Resource Management System",

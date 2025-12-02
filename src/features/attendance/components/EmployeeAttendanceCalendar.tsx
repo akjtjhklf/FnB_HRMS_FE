@@ -1,14 +1,13 @@
 import { Calendar, Badge, Tooltip, Card, Tag } from "antd";
 import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import dayjs from "@/lib/dayjs";
 
 interface AttendanceRecord {
     id: string;
     created_at: string;
     clock_in: string | null;
     clock_out: string | null;
+    worked_minutes: number | null;
     late_minutes: number | null;
     early_leave_minutes: number | null;
     status: "present" | "absent" | "partial";
@@ -17,7 +16,7 @@ interface AttendanceRecord {
 }
 
 interface EmployeeAttendanceCalendarProps {
-    records: AttendanceRecord[];
+    records: readonly AttendanceRecord[];
     month: Dayjs;
     onEdit?: (record: AttendanceRecord) => void;
 }

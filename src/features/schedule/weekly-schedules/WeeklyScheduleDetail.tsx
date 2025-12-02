@@ -31,7 +31,7 @@ import {
   ClockCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { WeeklySchedule } from "@/types/schedule";
 import type { Shift } from "@/types/schedule/shift.types";
