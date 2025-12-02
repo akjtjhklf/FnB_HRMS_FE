@@ -27,6 +27,7 @@ import {
     ReloadOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo, useCallback, useEffect } from "react";
+// @ts-ignore
 import debounce from "lodash/debounce";
 import { formatDate } from "@/lib/utils";
 import { SalaryRequest } from "@/features/salary/types";
@@ -51,8 +52,10 @@ export const SalaryRequests = () => {
     const [selectedRequest, setSelectedRequest] = useState<SalaryRequest | null>(null);
     const [actionForm] = Form.useForm();
 
-    const { mutate: approveRequest, isLoading: isApproving } = useCustomMutation();
-    const { mutate: rejectRequest, isLoading: isRejecting } = useCustomMutation();
+    const { mutate: approveRequest, mutation: approveMutation } = useCustomMutation();
+    const { mutate: rejectRequest, mutation: rejectMutation } = useCustomMutation();
+    const isApproving = approveMutation?.isPending;
+    const isRejecting = rejectMutation?.isPending;
 
     const { tableProps, tableQuery: tableQueryResult, setFilters } = useTable<SalaryRequest>({
         resource: "salary-requests",
@@ -327,7 +330,7 @@ export const SalaryRequests = () => {
             dataIndex: "reason", // or note
             key: "reason",
             ellipsis: true,
-            render: (value: string, record: SalaryRequest) => value || record.note || "-",
+            render: (value: string, record: SalaryRequest) => value || (record as any).note || "-",
         },
         {
             title: "Trạng thái",

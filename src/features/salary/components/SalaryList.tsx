@@ -867,6 +867,7 @@ export const SalaryList = () => {
               {...tableProps}
               columns={columns}
               rowKey="id"
+              key={`payroll-table-${roleName || 'loading'}`}
               scroll={{ x: 1200 }}
               pagination={{
                 ...tableProps.pagination,

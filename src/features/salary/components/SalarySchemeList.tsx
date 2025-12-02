@@ -22,6 +22,7 @@ import {
     SearchOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo, useCallback, useEffect } from "react";
+// @ts-ignore
 import debounce from "lodash/debounce";
 import { SalaryScheme } from "@/features/salary/types";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
@@ -40,8 +41,10 @@ export const SalarySchemeList = () => {
     const [editingScheme, setEditingScheme] = useState<SalaryScheme | null>(null);
     const [form] = Form.useForm();
 
-    const { mutate: createScheme, isLoading: isCreating } = useCreate();
-    const { mutate: updateScheme, isLoading: isUpdating } = useUpdate();
+    const { mutate: createScheme, mutation: createMutation } = useCreate();
+    const { mutate: updateScheme, mutation: updateMutation } = useUpdate();
+    const isCreating = createMutation?.isPending;
+    const isUpdating = updateMutation?.isPending;
     const { mutate: deleteScheme } = useDelete();
 
     const { tableProps, setFilters } = useTable<SalaryScheme>({
@@ -313,7 +316,7 @@ export const SalarySchemeList = () => {
                         <InputNumber
                             className="w-full"
                             formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                            parser={(value) => value!.replace(/\./g, "")}
+                            parser={(value) => Number(value!.replace(/\./g, "")) as any}
                             min={0}
                         />
                     </Form.Item>
