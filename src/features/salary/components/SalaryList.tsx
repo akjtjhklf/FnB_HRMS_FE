@@ -552,9 +552,12 @@ export const SalaryList = () => {
       },
     ];
 
+    // Treat undefined/null status as "draft"
+    const status = record.status || "draft";
+
     // Admin/Manager: Có các quyền quản lý (edit, lock, unlock, send payslip) nhưng KHÔNG có "Yêu cầu sửa"
     if (isAdminOrManager) {
-      if (record.status === "draft") {
+      if (status === "draft") {
         items.push({
           key: "edit",
           label: "Chỉnh sửa",
@@ -569,7 +572,7 @@ export const SalaryList = () => {
         });
       }
 
-      if (record.status === "pending_approval") {
+      if (status === "pending_approval") {
         items.push({
           key: "approve",
           label: "Duyệt",
@@ -585,7 +588,7 @@ export const SalaryList = () => {
       }
 
       // Cho phép gửi phiếu lương khi đã duyệt hoặc đã thanh toán
-      if (record.status === "approved" || record.status === "paid") {
+      if (status === "approved" || status === "paid") {
         items.push({
           key: "send-payslip",
           label: "Gửi phiếu lương",
@@ -721,8 +724,8 @@ export const SalaryList = () => {
         { text: "Đã duyệt", value: "approved" },
         { text: "Đã thanh toán", value: "paid" },
       ],
-      onFilter: (value: any, record: MonthlyPayroll) => record.status === value,
-      render: (status: string) => getStatusTag(status),
+      onFilter: (value: any, record: MonthlyPayroll) => (record.status || "draft") === value,
+      render: (status: string) => getStatusTag(status || "draft"),
     },
     {
       title: "Thao tác",
@@ -730,8 +733,9 @@ export const SalaryList = () => {
       fixed: "right" as const,
       width: 180,
       render: (_: any, record: MonthlyPayroll) => {
+        const status = record.status || "draft";
         const actionItems = getActionItems(record);
-        console.log('🔧 Actions for record:', record.id, 'status:', record.status, 'isAdmin:', isAdminOrManager, 'items:', actionItems.map(i => i.key));
+        console.log('🔧 Actions for record:', record.id, 'status:', status, 'isAdmin:', isAdminOrManager, 'items:', actionItems.map(i => i.key));
         return (
           <Space>
             {actionItems.map(item => (
