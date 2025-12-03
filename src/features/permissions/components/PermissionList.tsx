@@ -219,7 +219,7 @@ export const PermissionList = () => {
             <Tag color="cyan">{text.split(",").length} fields</Tag>
           </Tooltip>
         ) : (
-          <Tag color="default">All fields</Tag>
+          <Tag color="default">Thêm trường</Tag>
         )
       ),
     },

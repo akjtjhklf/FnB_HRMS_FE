@@ -15,7 +15,7 @@ export const PermissionsManagement = () => {
             label: (
                 <span>
                     <TeamOutlined />
-                    Quản lý Roles
+                     Quản lý Vai trò
                 </span>
             ),
             children: <RoleList />,
@@ -25,7 +25,7 @@ export const PermissionsManagement = () => {
             label: (
                 <span>
                     <SafetyCertificateOutlined />
-                    Quản lý Policies
+                     Quản lý Chính sách
                 </span>
             ),
             children: <PolicyList />,

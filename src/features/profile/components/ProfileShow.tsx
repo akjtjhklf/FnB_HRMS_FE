@@ -2,10 +2,12 @@
 
 import { useShow, useGetIdentity } from "@refinedev/core";
 import { Employee } from "@/types/employee";
-import { Button, Avatar, Tag, Tabs, Card, Space, Spin, Empty } from "antd";
+import { Button, Avatar, Tag, Tabs, Card, Space, Spin, Empty, Descriptions } from "antd";
 import { 
   ArrowLeftOutlined, 
   EditOutlined,
+  UserOutlined,
+  SafetyOutlined,
 } from "@ant-design/icons";
 import { 
   Mail, 
@@ -14,7 +16,8 @@ import {
   MapPin, 
   Briefcase, 
   FileText, 
-  UserCheck 
+  UserCheck,
+  Shield,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatDate, formatPhoneNumber } from "@/lib/utils";
@@ -22,11 +25,36 @@ import { ProfileContractList } from "./ProfileContractList";
 import { WorkHistoryTab } from "./WorkHistoryTab";
 import { TrendingUp } from "lucide-react";
 
+// Interface for user identity from auth provider
+interface UserIdentity {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  status?: string;
+  employee_id?: string;
+  employee?: { id: string };
+  role?: {
+    id: string;
+    name: string;
+    description?: string;
+    icon?: string;
+  };
+  policies?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+  }>;
+  is_admin?: boolean;
+  can_access_app?: boolean;
+  last_access?: string;
+}
+
 export const ProfileShow = () => {
   const router = useRouter();
   
   // Get current user's identity to retrieve employee_id and role
-  const { data: identity, isLoading: isIdentityLoading } = useGetIdentity<{ employee_id?: string; employee?: { id: string }; role?: any }>();
+  const { data: identity, isLoading: isIdentityLoading } = useGetIdentity<UserIdentity>();
   // Get employee_id from either identity.employee.id (populated) or identity.employee_id (just ID)
   const employeeId = identity?.employee?.id || identity?.employee_id;
   
@@ -300,6 +328,97 @@ export const ProfileShow = () => {
                             </p>
                           </Card>
                         </div>
+                      </div>
+                    ),
+                  },
+                  // Tab Thông tin tài khoản
+                  {
+                    key: "account",
+                    label: (
+                      <span className="flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        Tài khoản & Phân quyền
+                      </span>
+                    ),
+                    children: (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Account Info */}
+                        <Card type="inner" title="Thông tin tài khoản" size="small">
+                          <Space direction="vertical" className="w-full" size="middle">
+                            <div>
+                              <p className="text-gray-500 text-sm">Email đăng nhập</p>
+                              <p className="font-medium">{identity?.email || "-"}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Trạng thái tài khoản</p>
+                              <Tag color={identity?.status === 'active' ? 'success' : 'warning'}>
+                                {identity?.status === 'active' ? 'Đang hoạt động' : 
+                                 identity?.status === 'invited' ? 'Đã mời' : 
+                                 identity?.status === 'suspended' ? 'Tạm khóa' : identity?.status || 'Không xác định'}
+                              </Tag>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Lần truy cập cuối</p>
+                              <p className="font-medium">
+                                {identity?.last_access ? formatDate(identity.last_access) : "-"}
+                              </p>
+                            </div>
+                          </Space>
+                        </Card>
+
+                        {/* Role Info */}
+                        <Card type="inner" title="Vai trò (Role)" size="small">
+                          <Space direction="vertical" className="w-full" size="middle">
+                            <div>
+                              <p className="text-gray-500 text-sm">Tên vai trò</p>
+                              <div className="flex items-center gap-2">
+                                <SafetyOutlined className="text-blue-500" />
+                                <p className="font-medium">{identity?.role?.name || "-"}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Mô tả</p>
+                              <p className="font-medium text-gray-600">
+                                {identity?.role?.description || "Không có mô tả"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500 text-sm">Quyền đặc biệt</p>
+                              <Space wrap>
+                                {identity?.is_admin && (
+                                  <Tag color="red">Quản trị viên</Tag>
+                                )}
+                                {identity?.can_access_app && (
+                                  <Tag color="blue">Truy cập ứng dụng</Tag>
+                                )}
+                                {!identity?.is_admin && !identity?.can_access_app && (
+                                  <span className="text-gray-500">Không có</span>
+                                )}
+                              </Space>
+                            </div>
+                          </Space>
+                        </Card>
+
+                        {/* Policies */}
+                        <Card type="inner" title="Chính sách được áp dụng (Policies)" size="small" className="md:col-span-2">
+                          {identity?.policies && identity.policies.length > 0 ? (
+                            <Space wrap size="middle">
+                              {identity.policies.map((policy: any) => (
+                                <Tag 
+                                  key={policy.id} 
+                                  color="green"
+                                  className="px-3 py-1"
+                                >
+                                  {policy.name}
+                                </Tag>
+                              ))}
+                            </Space>
+                          ) : (
+                            <p className="text-gray-500">
+                              Chưa có chính sách nào được gán. Quyền hạn được kế thừa từ vai trò.
+                            </p>
+                          )}
+                        </Card>
                       </div>
                     ),
                   },
