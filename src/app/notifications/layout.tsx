@@ -3,9 +3,10 @@
 import React, { useState, useCallback } from "react";
 import { ModernSidebar } from "@/components/layout";
 import { Header } from "@/components/header";
+import { RoleGuard } from "@/components/auth";
 import { Menu } from "lucide-react";
 
-export default function PermissionsLayout({
+export default function NotificationsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -38,9 +39,11 @@ export default function PermissionsLayout({
           <Header />
         </div>
         
-        {/* Page Content */}
+        {/* Page Content - Chỉ Admin và Manager */}
         <main className="min-h-[calc(100vh-64px)]">
-          {children}
+          <RoleGuard allowedRoles={["admin", "manager"]} redirectTo="/profile">
+            {children}
+          </RoleGuard>
         </main>
       </div>
     </div>

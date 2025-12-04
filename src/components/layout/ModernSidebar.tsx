@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLogout } from "@refinedev/core";
+import { useLogout, useGetIdentity } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -25,58 +25,65 @@ interface SidebarItem {
   label: string;
   href: string;
   badge?: string | number;
+  // Roles được phép truy cập: undefined = tất cả, [] = không ai
+  allowedRoles?: ("admin" | "manager" | "employee")[];
 }
 
-const sidebarItems: SidebarItem[] = [
+// Định nghĩa tất cả menu items với quyền truy cập
+const allSidebarItems: SidebarItem[] = [
   {
     icon: <LayoutDashboard size={24} />,
     label: "Dashboard",
     href: "/dashboard",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <Users size={24} />,
     label: "Nhân viên",
     href: "/employees",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <User size={24} />,
     label: "Thông tin",
     href: "/profile",
+    // Tất cả đều có thể xem profile của mình
   },
   {
     icon: <Calendar size={24} />,
     label: "Lịch làm",
     href: "/schedule",
+    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
   },
   {
     icon: <CheckSquare size={24} />,
     label: "Chấm công",
     href: "/attendance",
+    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
   },
-  // {
-  //   icon: <ClipboardList size={24} />,
-  //   label: "Yêu cầu",
-  //   href: "/requests",
-  // },
   {
     icon: <DollarSign size={24} />,
     label: "Bảng lương",
     href: "/salary",
+    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
   },
   {
     icon: <Bell size={24} />,
     label: "Thông báo",
     href: "/notifications",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <FileText size={24} />,
     label: "Thống kê",
     href: "/reports",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <BranchesOutlined size={24} />,
     label: "Phân quyền",
     href: "/permissions",
+    allowedRoles: ["admin"], // Chỉ admin
   },
 ];
 
@@ -99,6 +106,40 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { mutate: logout } = useLogout();
+  const { data: identity } = useGetIdentity<{
+    id: string;
+    role?: string | { name?: string };
+    employee_id?: any;
+  }>();
+
+  // Lấy role từ identity (có thể là string hoặc object)
+  const userRole = useMemo((): "admin" | "manager" | "employee" => {
+    let roleName: string | undefined;
+    
+    // Role có thể là string hoặc object { name: string }
+    if (typeof identity?.role === "string") {
+      roleName = identity.role;
+    } else if (typeof identity?.role === "object" && identity?.role?.name) {
+      roleName = identity.role.name;
+    }
+    
+    const role = roleName?.toLowerCase();
+    // Match các variants của admin: admin, administrator
+    if (role === "admin" || role === "administrator") return "admin";
+    // Match các variants của manager
+    if (role === "manager") return "manager";
+    return "employee";
+  }, [identity?.role]);
+
+  // Lọc sidebar items dựa trên role
+  const sidebarItems = useMemo(() => {
+    return allSidebarItems.filter((item) => {
+      // Nếu không có allowedRoles => tất cả đều được phép
+      if (!item.allowedRoles) return true;
+      // Kiểm tra role có trong danh sách cho phép không
+      return item.allowedRoles.includes(userRole);
+    });
+  }, [userRole]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {

@@ -93,7 +93,9 @@ export const ProfileShow = () => {
   if (isIdentityLoading || isEmployeeLoading) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Đang tải thông tin..." />
+        <Spin size="large">
+          <div className="pt-8 text-gray-500">Đang tải thông tin...</div>
+        </Spin>
       </div>
     );
   }

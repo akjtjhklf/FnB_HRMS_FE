@@ -24,7 +24,9 @@ export function SalaryAnalytics({ data, loading }: SalaryAnalyticsProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Spin size="large" tip="Đang tải phân tích lương..." />
+        <Spin size="large">
+          <div className="pt-8 text-gray-500">Đang tải phân tích lương...</div>
+        </Spin>
       </div>
     );
   }

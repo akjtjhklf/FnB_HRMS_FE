@@ -21,7 +21,9 @@ export function OverviewDashboard({ data, loading }: OverviewDashboardProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Spin size="large" tip="Đang tải dữ liệu thống kê..." />
+        <Spin size="large">
+          <div className="pt-8 text-gray-500">Đang tải dữ liệu thống kê...</div>
+        </Spin>
       </div>
     );
   }

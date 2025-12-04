@@ -35,7 +35,9 @@ export function EmployeeAnalytics({ data, loading }: EmployeeAnalyticsProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Spin size="large" tip="Đang tải phân tích nhân viên..." />
+        <Spin size="large">
+          <div className="pt-8 text-gray-500">Đang tải phân tích nhân viên...</div>
+        </Spin>
       </div>
     );
   }

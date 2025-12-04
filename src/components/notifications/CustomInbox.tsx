@@ -1,8 +1,9 @@
 "use client";
 
-import { useNotifications } from "@novu/notification-center";
-import { Bell, Check, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useNovu, useNotifications, useCounts } from "@novu/react";
+import { Bell, Check, Clock, Archive, ArchiveRestore, Eye, EyeOff, Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Tabs, Tooltip, Spin, Empty, message } from "antd";
 
 interface CustomInboxProps {
   colorMode?: "light" | "dark";
@@ -10,56 +11,225 @@ interface CustomInboxProps {
 
 export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "unread" | "archived">("all");
 
-  // Ép kiểu 'as any' để tránh lỗi TypeScript thiếu definition
-  const {
-    notifications,
-    unseenCount,
-    markAsSeen, 
-    isLoading,
-    refetch // Hàm này rất quan trọng để tải danh sách
-  } = useNotifications() as any;
+  // Sử dụng hooks từ @novu/react v3
+  const novu = useNovu();
+  
+  // Lấy số lượng chưa đọc bằng useCounts
+  const { counts } = useCounts({ filters: [{ read: false }] });
+  const unseenCount = counts?.[0]?.count || 0;
+  
+  // Lấy notifications với filter theo tab
+  const { notifications, isLoading, hasMore, fetchMore, refetch } = useNotifications({
+    tags: activeTab === "archived" ? ["archived"] : undefined,
+    read: activeTab === "unread" ? false : undefined,
+    archived: activeTab === "archived" ? true : false,
+  });
 
-  // SỬA: Thêm useEffect để gọi API lấy danh sách thông báo khi mở dropdown
-  // Mặc định Novu có thể chỉ load số lượng (count) mà chưa load danh sách (feed)
+  // Refetch khi mở dropdown hoặc đổi tab
   useEffect(() => {
-    if (isOpen && refetch) {
-      refetch();
+    if (isOpen) {
+      refetch?.();
     }
-  }, [isOpen, refetch]);
+  }, [isOpen, activeTab, refetch]);
 
-  // Hàm xử lý khi click từng thông báo
-  const handleNotificationClick = (notification: any) => {
-    if (!notification.seen) {
-      markAsSeen(notification._id);
+  // Đánh dấu đã đọc
+  const handleMarkAsRead = useCallback(async (notification: any) => {
+    try {
+      if (!notification.isRead) {
+        await novu?.notifications.read({ notificationId: notification.id });
+        refetch?.();
+      }
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    }
+  }, [novu, refetch]);
+
+  // Đánh dấu chưa đọc
+  const handleMarkAsUnread = useCallback(async (notification: any) => {
+    try {
+      if (notification.isRead) {
+        await novu?.notifications.unread({ notificationId: notification.id });
+        refetch?.();
+      }
+    } catch (error) {
+      console.error("Failed to mark as unread:", error);
+    }
+  }, [novu, refetch]);
+
+  // Archive
+  const handleArchive = useCallback(async (notification: any) => {
+    try {
+      await novu?.notifications.archive({ notificationId: notification.id });
+      message.success("Đã lưu trữ thông báo");
+      refetch?.();
+    } catch (error) {
+      console.error("Failed to archive:", error);
+      message.error("Lỗi lưu trữ thông báo");
+    }
+  }, [novu, refetch]);
+
+  // Unarchive
+  const handleUnarchive = useCallback(async (notification: any) => {
+    try {
+      await novu?.notifications.unarchive({ notificationId: notification.id });
+      message.success("Đã bỏ lưu trữ");
+      refetch?.();
+    } catch (error) {
+      console.error("Failed to unarchive:", error);
+      message.error("Lỗi bỏ lưu trữ");
+    }
+  }, [novu, refetch]);
+
+  // Đánh dấu tất cả đã đọc
+  const handleMarkAllAsRead = useCallback(async () => {
+    try {
+      await novu?.notifications.readAll({});
+      message.success("Đã đánh dấu tất cả đã đọc");
+      refetch?.();
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+      message.error("Lỗi đánh dấu đã đọc");
+    }
+  }, [novu, refetch]);
+
+  // Xử lý click notification
+  const handleNotificationClick = useCallback((notification: any) => {
+    // Mark as read
+    handleMarkAsRead(notification);
+
+    // Navigate nếu có URL
+    const url = notification.cta?.data?.url || notification.payload?.url;
+    if (url) {
+      window.location.href = url;
+    }
+  }, [handleMarkAsRead]);
+
+  const count = unseenCount;
+
+  const renderNotificationList = () => {
+    if (isLoading && (!notifications || notifications.length === 0)) {
+      return (
+        <div className="flex items-center justify-center py-10">
+          <Spin />
+        </div>
+      );
     }
 
-    if (notification.cta?.data?.url) {
-      window.location.href = notification.cta.data.url;
-    } else if (notification.payload?.url) {
-      window.location.href = notification.payload.url;
+    if (!notifications || notifications.length === 0) {
+      return (
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            activeTab === "archived" 
+              ? "Không có thông báo đã lưu trữ" 
+              : activeTab === "unread"
+              ? "Không có thông báo chưa đọc"
+              : "Không có thông báo nào"
+          }
+          className="py-10"
+        />
+      );
     }
+
+    return (
+      <>
+        <div className="divide-y divide-gray-100">
+          {notifications.map((item: any) => (
+            <div
+              key={item.id}
+              className={`px-4 py-3 hover:bg-gray-50 transition-colors flex gap-3 ${
+                !item.isRead ? "bg-blue-50/50" : "bg-white"
+              }`}
+            >
+              {/* Indicator */}
+              <div className="mt-1 flex-shrink-0">
+                {!item.isRead ? (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                ) : (
+                  <Check size={14} className="text-gray-400 mt-1" />
+                )}
+              </div>
+
+              {/* Content */}
+              <div 
+                className="flex-1 cursor-pointer"
+                onClick={() => handleNotificationClick(item)}
+              >
+                <p className={`text-sm text-gray-800 ${!item.isRead ? 'font-medium' : ''}`}>
+                  {item.body || item.content || "Thông báo hệ thống"}
+                </p>
+                {item.subject && (
+                  <p className="text-xs text-gray-500 mt-0.5">{item.subject}</p>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  <Clock size={10} className="text-gray-400"/>
+                  <span className="text-xs text-gray-400">
+                    {new Date(item.createdAt).toLocaleString('vi-VN')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1">
+                {/* Read/Unread toggle */}
+                <Tooltip title={item.isRead ? "Đánh dấu chưa đọc" : "Đánh dấu đã đọc"}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.isRead ? handleMarkAsUnread(item) : handleMarkAsRead(item);
+                    }}
+                    className="p-1.5 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    {item.isRead ? (
+                      <EyeOff size={14} className="text-gray-400" />
+                    ) : (
+                      <Eye size={14} className="text-blue-500" />
+                    )}
+                  </button>
+                </Tooltip>
+
+                {/* Archive/Unarchive toggle */}
+                <Tooltip title={item.isArchived ? "Bỏ lưu trữ" : "Lưu trữ"}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      item.isArchived ? handleUnarchive(item) : handleArchive(item);
+                    }}
+                    className="p-1.5 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    {item.isArchived ? (
+                      <ArchiveRestore size={14} className="text-green-500" />
+                    ) : (
+                      <Archive size={14} className="text-gray-400" />
+                    )}
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Load more */}
+        {hasMore && (
+          <div className="p-2 text-center border-t border-gray-100">
+            <button
+              onClick={() => fetchMore?.()}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? "Đang tải..." : "Tải thêm"}
+            </button>
+          </div>
+        )}
+      </>
+    );
   };
-
-  const handleMarkAllAsRead = () => {
-    if (notifications && notifications.length > 0) {
-      notifications.forEach((n: any) => {
-        if (!n.seen) {
-           markAsSeen(n._id);
-        }
-      });
-    }
-  };
-
-  const count = unseenCount || 0;
-
-  // Logic kiểm tra loading: Chỉ hiện loading nếu đang tải VÀ chưa có dữ liệu hiển thị
-  // Điều này giúp tránh việc treo màn hình loading mãi
-  const showLoading = isLoading && (!notifications || notifications.length === 0);
 
   return (
     <div className="relative">
-      {/* --- Custom Bell Button --- */}
+      {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors group outline-none"
@@ -69,7 +239,6 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
           size={20}
           className={`transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-600 group-hover:text-gray-900'}`}
         />
-        {/* Badge count */}
         {count > 0 && (
           <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-white">
             {count > 9 ? '9+' : count}
@@ -77,7 +246,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
         )}
       </button>
 
-      {/* --- Custom Dropdown --- */}
+      {/* Dropdown */}
       {isOpen && (
         <>
           <div
@@ -85,75 +254,60 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="absolute right-0 top-12 z-50 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+          <div className="absolute right-0 top-12 z-50 w-[420px] bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
             
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-start">
+            <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
               <div>
                 <h3 className="font-semibold text-gray-900 text-base">Thông báo</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Cập nhật từ hệ thống</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {count > 0 ? `${count} thông báo chưa đọc` : "Cập nhật từ hệ thống"}
+                </p>
               </div>
-              <div className="flex gap-2">
-                 <button 
-                    onClick={handleMarkAllAsRead}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-100 transition-colors"
-                 >
-                    Đã đọc hết
-                 </button>
+              <button 
+                onClick={handleMarkAllAsRead}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+              >
+                Đọc tất cả
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="px-4 pt-2 border-b border-gray-100">
+              <div className="flex gap-4">
+                {[
+                  { key: "all", label: "Tất cả" },
+                  { key: "unread", label: "Chưa đọc" },
+                  { key: "archived", label: "Đã lưu" },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === tab.key
+                        ? "text-blue-600 border-blue-600"
+                        : "text-gray-500 border-transparent hover:text-gray-700"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* List Content */}
             <div className="max-h-[400px] overflow-y-auto">
-              {showLoading ? (
-                <div className="p-4 space-y-3">
-                   <p className="text-center text-sm text-gray-400 animate-pulse">Đang tải danh sách...</p>
-                </div>
-              ) : !notifications || notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-gray-400">
-                  <Bell size={40} className="mb-2 opacity-20" />
-                  <p className="text-sm">Không có thông báo nào</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-100">
-                  {notifications.map((item: any) => (
-                    <div
-                      key={item._id}
-                      onClick={() => handleNotificationClick(item)}
-                      className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors flex gap-3 ${
-                        !item.seen ? "bg-blue-50/50" : "bg-white"
-                      }`}
-                    >
-                      <div className="mt-1 flex-shrink-0">
-                         {!item.seen ? (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                         ) : (
-                            <Check size={14} className="text-gray-400 mt-1" />
-                         )}
-                      </div>
-
-                      <div className="flex-1">
-                        <p className={`text-sm text-gray-800 ${!item.seen ? 'font-medium' : ''}`}>
-                          {item.content || item.body || "Thông báo hệ thống"} 
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                            <Clock size={10} className="text-gray-400"/>
-                            <span className="text-xs text-gray-400">
-                              {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-                            </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {renderNotificationList()}
             </div>
 
             {/* Footer */}
             <div className="px-4 py-2 border-t border-gray-200 bg-gray-50">
               <button
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors py-1"
-                onClick={() => window.location.href = "/notifications"}
+                onClick={() => {
+                  setIsOpen(false);
+                  window.location.href = "/notifications";
+                }}
               >
                 Xem tất cả thông báo
               </button>

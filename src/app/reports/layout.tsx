@@ -2,6 +2,7 @@
 
 import { Header } from "@components/header";
 import { ModernSidebar } from "@components/layout";
+import { RoleGuard } from "@/components/auth";
 import { Menu } from "lucide-react";
 import { ReactNode, useState } from "react";
 
@@ -31,8 +32,12 @@ export default function ReportsLayout({ children }: { children: ReactNode }) {
           <Header />
         </div>
 
-        {/* Page Content */}
-        <main className="min-h-[calc(100vh-64px)]">{children}</main>
+        {/* Page Content - Chỉ Admin và Manager */}
+        <main className="min-h-[calc(100vh-64px)]">
+          <RoleGuard allowedRoles={["admin", "manager"]} redirectTo="/profile">
+            {children}
+          </RoleGuard>
+        </main>
       </div>
     </div>
   );

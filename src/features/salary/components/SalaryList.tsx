@@ -25,7 +25,10 @@ import {
   InputNumber,
   DatePicker,
   Tabs,
+  Dropdown,
+  Tooltip,
 } from "antd";
+import type { MenuProps } from "antd";
 import {
   DollarOutlined,
   EyeOutlined,
@@ -41,6 +44,8 @@ import {
   UnlockOutlined,
   ThunderboltOutlined,
   SearchOutlined,
+  SwapOutlined,
+  MoreOutlined,
 } from "@ant-design/icons";
 import { Settings } from "lucide-react";
 import { SalarySchemeList } from "./SalarySchemeList";
@@ -423,6 +428,92 @@ export const SalaryList = () => {
     });
   };
 
+  // Hook để thay đổi trạng thái linh hoạt
+  const { mutate: changeStatusMutation } = useCustomMutation();
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusChangePayroll, setStatusChangePayroll] = useState<MonthlyPayroll | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+
+  const statusOptions = [
+    { value: "draft", label: "Nháp", color: "default", icon: <FileTextOutlined /> },
+    { value: "pending_approval", label: "Chờ duyệt", color: "gold", icon: <ClockCircleOutlined /> },
+    { value: "approved", label: "Đã duyệt", color: "green", icon: <CheckCircleOutlined /> },
+    { value: "paid", label: "Đã thanh toán", color: "blue", icon: <DollarOutlined /> },
+  ];
+
+  const handleOpenStatusModal = (record: MonthlyPayroll) => {
+    setStatusChangePayroll(record);
+    setSelectedStatus(record.status || "draft");
+    setStatusModalOpen(true);
+  };
+
+  const handleChangeStatus = () => {
+    if (!statusChangePayroll || !selectedStatus) return;
+
+    const currentStatus = statusChangePayroll.status || "draft";
+    if (currentStatus === selectedStatus) {
+      message.info("Trạng thái không thay đổi");
+      setStatusModalOpen(false);
+      return;
+    }
+
+    changeStatusMutation({
+      url: `monthly-payrolls/${statusChangePayroll.id}/change-status`,
+      method: "post",
+      values: { status: selectedStatus },
+      successNotification: () => ({
+        message: "Cập nhật trạng thái thành công",
+        description: `Đã chuyển sang trạng thái "${statusOptions.find(s => s.value === selectedStatus)?.label}"`,
+        type: "success",
+      }),
+      errorNotification: (error: any) => ({
+        message: "Lỗi cập nhật trạng thái",
+        description: error?.response?.data?.error?.message || error?.message || "Vui lòng thử lại",
+        type: "error",
+      }),
+    }, {
+      onSuccess: () => {
+        setStatusModalOpen(false);
+        setStatusChangePayroll(null);
+        setSelectedStatus(null);
+        tableQueryResult?.refetch?.();
+      }
+    });
+  };
+
+  // Hook để đánh dấu đã thanh toán
+  const { mutate: markAsPaidMutation } = useCustomMutation();
+
+  const onMarkAsPaid = (id: string) => {
+    Modal.confirm({
+      title: "Đánh dấu đã thanh toán",
+      content: "Bạn có chắc muốn đánh dấu bảng lương này đã được thanh toán?",
+      okText: "Xác nhận",
+      cancelText: "Hủy",
+      onOk: () => {
+        markAsPaidMutation({
+          url: `monthly-payrolls/${id}/mark-paid`,
+          method: "post",
+          values: {},
+          successNotification: () => ({
+            message: "Đã cập nhật",
+            description: "Bảng lương đã được đánh dấu đã thanh toán",
+            type: "success",
+          }),
+          errorNotification: (error: any) => ({
+            message: "Lỗi cập nhật",
+            description: error?.response?.data?.error?.message || "Vui lòng thử lại",
+            type: "error",
+          }),
+        }, {
+          onSuccess: () => {
+            tableQueryResult?.refetch?.();
+          }
+        });
+      },
+    });
+  };
+
   const handleGeneratePayroll = () => {
     if (!generateMonth) {
       message.error("Vui lòng chọn tháng");
@@ -596,6 +687,24 @@ export const SalaryList = () => {
           onClick: () => handleSendPayslip(record),
         });
       }
+
+      // Đánh dấu đã thanh toán cho bảng lương đã duyệt
+      if (status === "approved") {
+        items.push({
+          key: "mark-paid",
+          label: "Đánh dấu đã thanh toán",
+          icon: <DollarOutlined className="text-green-600" />,
+          onClick: () => onMarkAsPaid(record.id),
+        });
+      }
+
+      // Thay đổi trạng thái (dành cho Admin/Manager)
+      items.push({
+        key: "change-status",
+        label: "Thay đổi trạng thái",
+        icon: <SwapOutlined className="text-blue-600" />,
+        onClick: () => handleOpenStatusModal(record),
+      });
     } else {
       // Employee: Chỉ có nút "Yêu cầu sửa" cho bảng lương của chính mình
       items.push({
@@ -1145,6 +1254,84 @@ export const SalaryList = () => {
             <br />
             * Bảng lương sẽ được tạo ở trạng thái "Nháp".
           </p>
+        </div>
+      </Modal>
+
+      {/* Status Change Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <SwapOutlined className="text-blue-500" />
+            <span>Thay đổi trạng thái phiếu lương</span>
+          </div>
+        }
+        open={statusModalOpen}
+        onCancel={() => {
+          setStatusModalOpen(false);
+          setStatusChangePayroll(null);
+          setSelectedStatus(null);
+        }}
+        onOk={handleChangeStatus}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        okButtonProps={{ disabled: !selectedStatus }}
+        centered
+      >
+        <div className="py-4">
+          {statusChangePayroll && (
+            <>
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500 mb-1">Nhân viên</p>
+                <p className="font-medium">
+                  {typeof statusChangePayroll.employee_id === "object"
+                    ? statusChangePayroll.employee_id.full_name ||
+                      `${statusChangePayroll.employee_id.first_name || ""} ${statusChangePayroll.employee_id.last_name || ""}`.trim()
+                    : "N/A"}
+                </p>
+                <p className="text-sm text-gray-500 mt-2 mb-1">Tháng lương</p>
+                <p className="font-medium">
+                  {statusChangePayroll.month || "N/A"}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Trạng thái hiện tại</p>
+                <Tag
+                  color={
+                    statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))
+                      ?.color || "default"
+                  }
+                >
+                  {statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))
+                    ?.label || statusChangePayroll.status}
+                </Tag>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Trạng thái mới</p>
+                <Select
+                  className="w-full"
+                  placeholder="Chọn trạng thái mới"
+                  value={selectedStatus}
+                  onChange={setSelectedStatus}
+                  options={statusOptions
+                    .filter((s) => s.value !== (statusChangePayroll.status || "draft"))
+                    .map((s) => ({
+                      value: s.value,
+                      label: (
+                        <div className="flex items-center gap-2">
+                          <Tag color={s.color}>{s.label}</Tag>
+                        </div>
+                      ),
+                    }))}
+                />
+              </div>
+
+              <p className="mt-4 text-xs text-gray-400">
+                * Thay đổi trạng thái sẽ được ghi nhận trong lịch sử.
+              </p>
+            </>
+          )}
         </div>
       </Modal>
 

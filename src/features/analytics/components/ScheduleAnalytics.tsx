@@ -34,7 +34,9 @@ export function ScheduleAnalytics({ data, loading }: ScheduleAnalyticsProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <Spin size="large" tip="Đang tải phân tích lịch làm..." />
+        <Spin size="large">
+          <div className="pt-8 text-gray-500">Đang tải phân tích lịch làm...</div>
+        </Spin>
       </div>
     );
   }
