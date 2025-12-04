@@ -2,23 +2,17 @@
 
 import { Contract } from "@/types/employee";
 import { useList } from "@refinedev/core";
-import {
-  Card,
-  Table,
-  Tag,
-} from "antd";
-import {
-  FileText,
-  Calendar,
-  DollarSign,
-} from "lucide-react";
+import { Card, Table, Tag } from "antd";
+import { FileText, Calendar, DollarSign } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface ProfileContractListProps {
   employeeId: string;
 }
 
-export const ProfileContractList: React.FC<ProfileContractListProps> = ({ employeeId }) => {
+export const ProfileContractList: React.FC<ProfileContractListProps> = ({
+  employeeId,
+}) => {
   const { query } = useList<Contract>({
     resource: "contracts",
     filters: [
@@ -48,17 +42,16 @@ export const ProfileContractList: React.FC<ProfileContractListProps> = ({ employ
     }
   };
 
-  const getContractStatusTag = (status: string) => {
-    switch (status) {
-      case "active":
-        return <Tag color="success">Đang hoạt động</Tag>;
-      case "expired":
-        return <Tag color="default">Đã hết hạn</Tag>;
-      case "terminated":
-        return <Tag color="error">Đã chấm dứt</Tag>;
-      default:
-        return <Tag>{status}</Tag>;
+  const getContractStatusTag = (contract: Contract) => {
+    if (!contract.is_active) {
+      return <Tag color="error">Đã chấm dứt</Tag>;
     }
+
+    if (contract.end_date && new Date(contract.end_date) < new Date()) {
+      return <Tag color="default">Đã hết hạn</Tag>;
+    }
+
+    return <Tag color="success">Đang hoạt động</Tag>;
   };
 
   const columns = [
@@ -97,25 +90,24 @@ export const ProfileContractList: React.FC<ProfileContractListProps> = ({ employ
     },
     {
       title: "Lương",
-      dataIndex: "salary",
-      key: "salary",
-      render: (salary: number) => (
+      dataIndex: "base_salary",
+      key: "base_salary",
+      render: (salary: string | number) => (
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-green-600" />
           <span className="font-medium text-green-600">
             {new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
-            }).format(salary)}
+            }).format(Number(salary) || 0)}
           </span>
         </div>
       ),
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
       key: "status",
-      render: (status: string) => getContractStatusTag(status),
+      render: (_: any, record: Contract) => getContractStatusTag(record),
     },
   ];
 

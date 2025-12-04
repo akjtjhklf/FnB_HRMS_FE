@@ -11,7 +11,7 @@ interface ShiftCardProps {
   shiftType?: ShiftType;
   assignments: ScheduleAssignment[];
   requirements: ShiftPositionRequirement[];
-  registeredCountByShiftPosition: Record<string, Record<string, number>>;
+  registeredCountByShiftPosition: Record<string, number>;
   onClick: () => void;
 }
 
@@ -83,8 +83,8 @@ export function ShiftCard({
                 totalAssigned >= totalRequired
                   ? "#22c55e"
                   : totalAssigned > 0
-                  ? "#f59e0b"
-                  : "#6b7280",
+                    ? "#f59e0b"
+                    : "#6b7280",
             }}
           />
         </div>
@@ -121,8 +121,8 @@ export function ShiftCard({
                     data.assigned >= data.required
                       ? "#22c55e"
                       : registeredCount > 0
-                      ? "#3b82f6"
-                      : "#6b7280",
+                        ? "#3b82f6"
+                        : "#6b7280",
                   fontSize: "10px",
                 }}
               />

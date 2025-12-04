@@ -48,6 +48,10 @@ export const NotificationForm = ({
       resource: "notifications",
       id: action === "edit" ? id : undefined,
       redirect: false,
+      defaultFormValues: {
+        recipient_type: "all",
+        level: "info",
+      },
       onMutationSuccess: () => {
         message.success(
           action === "create"
@@ -142,7 +146,7 @@ export const NotificationForm = ({
             ? "shadow-none border-0"
             : "shadow-sm border border-gray-200"
         }
-        bordered={!onCancel}
+        variant={onCancel ? "borderless" : "outlined"}
       >
         <Form {...formProps} layout="vertical" onFinish={onFinish}>
           <div className="grid grid-cols-1 gap-3 md:gap-4">
@@ -174,7 +178,6 @@ export const NotificationForm = ({
             <Form.Item
               label="Mức độ"
               name="level"
-              initialValue="info"
               rules={[{ required: true, message: "Vui lòng chọn mức độ" }]}
             >
               <Select
@@ -193,7 +196,6 @@ export const NotificationForm = ({
             <Form.Item
               label="Loại người nhận"
               name="recipient_type"
-              initialValue="all"
               rules={[
                 { required: true, message: "Vui lòng chọn loại người nhận" },
               ]}
@@ -204,7 +206,6 @@ export const NotificationForm = ({
               >
                 <Radio.Button value="all">Tất cả nhân viên</Radio.Button>
                 <Radio.Button value="individual">Cá nhân</Radio.Button>
-                <Radio.Button value="group">Nhóm</Radio.Button>
               </Radio.Group>
             </Form.Item>
 
@@ -235,32 +236,6 @@ export const NotificationForm = ({
               </Form.Item>
             )}
 
-            {recipientType === "group" && (
-              <Form.Item
-                label="Chọn nhóm nhân viên"
-                name="recipient_ids"
-                rules={[
-                  {
-                    required: true,
-                    message: "Vui lòng chọn ít nhất 1 nhóm",
-                  },
-                ]}
-              >
-                <Select
-                  {...employeeSelectProps}
-                  mode="multiple"
-                  placeholder="Chọn nhiều nhân viên (nhóm)"
-                  showSearch
-                  size="large"
-                  filterOption={(input, option) =>
-                    String(option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  maxTagCount="responsive"
-                />
-              </Form.Item>
-            )}
           </div>
 
           {!onCancel && <Divider className="my-3 md:my-4" />}

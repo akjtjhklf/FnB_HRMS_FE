@@ -1,4 +1,4 @@
-"use client";
+
 
 import { WeeklyScheduleDetail } from "@features/schedule/weekly-schedules/WeeklyScheduleDetail";
 

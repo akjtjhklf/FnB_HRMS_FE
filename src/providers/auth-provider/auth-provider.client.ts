@@ -14,6 +14,9 @@ export const authProviderClient: AuthProvider = {
         throw new Error("Email/Username và password là bắt buộc");
       }
 
+      // Clear old tokens before login to prevent sending expired tokens
+      tokenManager.clearTokens();
+
       // Gọi API login của HRMS_BE
       const response = await axiosClient.post<
         ResponseAPI<{

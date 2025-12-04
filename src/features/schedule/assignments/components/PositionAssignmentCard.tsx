@@ -10,6 +10,7 @@ interface PositionAssignmentCardProps {
   assignments: ScheduleAssignment[];
   employees: Employee[];
   availableEmployees: Employee[];
+  employeeShiftCounts: Record<string, number>;
   onRemoveAssignment: (assignmentId: string) => void;
   onAssignEmployee: (employeeId: string) => void;
 }
@@ -20,6 +21,7 @@ export function PositionAssignmentCard({
   assignments,
   employees,
   availableEmployees,
+  employeeShiftCounts,
   onRemoveAssignment,
   onAssignEmployee,
 }: PositionAssignmentCardProps) {
@@ -43,6 +45,11 @@ export function PositionAssignmentCard({
                   <span className="text-sm font-medium">
                     {employee?.full_name || "N/A"}
                   </span>
+                  {assignment.note && (
+                    <span className="text-xs text-gray-500 ml-1" title={assignment.note}>
+                      ({assignment.note.includes("Score") ? assignment.note.split("(")[1].replace(")", "") : "Note"})
+                    </span>
+                  )}
                 </div>
                 <Popconfirm
                   title="Xóa phân công?"
@@ -64,7 +71,7 @@ export function PositionAssignmentCard({
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {availableEmployees.length > 0 ? (
                 availableEmployees
-                  .filter((emp) => !assignments.some((a) => a.employee_id === emp.id))
+                  .filter((emp) => !assignments.some((a) => a.employee_id === emp.id)) // Only filter out currently assigned employees
                   .map((emp) => (
                     <div
                       key={emp.id}
@@ -74,7 +81,9 @@ export function PositionAssignmentCard({
                         <Avatar size="small" icon={<UserOutlined />} />
                         <div>
                           <div className="text-sm font-medium">{emp.full_name}</div>
-                          <div className="text-xs text-gray-500">{emp.id}</div>
+                          <div className="text-xs text-gray-500">
+                            {employeeShiftCounts[emp.id] || 0} ca tuần này
+                          </div>
                         </div>
                       </div>
                       <Button

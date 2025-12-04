@@ -3,11 +3,9 @@
 import { Table, Badge, Card, Row, Col, Statistic, Button, Radio, DatePicker, Modal, Form, Input, TimePicker, App } from "antd";
 import { useTable } from "@refinedev/antd";
 import { useCustomMutation } from "@refinedev/core";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
 import { useMemo, useState } from "react";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import { EmployeeAttendanceCalendar } from "./EmployeeAttendanceCalendar";
 
 interface AttendanceShift {
@@ -72,7 +70,7 @@ export function AttendanceHistory() {
             render: (date: string) => (
                 <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-gray-400" />
-                    <span>{format(new Date(date), "dd/MM/yyyy", { locale: vi })}</span>
+                    <span>{dayjs(date).format("DD/MM/YYYY")}</span>
                 </div>
             ),
         },
@@ -85,22 +83,7 @@ export function AttendanceHistory() {
                 time ? (
                     <div className="flex items-center gap-2">
                         <Clock size={16} className="text-green-600" />
-                        <span>{format(new Date(time), "HH:mm:ss")}</span>
-                    </div>
-                ) : (
-                    <span className="text-gray-400">-</span>
-                ),
-        },
-        {
-            title: "Check Out",
-            dataIndex: "clock_out",
-            key: "clock_out",
-            width: 130,
-            render: (time: string | null) =>
-                time ? (
-                    <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-red-600" />
-                        <span>{format(new Date(time), "HH:mm:ss")}</span>
+                        <span>{dayjs(time).format("HH:mm:ss")}</span>
                     </div>
                 ) : (
                     <span className="text-gray-400">-</span>
@@ -166,14 +149,14 @@ export function AttendanceHistory() {
     const [selectedRecord, setSelectedRecord] = useState<AttendanceShift | null>(null);
     const [form] = Form.useForm();
     const { mutate: createRequest, mutation } = useCustomMutation();
-    const isSubmitting = mutation?.isLoading;
+    const isSubmitting = mutation?.isPending;
     const { message } = App.useApp();
 
     const handleRequestAdjustment = (record: AttendanceShift) => {
         setSelectedRecord(record);
         form.setFieldsValue({
-            clock_in: record.clock_in ? dayjs(record.clock_in) : null,
-            clock_out: record.clock_out ? dayjs(record.clock_out) : null,
+            clock_in: record.clock_in ? dayjs.utc(record.clock_in).tz() : null,
+            clock_out: record.clock_out ? dayjs.utc(record.clock_out).tz() : null,
             reason: "",
         });
         setRequestModalOpen(true);

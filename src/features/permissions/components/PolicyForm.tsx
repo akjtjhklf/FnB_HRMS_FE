@@ -44,7 +44,7 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
                 },
                 {
                     onSuccess: () => {
-                        message.success("Cập nhật policy thành công");
+                        message.success("Cập nhật chính sách thành công");
                         if (activeTab === "info") {
                             onCancel();
                         }
@@ -59,7 +59,7 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
                 },
                 {
                     onSuccess: () => {
-                        message.success("Tạo policy thành công");
+                        message.success("Tạo chính sách thành công");
                         onCancel();
                     },
                 }
@@ -138,7 +138,7 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
 
     return (
         <Modal
-            title={initialValues ? "Chỉnh sửa Policy" : "Thêm Policy mới"}
+            title={initialValues ? "Chỉnh sửa chính sách" : "Thêm chính sách mới"}
             open={open}
             onCancel={onCancel}
             width={900}

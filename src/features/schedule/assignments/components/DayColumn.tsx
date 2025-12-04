@@ -15,7 +15,7 @@ interface DayColumnProps {
   shiftTypes: ShiftType[];
   assignments: ScheduleAssignment[];
   requirements: ShiftPositionRequirement[];
-  registeredCountByShiftPosition: Record<string, Record<string, number>>;
+  registeredCountByShiftPosition: Record<string, number>;
   onShiftClick: (shift: Shift) => void;
 }
 

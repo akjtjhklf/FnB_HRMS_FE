@@ -31,7 +31,7 @@ import {
   ClockCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { WeeklySchedule } from "@/types/schedule";
 import type { Shift } from "@/types/schedule/shift.types";
@@ -58,7 +58,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
   const { message } = App.useApp();
   const openConfirm = useConfirmModalStore((state) => state.openConfirm);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
-  
+
   // Workflow hooks
   const { publishSchedule: publishScheduleFn, isLoading: isPublishing } = usePublishSchedule();
   const { finalizeSchedule: finalizeScheduleFn, isLoading: isFinalizing } = useFinalizeSchedule();
@@ -116,8 +116,8 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
     coverageRate:
       shifts.reduce((sum, s) => sum + (s.total_required || 0), 0) > 0
         ? (assignments.length /
-            shifts.reduce((sum, s) => sum + (s.total_required || 0), 0)) *
-          100
+          shifts.reduce((sum, s) => sum + (s.total_required || 0), 0)) *
+        100
         : 0,
   };
 
@@ -267,7 +267,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => list("weekly-schedules")}
+              onClick={() => list("weekly-schedule")}
             >
               Quay lại
             </Button>
@@ -333,8 +333,8 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
               Tiếp theo: Thêm ca làm việc và yêu cầu vị trí, sau đó <strong>Công bố</strong> để nhân viên có thể đăng ký ca.
             </Text>
             <Space size="small">
-              <Button 
-                type="link" 
+              <Button
+                type="link"
                 size="small"
                 icon={<EditOutlined />}
                 onClick={() => window.location.href = "/schedule/shifts?schedule_id=" + id}
@@ -355,16 +355,16 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
               Nhân viên có thể xem và đăng ký ca. Tiếp theo: Xếp lịch phân công, sau đó <strong>Hoàn tất</strong> để khóa lịch.
             </Text>
             <Space size="small">
-              <Button 
-                type="link" 
+              <Button
+                type="link"
                 size="small"
                 icon={<EditOutlined />}
                 onClick={() => window.location.href = "/schedule/shifts?schedule_id=" + id}
               >
                 → Quản lý ca làm
               </Button>
-              <Button 
-                type="link" 
+              <Button
+                type="link"
                 size="small"
                 icon={<TeamOutlined />}
                 onClick={() => window.location.href = "/schedule/assignments?schedule_id=" + id}
@@ -474,7 +474,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
 
       {/* Quick Actions */}
       {canManage && schedule.status !== "finalized" && (
-        <Card 
+        <Card
           title={<Space><InfoCircleOutlined /> Hành động nhanh</Space>}
           style={{ marginBottom: "24px" }}
         >
@@ -496,7 +496,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
                 </Text>
               </div>
             </div>
-            
+
             {schedule.status === "scheduled" && (
               <div>
                 <Text strong>Phân công nhân viên:</Text>
@@ -555,24 +555,24 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
                   items={[
                     schedule.created_at
                       ? {
-                          color: "blue",
-                          label: dayjs(schedule.created_at).format("DD/MM/YYYY HH:mm"),
-                          children: "Lịch tuần được tạo",
-                        }
+                        color: "blue",
+                        label: dayjs(schedule.created_at).format("DD/MM/YYYY HH:mm"),
+                        children: "Lịch tuần được tạo",
+                      }
                       : null,
                     schedule.published_at
                       ? {
-                          color: "green",
-                          label: dayjs(schedule.published_at).format("DD/MM/YYYY HH:mm"),
-                          children: "Lịch tuần được công bố",
-                        }
+                        color: "green",
+                        label: dayjs(schedule.published_at).format("DD/MM/YYYY HH:mm"),
+                        children: "Lịch tuần được công bố",
+                      }
                       : null,
                     schedule.status === "finalized"
                       ? {
-                          color: "purple",
-                          label: dayjs(schedule.updated_at).format("DD/MM/YYYY HH:mm"),
-                          children: "Lịch tuần được hoàn tất",
-                        }
+                        color: "purple",
+                        label: dayjs(schedule.updated_at).format("DD/MM/YYYY HH:mm"),
+                        children: "Lịch tuần được hoàn tất",
+                      }
                       : null,
                   ].filter((item): item is NonNullable<typeof item> => item !== null)}
                 />

@@ -1,7 +1,7 @@
 "use client";
 
-import { ReportsDashboard } from "@/features/reports";
+import AnalyticsPage from "@/features/analytics";
 
 export default function ReportsPage() {
-  return <ReportsDashboard />;
+  return <AnalyticsPage />;
 }

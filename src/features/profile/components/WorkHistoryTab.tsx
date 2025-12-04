@@ -1,7 +1,21 @@
 "use client";
 
-import { useList, useCreate } from "@refinedev/core";
-import { Card, Statistic, Progress, Button, Tag, Table, Modal, Space, Tooltip, Input, App, Form } from "antd";
+import { useList, useCreate, useGetIdentity, useCustomMutation } from "@refinedev/core";
+import {
+  Card,
+  Statistic,
+  Progress,
+  Button,
+  Tag,
+  Table,
+  Modal,
+  Space,
+  Tooltip,
+  Input,
+  App,
+  Form,
+  Select,
+} from "antd";
 import {
   DollarOutlined,
   ClockCircleOutlined,
@@ -17,26 +31,88 @@ import dayjs from "dayjs";
 
 interface WorkHistoryTabProps {
   employeeId: string;
+  positionId?: string;
+  isOwnProfile?: boolean; // Chỉ hiển thị nút yêu cầu tăng lương nếu là profile của chính mình
 }
 
-export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) => {
+export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
+  employeeId,
+  positionId,
+  isOwnProfile = false,
+}) => {
   const { message } = App.useApp();
   const [bonusDetailVisible, setBonusDetailVisible] = useState(false);
   const [penaltyDetailVisible, setPenaltyDetailVisible] = useState(false);
   const [salaryRequestVisible, setSalaryRequestVisible] = useState(false);
   const [form] = Form.useForm();
-  
+
   const { mutate: createSalaryRequest } = useCreate();
   const [isCreating, setIsCreating] = useState(false);
 
-  // Fetch salary scheme
-  const { query: schemeQuery } = useList({
-    resource: "salary_schemes",
+  const { data: identity } = useGetIdentity<{ id: string; full_name: string; role: any }>();
+  const isAdminOrManager = identity?.role?.name === 'Administrator' || identity?.role?.name === 'Manager';
+
+  const { mutate: approveRequest } = useCustomMutation();
+  const { mutate: rejectRequest } = useCustomMutation();
+
+  const handleApproveRequest = (id: string) => {
+    Modal.confirm({
+      title: "Duyệt yêu cầu",
+      content: "Bạn có chắc chắn muốn duyệt yêu cầu này?",
+      onOk: () => {
+        approveRequest({
+          url: `salary-requests/${id}/approve`,
+          method: "post",
+          values: {
+            approved_by: identity?.full_name || "Manager",
+          },
+          successNotification: () => ({
+            message: "Đã duyệt yêu cầu",
+            type: "success",
+          }),
+        }, {
+          onSuccess: () => {
+            requestsQuery.refetch();
+          }
+        });
+      }
+    });
+  };
+
+  const handleRejectRequest = (id: string) => {
+    Modal.confirm({
+      title: "Từ chối yêu cầu",
+      content: "Bạn có chắc chắn muốn từ chối yêu cầu này?",
+      okText: "Từ chối",
+      okButtonProps: { danger: true },
+      onOk: () => {
+        rejectRequest({
+          url: `salary-requests/${id}/reject`,
+          method: "post",
+          values: {
+            rejected_by: identity?.full_name || "Manager",
+          },
+          successNotification: () => ({
+            message: "Đã từ chối yêu cầu",
+            type: "success",
+          }),
+        }, {
+          onSuccess: () => {
+            requestsQuery.refetch();
+          }
+        });
+      }
+    });
+  };
+
+  // Fetch active contract to get salary scheme
+  const { query: contractQuery } = useList({
+    resource: "contracts",
     filters: [
       {
-        field: "position_id",
+        field: "employee_id",
         operator: "eq",
-        value: "1", // Mock - should be from employee's current position
+        value: employeeId,
       },
       {
         field: "is_active",
@@ -45,10 +121,44 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       },
     ],
   });
+  const activeContract = contractQuery.data?.data?.[0];
+
+  // Extract salary_scheme_id - handle both object and string cases
+  const salarySchemeId = activeContract?.salary_scheme_id
+    ? typeof activeContract.salary_scheme_id === "object"
+      ? (activeContract.salary_scheme_id as any).id
+      : activeContract.salary_scheme_id
+    : null;
+
+  // If salary_scheme_id is already populated as object, use it directly
+  const populatedScheme = activeContract?.salary_scheme_id && typeof activeContract.salary_scheme_id === "object"
+    ? activeContract.salary_scheme_id as any
+    : null;
+
+  // Fetch salary scheme based on contract OR position (only if not already populated)
+  const { query: schemeQuery } = useList({
+    resource: "salary-schemes",
+    filters: [
+      salarySchemeId && !populatedScheme
+        ? {
+          field: "id",
+          operator: "eq",
+          value: salarySchemeId,
+        }
+        : {
+          field: "position_id",
+          operator: "eq",
+          value: positionId || "unknown",
+        },
+    ],
+    queryOptions: {
+      enabled: !populatedScheme && !!(salarySchemeId || positionId),
+    },
+  });
 
   // Fetch schedule assignments (to calculate total shifts)
   const { query: assignmentsQuery } = useList({
-    resource: "schedule_assignments",
+    resource: "schedule-assignments",
     filters: [
       {
         field: "employee_id",
@@ -66,9 +176,30 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     },
   });
 
-  // Fetch monthly payrolls (for bonuses/penalties history)
+  // Fetch monthly payrolls (for bonuses/penalties history and total hours)
   const { query: payrollsQuery } = useList({
-    resource: "monthly_payrolls",
+    resource: "monthly-payrolls",
+    filters: [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: employeeId,
+      },
+    ],
+    pagination: {
+      pageSize: 1000, // Fetch all history
+    },
+    sorters: [
+      {
+        field: "month",
+        order: "desc",
+      },
+    ],
+  });
+
+  // Fetch salary requests history
+  const { query: requestsQuery } = useList({
+    resource: "salary-requests",
     filters: [
       {
         field: "employee_id",
@@ -78,33 +209,91 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     ],
     sorters: [
       {
-        field: "month",
+        field: "created_at",
         order: "desc",
       },
     ],
   });
+  const salaryRequests = requestsQuery.data?.data || [];
 
-  // Calculate statistics
-  const currentScheme = schemeQuery.data?.data?.[0] || {
-    id: "1",
-    name: "Cơ bản",
-    rate: 50000,
+  // Fetch ALL salary schemes for selection (only active ones)
+  const { query: allSchemesQuery } = useList({
+    resource: "salary-schemes",
+    filters: [
+      {
+        field: "is_active",
+        operator: "eq",
+        value: true,
+      },
+    ],
+    pagination: {
+      pageSize: 100,
+    },
+    sorters: [
+      {
+        field: "rate",
+        order: "asc",
+      },
+    ],
+  });
+  const allSalarySchemes = allSchemesQuery.data?.data || [];
+
+  // Calculate statistics - use populated scheme first, then fetched scheme, then default
+  const currentScheme = populatedScheme || schemeQuery.data?.data?.[0] || {
+    id: "unknown",
+    name: "Chưa thiết lập",
+    rate: 0,
     pay_type: "hourly",
-    min_hours: 160,
+    min_hours: 0,
   };
 
-  const assignments = useMemo(() => assignmentsQuery.data?.data || [], [assignmentsQuery.data?.data]);
-  const payrolls = useMemo(() => payrollsQuery.data?.data || [], [payrollsQuery.data?.data]);
+  // Get base_salary from contract if available (overrides scheme rate)
+  const currentSalary = activeContract?.base_salary 
+    ? Number(activeContract.base_salary) 
+    : Number(currentScheme.rate) || 0;
 
-  // Mock data for demo
-  const totalHoursWorked = 1240; // Hours from hire date
-  const requiredHoursForRaise = 1600; // Hours needed for next raise
-  const hoursRemaining = requiredHoursForRaise - totalHoursWorked;
-  const progressPercent = (totalHoursWorked / requiredHoursForRaise) * 100;
+  // Filter salary schemes that have higher rate than current (for raise request)
+  const availableSchemesForRaise = useMemo(() => {
+    return allSalarySchemes.filter((scheme: any) => {
+      const schemeRate = Number(scheme.rate) || 0;
+      // Only show schemes with higher rate and different from current
+      return schemeRate > currentSalary && scheme.id !== currentScheme.id;
+    });
+  }, [allSalarySchemes, currentSalary, currentScheme.id]);
+
+  const assignments = useMemo(
+    () => assignmentsQuery.data?.data || [],
+    [assignmentsQuery.data?.data]
+  );
+  const payrolls = useMemo(
+    () => payrollsQuery.data?.data || [],
+    [payrollsQuery.data?.data]
+  );
+
+  // Real data calculations
+  const totalHoursWorked = useMemo(() => {
+    return payrolls.reduce(
+      (sum: number, p: any) => sum + (Number(p.total_work_hours) || 0),
+      0
+    );
+  }, [payrolls]);
+
+  const requiredHoursForRaise = 1000; // Threshold for raise eligibility (can be dynamic later)
+  const hoursRemaining = Math.max(0, requiredHoursForRaise - totalHoursWorked);
+  const progressPercent = Math.min(
+    100,
+    (totalHoursWorked / requiredHoursForRaise) * 100
+  );
 
   // Calculate total bonuses and penalties
-  const totalBonuses = payrolls.reduce((sum: number, p: any) => sum + (p.bonuses || 0), 0);
-  const totalPenalties = payrolls.reduce((sum: number, p: any) => sum + (p.penalties || 0), 0);
+  const totalBonuses = payrolls.reduce(
+    (sum: number, p: any) => sum + (Number(p.bonuses) || 0),
+    0
+  );
+  const totalPenalties = payrolls.reduce(
+    (sum: number, p: any) => sum + (Number(p.penalties) || 0),
+    0
+  );
 
   // Calculate shifts by position
   const shiftsByPosition = useMemo(() => {
@@ -116,21 +305,21 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     return positionMap;
   }, [assignments]);
 
-  // Mock bonus/penalty details
+  // Bonus/penalty details
   const bonusDetails = payrolls
-    .filter((p: any) => p.bonuses > 0)
+    .filter((p: any) => Number(p.bonuses) > 0)
     .map((p: any) => ({
       month: p.month,
       amount: p.bonuses,
-      reason: "Hoàn thành xuất sắc KPI",
+      reason: p.notes || "Thưởng hiệu suất/Khác",
     }));
 
   const penaltyDetails = payrolls
-    .filter((p: any) => p.penalties > 0)
+    .filter((p: any) => Number(p.penalties) > 0)
     .map((p: any) => ({
       month: p.month,
       amount: p.penalties,
-      reason: p.notes || "Vi phạm quy định",
+      reason: p.notes || "Vi phạm quy định/Khác",
     }));
 
   const handleSalaryRequest = () => {
@@ -141,18 +330,37 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
     try {
       const values = await form.validateFields();
       setIsCreating(true);
-      
+
+      // Get proposed rate - from selected scheme or manual input
+      let proposedRate = 0;
+      let proposedSchemeId = null;
+
+      if (values.proposed_scheme_id) {
+        // Find selected scheme to get the rate
+        const selectedScheme = allSalarySchemes.find(
+          (s: any) => s.id === values.proposed_scheme_id
+        );
+        proposedRate = selectedScheme ? Number(selectedScheme.rate) : 0;
+        proposedSchemeId = values.proposed_scheme_id;
+      } else if (values.proposed_rate) {
+        // Use manual input rate
+        proposedRate = Number(values.proposed_rate);
+      }
+
       createSalaryRequest(
         {
-          resource: "salary_requests",
+          resource: "salary-requests",
           values: {
             employee_id: employeeId,
-            current_scheme_id: currentScheme.id,
-            current_rate: currentScheme.rate,
-            proposed_rate: values.proposed_rate || currentScheme.rate * 1.15, // Default 15% increase
+            current_scheme_id:
+              currentScheme.id !== "unknown" ? currentScheme.id : null,
+            current_rate: currentSalary,
+            proposed_scheme_id: proposedSchemeId,
+            proposed_rate: proposedRate,
             request_date: dayjs().toISOString(),
             status: "pending",
             note: values.note,
+            type: "raise", // Always "raise" for salary increase request
           },
         },
         {
@@ -164,11 +372,13 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             });
             setSalaryRequestVisible(false);
             form.resetFields();
+            requestsQuery.refetch();
           },
           onError: (error: any) => {
             setIsCreating(false);
             message.error({
-              content: `❌ Gửi yêu cầu thất bại: ${error?.message || "Có lỗi xảy ra"}`,
+              content: `❌ Gửi yêu cầu thất bại: ${error?.message || "Có lỗi xảy ra"
+                }`,
               duration: 4,
             });
           },
@@ -187,19 +397,19 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       render: (text: string) => dayjs(text).format("MM/YYYY"),
     },
     {
+      title: "Loại / Lý do",
+      dataIndex: "reason",
+      key: "reason",
+    },
+    {
       title: "Số tiền",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => (
         <span className="font-semibold text-green-600">
-          +{amount.toLocaleString()} VNĐ
+          +{Number(amount).toLocaleString()} VNĐ
         </span>
       ),
-    },
-    {
-      title: "Lý do",
-      dataIndex: "reason",
-      key: "reason",
     },
   ];
 
@@ -211,21 +421,34 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
       render: (text: string) => dayjs(text).format("MM/YYYY"),
     },
     {
+      title: "Loại / Lý do",
+      dataIndex: "reason",
+      key: "reason",
+    },
+    {
       title: "Số tiền",
       dataIndex: "amount",
       key: "amount",
       render: (amount: number) => (
         <span className="font-semibold text-red-600">
-          -{amount.toLocaleString()} VNĐ
+          -{Number(amount).toLocaleString()} VNĐ
         </span>
       ),
     },
-    {
-      title: "Lý do",
-      dataIndex: "reason",
-      key: "reason",
-    },
   ];
+
+  const getPayTypeLabel = (type: string) => {
+    switch (type) {
+      case "hourly":
+        return "Theo giờ";
+      case "fixed_shift":
+        return "Theo ca";
+      case "monthly":
+        return "Theo tháng";
+      default:
+        return type;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -239,27 +462,28 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             </h3>
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-blue-600">
-                {currentScheme.rate.toLocaleString()} VNĐ
+                {currentSalary.toLocaleString()} VNĐ
               </span>
-              <Tag color="blue">{currentScheme.name}</Tag>
-              <Tag color="cyan">
-                {currentScheme.pay_type === "hourly"
-                  ? "Theo giờ"
-                  : currentScheme.pay_type === "fixed_shift"
-                  ? "Theo ca"
-                  : "Theo tháng"}
+              <Tag color={currentScheme.id !== "unknown" ? "blue" : "default"}>
+                {currentScheme.name}
               </Tag>
+              <Tag color="cyan">{getPayTypeLabel(currentScheme.pay_type)}</Tag>
             </div>
           </div>
-          <Button
-            type="primary"
-            icon={<RiseOutlined />}
-            size="large"
-            onClick={handleSalaryRequest}
-            className="flex items-center gap-2"
-          >
-            Yêu cầu tăng lương
-          </Button>
+          {/* Chỉ hiển thị nút yêu cầu tăng lương trong trang Profile của chính mình */}
+          {isOwnProfile && (
+            <Button
+              type="primary"
+              icon={<RiseOutlined />}
+              size="large"
+              onClick={handleSalaryRequest}
+              className="flex items-center gap-2"
+              disabled={!activeContract}
+              title={!activeContract ? "Bạn cần có hợp đồng đang hoạt động để yêu cầu tăng lương" : ""}
+            >
+              Yêu cầu tăng lương
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -278,6 +502,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             <Statistic
               title="Tổng giờ đã làm"
               value={totalHoursWorked}
+              precision={1}
               suffix="giờ"
               prefix={<ClockCircleOutlined />}
               valueStyle={{ color: "#1890ff" }}
@@ -292,16 +517,21 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
             <Statistic
               title="Còn lại"
               value={hoursRemaining}
+              precision={1}
               suffix="giờ"
               prefix={<CalendarOutlined />}
-              valueStyle={{ color: hoursRemaining <= 100 ? "#52c41a" : "#faad14" }}
+              valueStyle={{
+                color: hoursRemaining <= 100 ? "#52c41a" : "#faad14",
+              }}
             />
           </div>
 
           <div>
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">Tiến độ hoàn thành</span>
-              <span className="font-semibold">{progressPercent.toFixed(1)}%</span>
+              <span className="font-semibold">
+                {progressPercent.toFixed(1)}%
+              </span>
             </div>
             <Progress
               percent={progressPercent}
@@ -352,6 +582,115 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
           <p className="text-gray-500 text-sm mt-2">
             Tổng {bonusDetails.length} lần nhận thưởng
           </p>
+        </Card>
+
+        {/* Salary Request History */}
+        <Card
+          title={
+            <div className="flex items-center gap-2">
+              <RiseOutlined className="text-blue-600" />
+              Lịch sử yêu cầu lương
+            </div>
+          }
+          className="border-l-4 border-l-blue-500"
+        >
+          <Table
+            dataSource={salaryRequests}
+            rowKey="id"
+            pagination={{ pageSize: 5 }}
+            columns={[
+              {
+                title: "Ngày tạo",
+                dataIndex: "created_at",
+                key: "created_at",
+                render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
+              },
+              {
+                title: "Loại",
+                dataIndex: "type",
+                key: "type",
+                render: (type: string) => (
+                  <Tag color={type === "raise" ? "blue" : "orange"}>
+                    {type === "raise" ? "Tăng lương" : "Điều chỉnh"}
+                  </Tag>
+                ),
+              },
+              {
+                title: "Chi tiết",
+                key: "details",
+                render: (_: any, record: any) => {
+                  if (record.type === "raise") {
+                    return (
+                      <div className="text-sm">
+                        <div>HT: {Number(record.current_rate).toLocaleString()}</div>
+                        <div className="font-semibold text-green-600">
+                          ĐX: {Number(record.proposed_rate).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <span className={record.adjustment_amount >= 0 ? "text-green-600" : "text-red-600"}>
+                      {record.adjustment_amount > 0 ? "+" : ""}
+                      {Number(record.adjustment_amount).toLocaleString()}
+                    </span>
+                  );
+                },
+              },
+              {
+                title: "Trạng thái",
+                dataIndex: "status",
+                key: "status",
+                render: (status: string) => {
+                  const colors: Record<string, string> = {
+                    pending: "gold",
+                    approved: "green",
+                    rejected: "red",
+                  };
+                  const texts: Record<string, string> = {
+                    pending: "Chờ duyệt",
+                    approved: "Đã duyệt",
+                    rejected: "Từ chối",
+                  };
+                  return <Tag color={colors[status]}>{texts[status]}</Tag>;
+                },
+              },
+              {
+                title: "Ghi chú",
+                dataIndex: "manager_note",
+                key: "manager_note",
+                render: (text: string, record: any) => text || record.note || "-",
+              },
+              {
+                title: "Thao tác",
+                key: "actions",
+                render: (_: any, record: any) => {
+                  if (isAdminOrManager && record.status === 'pending') {
+                    return (
+                      <Space>
+                        <Button
+                          size="small"
+                          type="primary"
+                          ghost
+                          onClick={() => handleApproveRequest(record.id)}
+                        >
+                          Duyệt
+                        </Button>
+                        <Button
+                          size="small"
+                          danger
+                          onClick={() => handleRejectRequest(record.id)}
+                        >
+                          Từ chối
+                        </Button>
+                      </Space>
+                    );
+                  }
+                  return null;
+                }
+              }
+            ]}
+          />
         </Card>
 
         {/* Penalties */}
@@ -518,29 +857,33 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
         okText="Gửi yêu cầu"
         cancelText="Hủy"
         width={600}
-        okButtonProps={{ 
+        okButtonProps={{
           icon: <RiseOutlined />,
           disabled: isCreating,
         }}
       >
         <div className="space-y-4 mt-4">
           {/* Current Info */}
-          <Card type="inner" size="small" className="bg-blue-50 border-blue-200">
+          <Card
+            type="inner"
+            size="small"
+            className="bg-blue-50 border-blue-200"
+          >
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Số giờ đã làm:</span>
-                <strong>{totalHoursWorked} giờ</strong>
+                <span className="text-gray-600">Chế độ lương hiện tại:</span>
+                <Tag color="blue">{currentScheme.name}</Tag>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Mức lương hiện tại:</span>
                 <strong className="text-blue-600">
-                  {currentScheme.rate.toLocaleString()} VNĐ/
-                  {currentScheme.pay_type === "hourly"
-                    ? "giờ"
-                    : currentScheme.pay_type === "fixed_shift"
-                    ? "ca"
-                    : "tháng"}
+                  {currentSalary.toLocaleString()} VNĐ/
+                  {getPayTypeLabel(currentScheme.pay_type)}
                 </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Số giờ đã làm:</span>
+                <strong>{totalHoursWorked.toFixed(1)} giờ</strong>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tiến độ:</span>
@@ -555,42 +898,66 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
           <Form
             form={form}
             layout="vertical"
-            initialValues={{
-              proposed_rate: Math.round(currentScheme.rate * 1.15),
-            }}
           >
-            <Form.Item
-              label="Mức lương đề xuất"
-              name="proposed_rate"
-              rules={[
-                { required: true, message: "Vui lòng nhập mức lương đề xuất!" },
-                {
-                  validator: (_, value) => {
-                    if (value && value <= currentScheme.rate) {
-                      return Promise.reject(
-                        "Mức lương đề xuất phải cao hơn mức lương hiện tại!"
-                      );
-                    }
-                    return Promise.resolve();
-                  },
-                },
-              ]}
-              tooltip="Mức lương bạn mong muốn (VNĐ)"
-            >
-              <Input
-                type="number"
-                prefix={<DollarOutlined />}
-                suffix="VNĐ"
-                placeholder="Nhập mức lương đề xuất"
-                size="large"
-              />
-            </Form.Item>
+            {availableSchemesForRaise.length > 0 ? (
+              <Form.Item
+                label="Chế độ lương đề xuất"
+                name="proposed_scheme_id"
+                rules={[
+                  { required: true, message: "Vui lòng chọn chế độ lương mong muốn!" },
+                ]}
+                tooltip="Chọn mức lương bạn mong muốn được xét duyệt"
+              >
+                <Select
+                  size="large"
+                  placeholder="Chọn chế độ lương"
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {availableSchemesForRaise.map((scheme: any) => (
+                    <Select.Option key={scheme.id} value={scheme.id}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{scheme.name}</span>
+                        <span className="text-green-600 ml-2">
+                          {Number(scheme.rate).toLocaleString()} VNĐ
+                          <span className="text-xs text-gray-500 ml-1">
+                            (+{((Number(scheme.rate) - currentSalary) / currentSalary * 100).toFixed(0)}%)
+                          </span>
+                        </span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            ) : (
+              <Form.Item
+                label="Mức lương đề xuất (VNĐ)"
+                name="proposed_rate"
+                rules={[
+                  { required: true, message: "Vui lòng nhập mức lương mong muốn!" },
+                ]}
+                tooltip="Nhập mức lương bạn mong muốn được xét duyệt"
+              >
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    size="large"
+                    type="number"
+                    min={currentSalary}
+                    placeholder={`Ví dụ: ${(currentSalary * 1.1).toLocaleString()}`}
+                  />
+                  <Button size="large" disabled>VNĐ</Button>
+                </Space.Compact>
+              </Form.Item>
+            )}
 
             <Form.Item
-              label="Ghi chú"
+              label="Lý do yêu cầu"
               name="note"
               rules={[
-                { required: true, message: "Vui lòng nhập lý do yêu cầu tăng lương!" },
+                {
+                  required: true,
+                  message: "Vui lòng nhập lý do yêu cầu tăng lương!",
+                },
               ]}
               tooltip="Nêu rõ lý do và thành tích để được xem xét"
             >
@@ -604,8 +971,8 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({ employeeId }) =>
 
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
             <p className="text-sm text-yellow-800">
-              💡 <strong>Lưu ý:</strong> Yêu cầu sẽ được gửi đến quản lý để xem xét. 
-              Thời gian phê duyệt thường là 3-7 ngày làm việc.
+              💡 <strong>Lưu ý:</strong> Yêu cầu sẽ được gửi đến quản lý để xem
+              xét. Thời gian phê duyệt thường là 3-7 ngày làm việc.
             </p>
           </div>
         </div>

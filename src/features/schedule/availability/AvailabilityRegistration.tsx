@@ -119,6 +119,7 @@ export function AvailabilityRegistration() {
 
   const { query: availabilitiesQuery } = useList<EmployeeAvailability>({
     resource: "employee-availability",
+    pagination: { pageSize: 1000 },
     filters: [
       {
         field: "employee_id",
@@ -161,7 +162,7 @@ export function AvailabilityRegistration() {
     resource: "shift-position-requirements",
     pagination: { pageSize: 1000 },
     meta: {
-      fields: ["*", "position.id", "position.name", "position.description"],
+      fields: ["*", "position.id", "position.name", "position.description", "position_id.*"],
     },
   });
 
@@ -285,36 +286,51 @@ export function AvailabilityRegistration() {
 
       const values = await form.validateFields();
 
-      // Step 1: Create availability record
-      const availabilityData: CreateEmployeeAvailabilityDto = {
-        employee_id: user?.employee?.id || "",
-        shift_id: selectedShift.id,
-        priority: 5,
-        note: values.note || null,
-        positions: selectedPositions,
-      };
+      // Check if availability already exists for this shift
+      let availabilityId = availabilityByShift[selectedShift.id];
 
-      const availabilityResult = await new Promise<any>((resolve, reject) => {
-        createAvailability(
-          {
-            resource: "employee-availability",
-            values: availabilityData,
-          },
-          {
-            onSuccess: (data) => resolve(data),
-            onError: (error) => reject(error),
-          }
-        );
-      });
+      if (!availabilityId) {
+        // Step 1: Create availability record if not exists
+        const availabilityData: CreateEmployeeAvailabilityDto = {
+          employee_id: user?.employee?.id || "",
+          shift_id: selectedShift.id,
+          priority: 5,
+          note: values.note || null,
+          positions: selectedPositions,
+        };
 
-      const availabilityId = availabilityResult?.data?.id;
+        const availabilityResult = await new Promise<any>((resolve, reject) => {
+          createAvailability(
+            {
+              resource: "employee-availability",
+              values: availabilityData,
+            },
+            {
+              onSuccess: (data) => resolve(data),
+              onError: (error) => reject(error),
+            }
+          );
+        });
+
+        availabilityId = availabilityResult?.data?.id;
+      }
 
       if (!availabilityId) {
         throw new Error("Không tạo được availability");
       }
 
       // Step 2: Create availability-position records for each selected position
-      const positionPromises = selectedPositions.map((positionId, index) => {
+      // Filter out positions that are already registered
+      const currentRegisteredPositions = positionsByAvailability[availabilityId] || [];
+      const newPositions = selectedPositions.filter(posId => !currentRegisteredPositions.includes(posId));
+
+      if (newPositions.length === 0) {
+        message.info("Bạn đã đăng ký các vị trí này rồi");
+        setRegisterModalOpen(false);
+        return;
+      }
+
+      const positionPromises = newPositions.map((positionId, index) => {
         const positionData: CreateEmployeeAvailabilityPositionDto = {
           availability_id: availabilityId,
           position_id: positionId,
@@ -338,7 +354,7 @@ export function AvailabilityRegistration() {
       await Promise.all(positionPromises);
 
       message.success(
-        `Đăng ký thành công ${selectedPositions.length} vị trí cho ca làm việc!`
+        `Đăng ký thành công ${newPositions.length} vị trí cho ca làm việc!`
       );
       setRegisterModalOpen(false);
       setSelectedShift(null);
@@ -424,10 +440,13 @@ export function AvailabilityRegistration() {
                 {shiftRequirements.map((req) => {
                   const registered =
                     registeredCountByShiftPosition[shift.id]?.[
-                      req.position_id
+                    req.position_id
                     ] || 0;
                   const isUserRegistered = userRegistered.has(req.position_id);
                   const isFull = registered >= req.required_count;
+
+                  // Helper to get position name safely
+                  const positionName = req.position?.name || (req as any).position_id?.name || "Unknown";
 
                   return (
                     <Tag
@@ -436,12 +455,12 @@ export function AvailabilityRegistration() {
                         isUserRegistered
                           ? "success"
                           : isFull
-                          ? "default"
-                          : "processing"
+                            ? "default"
+                            : "processing"
                       }
                       icon={<TeamOutlined />}
                     >
-                      {req.position?.name}: {registered}/{req.required_count}
+                      {positionName}: {registered}/{req.required_count}
                       {isUserRegistered && " ✓"}
                     </Tag>
                   );
@@ -451,7 +470,7 @@ export function AvailabilityRegistration() {
           </Col>
           <Col>
             {userRegistered.size > 0 &&
-            userRegistered.size === shiftRequirements.length ? (
+              userRegistered.size === shiftRequirements.length ? (
               <Tag color="success" icon={<CheckCircleOutlined />}>
                 Đã đăng ký đủ
               </Tag>
@@ -593,6 +612,16 @@ export function AvailabilityRegistration() {
 
   return (
     <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+      <style jsx global>{`
+        .ant-picker-cell .ant-picker-cell-inner {
+          height: auto !important;
+          min-height: 24px;
+        }
+        .ant-picker-calendar-date-content {
+          height: auto !important;
+          overflow: visible !important;
+        }
+      `}</style>
       {/* Header */}
       <div style={{ marginBottom: "24px" }}>
         <Title level={2} style={{ marginBottom: "8px" }}>
@@ -662,9 +691,6 @@ export function AvailabilityRegistration() {
       />
 
       {/* Available Shifts Calendar */}
-      {/* ... Các phần code khác giữ nguyên ... */}
-
-      {/* Available Shifts Calendar */}
       <Card
         title={
           <Space>
@@ -710,14 +736,14 @@ export function AvailabilityRegistration() {
                     const bgColor = isFullyRegistered
                       ? "#f6ffed"
                       : hasRegistered
-                      ? "#fff7e6"
-                      : "#f0f5ff";
+                        ? "#fff7e6"
+                        : "#f0f5ff";
 
                     const borderColor = isFullyRegistered
                       ? "#b7eb8f"
                       : hasRegistered
-                      ? "#ffd591"
-                      : "#adc6ff";
+                        ? "#ffd591"
+                        : "#adc6ff";
 
                     return (
                       <div
@@ -920,7 +946,7 @@ export function AvailabilityRegistration() {
                       (req) => {
                         const registered =
                           registeredCountByShiftPosition[selectedShift.id]?.[
-                            req.position_id
+                          req.position_id
                           ] || 0;
                         const userRegistered = userRegisteredPositions[
                           selectedShift.id
@@ -929,6 +955,10 @@ export function AvailabilityRegistration() {
                         const isSelected = selectedPositions.includes(
                           req.position_id
                         );
+
+                        // Helper to get position name safely
+                        const positionName = req.position?.name || (req as any).position_id?.name || "Unknown";
+                        const positionDesc = req.position?.description || (req as any).position_id?.description;
 
                         return (
                           <Card
@@ -964,13 +994,13 @@ export function AvailabilityRegistration() {
                                   }}
                                 >
                                   <Space direction="vertical" size={2}>
-                                    <Text strong>{req.position?.name}</Text>
-                                    {req.position?.description && (
+                                    <Text strong>{positionName}</Text>
+                                    {positionDesc && (
                                       <Text
                                         type="secondary"
                                         style={{ fontSize: 12 }}
                                       >
-                                        {req.position.description}
+                                        {positionDesc}
                                       </Text>
                                     )}
                                   </Space>
@@ -1078,12 +1108,12 @@ export function AvailabilityRegistration() {
               <Tag
                 color={
                   selectedAvailability.priority &&
-                  selectedAvailability.priority >= 8
+                    selectedAvailability.priority >= 8
                     ? "red"
                     : selectedAvailability.priority &&
                       selectedAvailability.priority >= 5
-                    ? "blue"
-                    : "default"
+                      ? "blue"
+                      : "default"
                 }
               >
                 {selectedAvailability.priority || 5}/10

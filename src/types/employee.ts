@@ -10,6 +10,7 @@ export interface Role {
 // User type FE
 export interface UserWithRole extends User {
   role?: Role;
+  policies?: any[];
 }
 // Employee types
 export interface Employee {
@@ -40,6 +41,7 @@ export interface Employee {
   status: "active" | "on_leave" | "suspended" | "terminated";
 
   scheme_id: string | null;
+  position_id: string | null; // Added position_id
 
   default_work_hours_per_week: number | null;
   max_hours_per_week: number | null;
@@ -132,6 +134,7 @@ export interface Contract {
   end_date: string;
 
   base_salary: number | null;
+  salary_scheme_id?: string | { id: string; name: string; [key: string]: any } | null;
 
   probation_end_date: string | null;
 
@@ -140,6 +143,7 @@ export interface Contract {
   is_active: boolean | null;
 
   notes: string | null;
+  terms?: string | null;
 
   created_at: string | null;
   updated_at: string | null;
@@ -155,6 +159,7 @@ export interface CreateContractDto {
   end_date?: string | null;
 
   base_salary?: number | null;
+  salary_scheme_id?: string | null;
 
   probation_end_date?: string | null;
 
@@ -163,6 +168,7 @@ export interface CreateContractDto {
   is_active?: boolean | null;
 
   notes?: string | null;
+  terms?: string | null;
 }
 
 export interface UpdateContractDto extends Partial<CreateContractDto> {}

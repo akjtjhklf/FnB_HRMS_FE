@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useList, useCreate } from "@refinedev/core";
+import { useList, useCreate, useGetIdentity } from "@refinedev/core";
 import {
   Calendar,
   Badge,
@@ -28,13 +28,12 @@ import {
   CalendarOutlined,
 } from "@ant-design/icons";
 import dayjs, { Dayjs } from "dayjs";
-import type { BadgeProps } from "antd";
 
 interface ScheduleAssignment {
   id: string;
-  shift_id: string;
+  shift_id: string | any;
   employee_id: string;
-  position_id: string;
+  position_id: string | any;
   assigned_at?: string;
   notes?: string;
   shift?: {
@@ -45,6 +44,7 @@ interface ScheduleAssignment {
     shift_type?: {
       name: string;
     };
+    shift_type_id?: string | any;
   };
   position?: {
     id: string;
@@ -80,57 +80,173 @@ export function MyScheduleView() {
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<ScheduleAssignment | null>(null);
 
-  // Fetch my assignments (filter by current user - would use auth context in real app)
+  const { data: user } = useGetIdentity<any>();
+
+  // Fetch my assignments (filter by current user)
   const { query: assignmentsQuery } = useList<ScheduleAssignment>({
     resource: "schedule-assignments",
-    // In production: add filter for current user's employee_id
+    pagination: { pageSize: 1000 },
+    filters: [
+      {
+        field: "employee_id",
+        operator: "eq",
+        value: user?.employee?.id,
+      },
+    ],
+    // Try to request expanded fields, but we will fallback to manual join if needed
+    meta: {
+      fields: [
+        "*",
+        "shift.*",
+        "shift.shift_type.id",
+        "shift.shift_type.name",
+        "position.*",
+        "shift_id.*",
+        "shift_id.shift_type.id",
+        "shift_id.shift_type.name",
+        "position_id.*"
+      ],
+    },
+    queryOptions: {
+      enabled: !!user?.employee?.id,
+    },
+  });
+
+  // Fetch all shifts for manual join (fallback)
+  const { query: shiftsQuery } = useList<any>({
+    resource: "shifts",
+    pagination: { pageSize: 1000 },
+    meta: {
+      fields: ["*", "shift_type.id", "shift_type.name"],
+    },
+  });
+
+  // Fetch all positions for manual join (fallback)
+  const { query: positionsQuery } = useList<any>({
+    resource: "positions",
+    pagination: { pageSize: 1000 },
+  });
+
+  // Fetch all shift types for manual join (fallback)
+  const { query: shiftTypesQuery } = useList<any>({
+    resource: "shift-types",
+    pagination: { pageSize: 1000 },
+    meta: {
+      fields: ["id", "name"],
+    },
   });
 
   // Fetch all employees for swap selection
   const { query: employeesQuery } = useList<Employee>({
     resource: "employees",
+    pagination: { pageSize: 1000 },
     queryOptions: {
       enabled: swapModalOpen,
     },
   });
 
   const assignments = assignmentsQuery.data?.data || [];
+  const shifts = shiftsQuery.data?.data || [];
+  const positions = positionsQuery.data?.data || [];
+  const shiftTypes = shiftTypesQuery.data?.data || [];
   const employees = employeesQuery.data?.data || [];
 
   // Mutation for creating swap request
   const { mutate: createSwapRequest } = useCreate();
 
+  // Helper to get shift data safely and normalize it
+  const getShift = (a: ScheduleAssignment) => {
+    let shift: any = a.shift;
+
+    // If shift is not in .shift, check .shift_id
+    if (!shift) {
+      if (typeof a.shift_id === 'object' && a.shift_id !== null) {
+        shift = a.shift_id;
+      } else {
+        shift = shifts.find((s: any) => s.id === a.shift_id);
+      }
+    }
+
+    if (!shift) return null;
+
+    // Enrich shift_type if missing or just an ID
+    if (!shift.shift_type || typeof shift.shift_type !== 'object') {
+      // 1. Try from shifts list (if we have a full shift object there)
+      const fullShift = shifts.find((s: any) => s.id === shift.id);
+      if (fullShift?.shift_type && typeof fullShift.shift_type === 'object') {
+        shift = { ...shift, shift_type: fullShift.shift_type };
+      } else {
+        // 2. Try from shiftTypes list using shift_type_id
+        const shiftTypeId = shift.shift_type_id || shift.shift_type; // shift_type might be the ID
+        if (shiftTypeId && typeof shiftTypeId === 'string') {
+          const foundShiftType = shiftTypes.find((st: any) => st.id === shiftTypeId);
+          if (foundShiftType) {
+            shift = { ...shift, shift_type: foundShiftType };
+          }
+        }
+      }
+    }
+
+    // Normalize fields (Directus might return different field names)
+    return {
+      ...shift,
+      date: shift.date || shift.shift_date,
+      start_time: shift.start_time || shift.start_at,
+      end_time: shift.end_time || shift.end_at,
+      shift_type: shift.shift_type || (shift.shift_type_id ? { name: "Ca làm việc" } : null)
+    };
+  };
+
+  const getPosition = (a: ScheduleAssignment) => {
+    if (a.position) return a.position;
+
+    if (typeof a.position_id === 'object' && a.position_id !== null) {
+      return a.position_id;
+    }
+
+    // Fallback: find in positions list
+    return positions.find((p: any) => p.id === a.position_id);
+  };
+
   // Stats
   const thisWeekAssignments = assignments.filter((a: ScheduleAssignment) => {
-    if (!a.shift?.date) return false;
-    const shiftDate = dayjs(a.shift.date);
+    const shift = getShift(a);
+    if (!shift?.date) return false;
+    const shiftDate = dayjs(shift.date);
     return shiftDate.isSame(dayjs(), "week");
   });
 
   const thisMonthAssignments = assignments.filter((a: ScheduleAssignment) => {
-    if (!a.shift?.date) return false;
-    const shiftDate = dayjs(a.shift.date);
+    const shift = getShift(a);
+    if (!shift?.date) return false;
+    const shiftDate = dayjs(shift.date);
     return shiftDate.isSame(dayjs(), "month");
   });
 
   // Get assignments for specific date
   const getAssignmentsForDate = (date: Dayjs) => {
     return assignments.filter((a: ScheduleAssignment) => {
-      if (!a.shift?.date) return false;
-      return dayjs(a.shift.date).isSame(date, "day");
+      const shift = getShift(a);
+      if (!shift?.date) return false;
+      return dayjs(shift.date).isSame(date, "day");
     });
   };
 
   // Calendar cell render
-  const dateCellRender = (value: Dayjs) => {
+  const cellRender = (value: Dayjs, info: any) => {
+    if (info.type !== 'date') return info.originNode;
+
     const dayAssignments = getAssignmentsForDate(value);
-    if (dayAssignments.length === 0) return null;
+    if (dayAssignments.length === 0) return info.originNode;
 
     return (
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {dayAssignments.map((assignment: ScheduleAssignment) => {
-          const shiftName = assignment.shift?.shift_type?.name || "Ca làm việc";
-          const startTime = assignment.shift?.start_time || "";
+          const shift = getShift(assignment);
+          const shiftName = shift?.shift_type?.name || "Ca làm việc";
+          const startTime = shift?.start_time ? dayjs(shift.start_time).format("HH:mm") : "";
+          const endTime = shift?.end_time ? dayjs(shift.end_time).format("HH:mm") : "";
+
           return (
             <li key={assignment.id} style={{ marginBottom: "4px" }}>
               <Badge
@@ -144,7 +260,7 @@ export function MyScheduleView() {
                       setViewModalOpen(true);
                     }}
                   >
-                    {shiftName} ({startTime})
+                    {shiftName} ({startTime} - {endTime})
                   </span>
                 }
               />
@@ -187,6 +303,47 @@ export function MyScheduleView() {
     } catch (error) {
       console.error("Validation error:", error);
     }
+  };
+
+  // Helper to render assignment details with fallback data
+  const renderAssignmentDetails = () => {
+    if (!selectedAssignment) return null;
+    const shift = getShift(selectedAssignment);
+    const position = getPosition(selectedAssignment);
+
+    if (!shift) return null;
+
+    return (
+      <Descriptions column={1} bordered style={{ marginTop: "24px" }}>
+        <Descriptions.Item label="Ca làm việc">
+          <strong>{shift.shift_type?.name || "Ca làm việc"}</strong>
+        </Descriptions.Item>
+        <Descriptions.Item label="Ngày">
+          {dayjs(shift.date).format("dddd, DD/MM/YYYY")}
+        </Descriptions.Item>
+        <Descriptions.Item label="Giờ làm việc">
+          <Space>
+            <ClockCircleOutlined />
+            <span>
+              {dayjs(shift.start_time).format("HH:mm")} - {dayjs(shift.end_time).format("HH:mm")}
+            </span>
+          </Space>
+        </Descriptions.Item>
+        <Descriptions.Item label="Vị trí">
+          <Tag color="blue">{position?.name || "N/A"}</Tag>
+        </Descriptions.Item>
+        <Descriptions.Item label="Phân công lúc">
+          {selectedAssignment.assigned_at
+            ? dayjs(selectedAssignment.assigned_at).format("DD/MM/YYYY HH:mm")
+            : "-"}
+        </Descriptions.Item>
+        {selectedAssignment.notes && (
+          <Descriptions.Item label="Ghi chú">
+            {selectedAssignment.notes}
+          </Descriptions.Item>
+        )}
+      </Descriptions>
+    );
   };
 
   return (
@@ -238,7 +395,7 @@ export function MyScheduleView() {
           <Calendar
             value={selectedDate}
             onSelect={setSelectedDate}
-            dateCellRender={dateCellRender}
+            cellRender={cellRender}
           />
         ) : (
           <Empty description="Chưa có ca làm việc nào được phân công" />
@@ -270,37 +427,7 @@ export function MyScheduleView() {
         }
         width={700}
       >
-        {selectedAssignment && selectedAssignment.shift && (
-          <Descriptions column={1} bordered style={{ marginTop: "24px" }}>
-            <Descriptions.Item label="Ca làm việc">
-              <strong>{selectedAssignment.shift.shift_type?.name || "Ca làm việc"}</strong>
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày">
-              {dayjs(selectedAssignment.shift.date).format("dddd, DD/MM/YYYY")}
-            </Descriptions.Item>
-            <Descriptions.Item label="Giờ làm việc">
-              <Space>
-                <ClockCircleOutlined />
-                <span>
-                  {selectedAssignment.shift.start_time} → {selectedAssignment.shift.end_time}
-                </span>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Vị trí">
-              <Tag color="blue">{selectedAssignment.position?.name || "N/A"}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Phân công lúc">
-              {selectedAssignment.assigned_at
-                ? dayjs(selectedAssignment.assigned_at).format("DD/MM/YYYY HH:mm")
-                : "-"}
-            </Descriptions.Item>
-            {selectedAssignment.notes && (
-              <Descriptions.Item label="Ghi chú">
-                {selectedAssignment.notes}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-        )}
+        {renderAssignmentDetails()}
       </Modal>
 
       {/* Swap Request Modal */}
@@ -326,17 +453,21 @@ export function MyScheduleView() {
             style={{ marginBottom: "16px" }}
           />
 
-          {selectedAssignment && selectedAssignment.shift && (
-            <Alert
-              message="Ca làm việc của bạn"
-              description={`${selectedAssignment.shift.shift_type?.name || "Ca làm việc"} - ${dayjs(
-                selectedAssignment.shift.date
-              ).format("DD/MM/YYYY")} (${selectedAssignment.shift.start_time} - ${
-                selectedAssignment.shift.end_time
-              })`}
-              type="info"
-              style={{ marginBottom: "16px" }}
-            />
+          {selectedAssignment && (
+            (() => {
+              const shift = getShift(selectedAssignment);
+              if (!shift) return null;
+              return (
+                <Alert
+                  message="Ca làm việc của bạn"
+                  description={`${shift.shift_type?.name || "Ca làm việc"} - ${dayjs(
+                    shift.date
+                  ).format("DD/MM/YYYY")} (${dayjs(shift.start_time).format("HH:mm")} - ${dayjs(shift.end_time).format("HH:mm")})`}
+                  type="info"
+                  style={{ marginBottom: "16px" }}
+                />
+              );
+            })()
           )}
 
           <Form.Item

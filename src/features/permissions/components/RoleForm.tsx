@@ -59,14 +59,14 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
                     values: roleData,
                 });
                 roleId = initialValues.id;
-                message.success("Cập nhật role thành công");
+                message.success("Cập nhật vai trò thành công");
             } else {
                 const response = await createRole({
                     resource: "roles",
                     values: roleData,
                 });
                 roleId = response.data.id;
-                message.success("Tạo role thành công");
+                message.success("Tạo vai trò thành công");
             }
 
             // Update Policies using new endpoint
@@ -89,7 +89,7 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
 
     return (
         <Modal
-            title={initialValues ? "Chỉnh sửa Role" : "Thêm Role mới"}
+            title={initialValues ? "Chỉnh sửa vai trò" : "Thêm vai trò mới"}
             open={open}
             onCancel={onCancel}
             onOk={() => form.submit()}
@@ -115,7 +115,7 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
                     label="Policies (Quyền hạn)"
                     help="Chọn các chính sách áp dụng cho vai trò này"
                 >
-                    <Select {...policySelectProps} placeholder="Chọn policies" mode="multiple" />
+                    <Select {...policySelectProps} placeholder="Chọn chính sách" mode="multiple" />
                 </Form.Item>
             </Form>
         </Modal>

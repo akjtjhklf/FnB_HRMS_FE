@@ -1,7 +1,7 @@
 import { Employee } from "./employee";
 
 // Recipient types
-export type RecipientType = "all" | "individual" | "group";
+export type RecipientType = "all" | "individual";
 
 // Notification types
 export interface Notification {

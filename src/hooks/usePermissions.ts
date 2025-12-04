@@ -22,11 +22,17 @@ export function usePermissions() {
   const { data: user } = useGetIdentity<User>();
 
   const permissions = useMemo(() => {
+    console.log("🔍 [usePermissions] User:", user);
+    console.log("🔍 [usePermissions] Role:", user?.role);
+
     // Handle role as object or string
     const role = typeof user?.role === "object" ? user.role : null;
     
+    // Check for admin access (either via role flag or user flag)
+    const isAdmin = role?.admin_access === true;
+
     // Admin access bypass - có full quyền
-    if (role?.admin_access) {
+    if (isAdmin) {
       return {
         isAdmin: true,
         hasPermission: () => true,
@@ -53,8 +59,13 @@ export function usePermissions() {
       });
     };
 
-    // Derive role-based helpers from actual permissions
+    // Check if role name implies manager access
+    const isManagerRole = role?.name?.toLowerCase().includes("manager") || 
+                          role?.name?.toLowerCase().includes("admin");
+
+    // Derive role-based helpers from actual permissions OR role name
     const canManageSchedule = 
+      isManagerRole ||
       hasPermission('schedule_assignments', 'create') ||
       hasPermission('weekly_schedule', 'create');
     
@@ -90,7 +101,7 @@ export function useHasPermission(collection: string, action: Action): boolean {
 export function useIsAdmin(): boolean {
   const { data: user } = useGetIdentity<User>();
   const role = typeof user?.role === "object" ? user.role : null;
-  return role?.admin_access === true;
+  return role?.admin_access === true ;
 }
 
 /**

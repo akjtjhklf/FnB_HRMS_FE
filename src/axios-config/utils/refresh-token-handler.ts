@@ -15,44 +15,56 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
 }
 
-type QueueItem = {
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-};
+// Singleton promise for refresh - ensures only ONE refresh request at a time
+let refreshPromise: Promise<boolean> | null = null;
 
-let isRefreshing = false;
-let failedQueue: QueueItem[] = [];
-
-function processQueue(error: unknown) {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error);
-    else resolve();
-  });
-  failedQueue = [];
-}
-
-async function refreshAccessToken(axiosInstance: AxiosInstance) {
+async function doRefresh(axiosInstance: AxiosInstance): Promise<boolean> {
   const refreshToken = tokenManager.getRefreshToken();
   if (!refreshToken) {
     throw new Error("No refresh token available");
   }
 
+  console.log("🔄 [Refresh Token] Starting refresh process...");
+  console.log("🔑 [Refresh Token] Using token:", refreshToken.substring(0, 20) + "...");
+
   try {
     const response = await axiosInstance.post<RefreshTokenResponse>(
-      AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT,
+      AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT, 
       { refresh_token: refreshToken }
     );
 
     const { token, refresh_token } = response.data.data;
 
+    console.log("📦 [Refresh Token] Got new tokens");
+    console.log("🔑 [Refresh Token] New refresh_token:", refresh_token.substring(0, 20) + "...");
+
     tokenManager.setTokens(token, refresh_token);
+
+    console.log("✅ [Refresh Token] Successfully refreshed and stored new tokens");
 
     return true;
   } catch (error) {
-    console.error("Refresh token failed:", error);
+    console.error("❌ [Refresh Token] Failed:", error);
     tokenManager.clearTokens();
     throw error;
   }
+}
+
+// Get or create refresh promise - ensures single refresh
+async function refreshAccessToken(axiosInstance: AxiosInstance): Promise<boolean> {
+  // If already refreshing, return the existing promise
+  if (refreshPromise) {
+    console.log("🔄 [Refresh Token] Using existing refresh promise");
+    return refreshPromise;
+  }
+
+  // Create new refresh promise
+  refreshPromise = doRefresh(axiosInstance).finally(() => {
+    // Clear promise after completion (success or failure)
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
 }
 
 async function logout(axiosInstance: AxiosInstance) {
@@ -76,39 +88,25 @@ export async function handleTokenRefresh(
   originalRequest: RetryableRequestConfig,
   axiosInstance: AxiosInstance
 ): Promise<unknown> {
-  if (isRefreshing) {
-    return new Promise((resolve, reject) => {
-      failedQueue.push({ resolve, reject });
-    }).then(() => {
-      const newAccessToken = tokenManager.getAccessToken();
-      if (newAccessToken) {
-        originalRequest.headers.set(
-          "Authorization",
-          `Bearer ${newAccessToken}`
-        );
-      }
-      return axiosInstance(originalRequest);
-    });
-  }
-
+  console.log(`🔐 [Auth] Token refresh needed for ${originalRequest.url}`);
+  
   originalRequest._retry = true;
-  isRefreshing = true;
 
   try {
+    // Wait for refresh (singleton promise ensures only one refresh at a time)
     await refreshAccessToken(axiosInstance);
-    processQueue(null);
-
+    
+    // Retry original request with new token
     const newAccessToken = tokenManager.getAccessToken();
     if (newAccessToken) {
       originalRequest.headers.set("Authorization", `Bearer ${newAccessToken}`);
     }
 
+    console.log(`🔄 [Auth] Retrying original request: ${originalRequest.url}`);
     return axiosInstance(originalRequest);
   } catch (refreshError) {
-    processQueue(refreshError);
+    console.error(`❌ [Auth] Refresh failed, logging out`);
     await logout(axiosInstance);
     throw refreshError;
-  } finally {
-    isRefreshing = false;
   }
 }

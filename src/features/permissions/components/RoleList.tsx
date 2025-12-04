@@ -56,7 +56,7 @@ export const RoleList = () => {
             ),
         },
         {
-            title: "Tên Role",
+            title: "Tên vai trò",
             dataIndex: "name",
             key: "name",
             render: (text: string) => <span className="font-medium">{text}</span>,

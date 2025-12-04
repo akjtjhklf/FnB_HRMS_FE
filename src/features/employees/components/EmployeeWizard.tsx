@@ -45,11 +45,26 @@ export const EmployeeWizard: React.FC = () => {
     };
 
     const handleSubmit = () => {
+        // Chuẩn bị dữ liệu để gửi, loại bỏ confirmPassword và đảm bảo roleId là string
+        const submitData = {
+            ...formData,
+            roleId: typeof formData.roleId === 'object' 
+                ? (formData.roleId as any)?.id || (formData.roleId as any)?.value 
+                : formData.roleId,
+            policyIds: (formData.policyIds || []).map((p: any) => 
+                typeof p === 'object' ? p?.id || p?.value : p
+            ),
+        };
+        // Loại bỏ confirmPassword vì BE không cần
+        delete (submitData as any).confirmPassword;
+
+        console.log('[EmployeeWizard] Submit data:', submitData);
+        
         mutate(
             {
                 url: 'employees/full',
                 method: 'post',
-                values: formData,
+                values: submitData,
             },
             {
                 onSuccess: () => {
