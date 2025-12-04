@@ -48,6 +48,10 @@ export const NotificationForm = ({
       resource: "notifications",
       id: action === "edit" ? id : undefined,
       redirect: false,
+      defaultFormValues: {
+        recipient_type: "all",
+        level: "info",
+      },
       onMutationSuccess: () => {
         message.success(
           action === "create"
@@ -142,7 +146,7 @@ export const NotificationForm = ({
             ? "shadow-none border-0"
             : "shadow-sm border border-gray-200"
         }
-        bordered={!onCancel}
+        variant={onCancel ? "borderless" : "outlined"}
       >
         <Form {...formProps} layout="vertical" onFinish={onFinish}>
           <div className="grid grid-cols-1 gap-3 md:gap-4">
@@ -174,7 +178,6 @@ export const NotificationForm = ({
             <Form.Item
               label="Mức độ"
               name="level"
-              initialValue="info"
               rules={[{ required: true, message: "Vui lòng chọn mức độ" }]}
             >
               <Select
@@ -193,7 +196,6 @@ export const NotificationForm = ({
             <Form.Item
               label="Loại người nhận"
               name="recipient_type"
-              initialValue="all"
               rules={[
                 { required: true, message: "Vui lòng chọn loại người nhận" },
               ]}

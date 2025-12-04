@@ -23,6 +23,7 @@ import {
   UserOutlined,
   TeamOutlined,
   GlobalOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo } from "react";
 import { formatDate } from "@/lib/utils";
@@ -45,7 +46,7 @@ export const NotificationList = () => {
   const [editingNotification, setEditingNotification] =
     useState<Notification | null>(null);
 
-  const { tableProps } = useTable<Notification>({
+  const { tableProps, tableQuery } = useTable<Notification>({
     resource: "notifications",
     syncWithLocation: true,
     pagination: {
@@ -88,8 +89,11 @@ export const NotificationList = () => {
     }
   };
 
-  const getRecipientTypeConfig = (type: RecipientType) => {
-    switch (type) {
+  const getRecipientTypeConfig = (type?: RecipientType | string) => {
+    // Normalize to lowercase for comparison
+    const normalizedType = type?.toLowerCase();
+    
+    switch (normalizedType) {
       case "all":
         return {
           icon: <GlobalOutlined />,
@@ -97,6 +101,7 @@ export const NotificationList = () => {
           text: "Tất cả",
         };
       case "individual":
+      case "specific":
         return {
           icon: <UserOutlined />,
           color: "green",
@@ -107,6 +112,12 @@ export const NotificationList = () => {
           icon: <TeamOutlined />,
           color: "orange",
           text: "Nhóm",
+        };
+      default:
+        return {
+          icon: <UserOutlined />,
+          color: "default",
+          text: type || "Không xác định",
         };
     }
   };
@@ -148,13 +159,13 @@ export const NotificationList = () => {
 
   const handleCreateSuccess = () => {
     setCreateDrawerOpen(false);
-    tableProps.dataSource && (tableProps as any).refetch?.();
+    tableQuery?.refetch();
   };
 
   const handleEditSuccess = () => {
     setEditDrawerOpen(false);
     setEditingNotification(null);
-    tableProps.dataSource && (tableProps as any).refetch?.();
+    tableQuery?.refetch();
   };
 
   const getActionItems = (record: Notification): ActionItem[] => [
@@ -270,6 +281,11 @@ export const NotificationList = () => {
     },
   ];
 
+  const handleRefresh = () => {
+    tableQuery?.refetch();
+    message.info("Đang tải lại dữ liệu...");
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -278,6 +294,14 @@ export const NotificationList = () => {
           <p className="text-gray-500 mt-1">Quản lý thông báo hệ thống</p>
         </div>
         <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={tableQuery?.isFetching}
+            size="large"
+          >
+            Làm mới
+          </Button>
           <Input.Search
             placeholder="Tìm theo tiêu đề, nội dung..."
             allowClear

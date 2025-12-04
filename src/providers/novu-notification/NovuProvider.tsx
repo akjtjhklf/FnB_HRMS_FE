@@ -12,11 +12,15 @@ export const AppNovuProvider = ({
   children: React.ReactNode;
   user: any;
 }) => {
-  if (!user?.id) return <>{children}</>;
+  // Ưu tiên dùng employee.id làm subscriberId (khớp với BE khi gửi notification)
+  // Fallback về user.id nếu không có employee
+  const subscriberId = user?.employee?.id || user?.employee_id || user?.id;
+  
+  if (!subscriberId) return <>{children}</>;
 
   return (
     <NovuProvider
-      subscriberId={String(user.id)}
+      subscriberId={String(subscriberId)}
       applicationIdentifier="VoHt917w84Br"
     >
       {children}

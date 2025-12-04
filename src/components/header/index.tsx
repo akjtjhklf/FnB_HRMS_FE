@@ -8,15 +8,10 @@ import React, { useContext } from "react";
 import { Search } from "lucide-react";
 import { CustomInbox } from "@/components/notifications/CustomInbox";
 import { AppNovuProvider } from "@/providers/novu-notification/NovuProvider"; // Import Provider mới tạo
-
-type IUser = {
-  id: number;
-  name: string;
-  avatar: string;
-};
+import { UserIdentity } from "@/types/auth";
 
 export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
-  const { data: user } = useGetIdentity<IUser>();
+  const { data: user } = useGetIdentity<UserIdentity>();
   const { mode } = useContext(ColorModeContext);
 
   return (

@@ -1,9 +1,9 @@
 "use client";
 
 import { useNovu, useNotifications, useCounts } from "@novu/react";
-import { Bell, Check, Clock, Archive, ArchiveRestore, Eye, EyeOff, Trash2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
-import { Tabs, Tooltip, Spin, Empty, message } from "antd";
+import { Bell, Check, Clock, Archive, ArchiveRestore, Eye, EyeOff } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { Tooltip, Spin, Empty, App } from "antd";
 
 interface CustomInboxProps {
   colorMode?: "light" | "dark";
@@ -12,27 +12,47 @@ interface CustomInboxProps {
 export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "archived">("all");
+  
+  // Dùng App.useApp() để tránh lỗi context
+  const { message } = App.useApp();
 
   // Sử dụng hooks từ @novu/react v3
   const novu = useNovu();
   
-  // Lấy số lượng chưa đọc bằng useCounts
-  const { counts } = useCounts({ filters: [{ read: false }] });
+  // Lấy số lượng chưa đọc
+  const { counts } = useCounts({ filters: [{ read: false, archived: false }] });
   const unseenCount = counts?.[0]?.count || 0;
-  
-  // Lấy notifications với filter theo tab
-  const { notifications, isLoading, hasMore, fetchMore, refetch } = useNotifications({
-    tags: activeTab === "archived" ? ["archived"] : undefined,
-    read: activeTab === "unread" ? false : undefined,
+
+  // Lấy tất cả notifications (không filter ở API level để tránh re-render)
+  const { notifications: allNotifications, isLoading, hasMore, fetchMore, refetch } = useNotifications({
     archived: activeTab === "archived" ? true : false,
   });
 
-  // Refetch khi mở dropdown hoặc đổi tab
-  useEffect(() => {
-    if (isOpen) {
+  // Filter notifications theo tab ở client side
+  const notifications = allNotifications?.filter((item: any) => {
+    if (activeTab === "unread") return !item.isRead && !item.isArchived;
+    if (activeTab === "archived") return item.isArchived;
+    return !item.isArchived; // "all" tab
+  }) || [];
+
+  // Ref để track việc đã refetch chưa
+  const hasRefetchedRef = useRef(false);
+
+  // Handle mở dropdown
+  const handleOpenDropdown = useCallback(() => {
+    setIsOpen(true);
+    // Chỉ refetch 1 lần khi mở
+    if (!hasRefetchedRef.current) {
       refetch?.();
+      hasRefetchedRef.current = true;
     }
-  }, [isOpen, activeTab, refetch]);
+  }, [refetch]);
+
+  // Handle đóng dropdown  
+  const handleCloseDropdown = useCallback(() => {
+    setIsOpen(false);
+    hasRefetchedRef.current = false;
+  }, []);
 
   // Đánh dấu đã đọc
   const handleMarkAsRead = useCallback(async (notification: any) => {
@@ -68,7 +88,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
       console.error("Failed to archive:", error);
       message.error("Lỗi lưu trữ thông báo");
     }
-  }, [novu, refetch]);
+  }, [novu, refetch, message]);
 
   // Unarchive
   const handleUnarchive = useCallback(async (notification: any) => {
@@ -80,7 +100,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
       console.error("Failed to unarchive:", error);
       message.error("Lỗi bỏ lưu trữ");
     }
-  }, [novu, refetch]);
+  }, [novu, refetch, message]);
 
   // Đánh dấu tất cả đã đọc
   const handleMarkAllAsRead = useCallback(async () => {
@@ -92,24 +112,19 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
       console.error("Failed to mark all as read:", error);
       message.error("Lỗi đánh dấu đã đọc");
     }
-  }, [novu, refetch]);
+  }, [novu, refetch, message]);
 
   // Xử lý click notification
   const handleNotificationClick = useCallback((notification: any) => {
-    // Mark as read
     handleMarkAsRead(notification);
-
-    // Navigate nếu có URL
     const url = notification.cta?.data?.url || notification.payload?.url;
     if (url) {
       window.location.href = url;
     }
   }, [handleMarkAsRead]);
 
-  const count = unseenCount;
-
   const renderNotificationList = () => {
-    if (isLoading && (!notifications || notifications.length === 0)) {
+    if (isLoading && notifications.length === 0) {
       return (
         <div className="flex items-center justify-center py-10">
           <Spin />
@@ -117,7 +132,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
       );
     }
 
-    if (!notifications || notifications.length === 0) {
+    if (notifications.length === 0) {
       return (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -173,7 +188,6 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
 
               {/* Actions */}
               <div className="flex items-center gap-1">
-                {/* Read/Unread toggle */}
                 <Tooltip title={item.isRead ? "Đánh dấu chưa đọc" : "Đánh dấu đã đọc"}>
                   <button
                     onClick={(e) => {
@@ -190,7 +204,6 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                   </button>
                 </Tooltip>
 
-                {/* Archive/Unarchive toggle */}
                 <Tooltip title={item.isArchived ? "Bỏ lưu trữ" : "Lưu trữ"}>
                   <button
                     onClick={(e) => {
@@ -211,7 +224,6 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
           ))}
         </div>
 
-        {/* Load more */}
         {hasMore && (
           <div className="p-2 text-center border-t border-gray-100">
             <button
@@ -231,7 +243,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
     <div className="relative">
       {/* Bell Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => isOpen ? handleCloseDropdown() : handleOpenDropdown()}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors group outline-none"
         aria-label="Notifications"
       >
@@ -239,9 +251,9 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
           size={20}
           className={`transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-600 group-hover:text-gray-900'}`}
         />
-        {count > 0 && (
+        {unseenCount > 0 && (
           <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-white">
-            {count > 9 ? '9+' : count}
+            {unseenCount > 9 ? '9+' : unseenCount}
           </span>
         )}
       </button>
@@ -251,7 +263,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
         <>
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
+            onClick={handleCloseDropdown}
           />
 
           <div className="absolute right-0 top-12 z-50 w-[420px] bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
@@ -261,7 +273,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
               <div>
                 <h3 className="font-semibold text-gray-900 text-base">Thông báo</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {count > 0 ? `${count} thông báo chưa đọc` : "Cập nhật từ hệ thống"}
+                  {unseenCount > 0 ? `${unseenCount} thông báo chưa đọc` : "Cập nhật từ hệ thống"}
                 </p>
               </div>
               <button 
@@ -305,7 +317,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
               <button
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors py-1"
                 onClick={() => {
-                  setIsOpen(false);
+                  handleCloseDropdown();
                   window.location.href = "/notifications";
                 }}
               >
