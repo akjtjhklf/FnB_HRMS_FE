@@ -310,7 +310,7 @@ export function ShiftTypesManagement() {
       />
 
       {/* Statistics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
         <Col xs={24} sm={12} md={8}>
           <Card>
             <Statistic
@@ -321,7 +321,7 @@ export function ShiftTypesManagement() {
             />
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
       {/* Table */}
       <Card>

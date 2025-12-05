@@ -209,7 +209,7 @@ export const SalarySchemeList = () => {
             title: "Mức lương / Đơn giá",
             dataIndex: "rate",
             key: "rate",
-            align: "right" as const,
+            align: "left" as const,
             render: (value: number) => (
                 <span className="font-mono text-gray-700">{formatCurrency(value)}</span>
             ),
