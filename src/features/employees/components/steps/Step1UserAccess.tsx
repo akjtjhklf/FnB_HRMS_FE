@@ -13,8 +13,14 @@ interface Step1UserAccessProps {
 }
 
 export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false }) => {
-    const { formData, updateFormData } = useEmployeeWizardStore();
+    const { formData, updateFormData, setStepForm } = useEmployeeWizardStore();
     const [form] = Form.useForm();
+
+    // Register form instance for validation
+    useEffect(() => {
+        setStepForm(0, form);
+        return () => setStepForm(0, null);
+    }, [form, setStepForm]);
 
     // Fetch roles
     const { selectProps: roleSelectProps } = useSelect({
@@ -176,21 +182,31 @@ export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false
 
                     {/* Policy Select */}
                     <Form.Item
-                        label="Chính sách bổ sung (Extra Policies)"
+                        label={<span>Chính sách bổ sung (Extra Policies) <span className="text-red-500">*</span></span>}
                         name="policyIds"
+                        rules={[
+                            { required: true, message: 'Vui lòng chọn ít nhất một chính sách!' },
+                            {
+                                validator: (_, value) => {
+                                    if (!value || value.length === 0) {
+                                        return Promise.reject(new Error('Vui lòng chọn ít nhất một chính sách!'));
+                                    }
+                                    return Promise.resolve();
+                                }
+                            }
+                        ]}
                         tooltip="Gán thêm các quyền cụ thể cho nhân viên này (ngoài quyền từ Role)"
                     >
                         <Select
                             {...policySelectProps}
                             mode="multiple"
-                            placeholder="Chọn thêm chính sách (nếu cần)"
+                            placeholder="Chọn chính sách (bắt buộc)"
                             size="large"
                             suffixIcon={<VerifiedOutlined />}
                             showSearch
                             filterOption={(input, option) =>
                                 String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                             }
-                            allowClear
                         />
                     </Form.Item>
                 </Card>

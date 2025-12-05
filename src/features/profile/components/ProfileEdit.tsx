@@ -69,10 +69,7 @@ export const ProfileEdit: React.FC = () => {
   const handleFinish = (values: any) => {
     const formattedValues = {
       ...values,
-      dob: values.dob ? dayjs(values.dob).format("YYYY-MM-DD") : null,
-      hire_date: values.hire_date
-        ? dayjs(values.hire_date).format("YYYY-MM-DD")
-        : null,
+      // dob is already normalized to YYYY-MM-DD string by Form.Item normalize
       photo_url: avatarUrl || values.photo_url,
     };
 
@@ -91,16 +88,12 @@ export const ProfileEdit: React.FC = () => {
     }
   };
 
-  // Transform date fields for edit mode
+  // Set avatar URL when employee data is loaded
   React.useEffect(() => {
-    if (employee && form) {
-      form.setFieldsValue({
-        ...employee,
-        dob: employee.dob ? dayjs(employee.dob) : undefined,
-        hire_date: employee.hire_date ? dayjs(employee.hire_date) : undefined,
-      });
+    if (employee?.photo_url) {
+      setAvatarUrl(employee.photo_url);
     }
-  }, [employee, form]);
+  }, [employee]);
 
   // Loading state
   if (isLoading) {
@@ -276,7 +269,14 @@ export const ProfileEdit: React.FC = () => {
 
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12}>
-                <Form.Item label="Ngày sinh" name="dob">
+                <Form.Item 
+                  label="Ngày sinh" 
+                  name="dob"
+                  getValueProps={(value) => ({
+                    value: value ? dayjs(value) : undefined,
+                  })}
+                  normalize={(value) => value ? dayjs(value).format("YYYY-MM-DD") : null}
+                >
                   <DatePicker
                     className="w-full"
                     format="DD/MM/YYYY"

@@ -65,13 +65,25 @@ const allSidebarItems: SidebarItem[] = [
     icon: <DollarSign size={24} />,
     label: "Bảng lương",
     href: "/salary",
-    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager quản lý bảng lương
+  },
+  {
+    icon: <DollarSign size={24} />,
+    label: "Lương của tôi",
+    href: "/salary/my-salary",
+    allowedRoles: ["employee"], // Chỉ employee xem lương của mình
   },
   {
     icon: <Bell size={24} />,
     label: "Thông báo",
     href: "/notifications",
     allowedRoles: ["admin", "manager"], // Chỉ admin và manager
+  },
+  {
+    icon: <Bell size={24} />,
+    label: "Thông báo của tôi",
+    href: "/my-notifications",
+    allowedRoles: ["employee"], // Chỉ employee xem thông báo của mình
   },
   {
     icon: <FileText size={24} />,

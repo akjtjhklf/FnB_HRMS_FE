@@ -644,6 +644,8 @@ export function WeeklySchedulesManagement() {
                 // Disable dates in the past
                 return current && current < dayjs().startOf("day");
               }}
+              picker="date"
+              presets={[]}
             />
           </Form.Item>
 

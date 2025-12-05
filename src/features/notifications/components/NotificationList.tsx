@@ -50,7 +50,7 @@ export const NotificationList = () => {
     resource: "notifications",
     syncWithLocation: true,
     pagination: {
-      pageSize: 15,
+      pageSize: 1000,
     },
     sorters: {
       initial: [
@@ -240,7 +240,7 @@ export const NotificationList = () => {
       render: (type: RecipientType, record: Notification) => {
         const config = getRecipientTypeConfig(type);
         const count =
-          type === "all" ? null : record.recipient_ids?.length || 0;
+          type === "ALL" ? null : record.recipient_ids?.length || 0;
         return (
           <Badge count={count} showZero={false} offset={[8, 0]}>
             <Tag color={config.color} icon={config.icon}>
@@ -376,7 +376,7 @@ export const NotificationList = () => {
                       <Tag color={config.color} icon={config.icon}>
                         {config.text}
                       </Tag>
-                      {viewingNotification.recipient_type !== "all" && (
+                      {viewingNotification.recipient_type !== "ALL" && (
                         <span className="text-gray-500">
                           ({viewingNotification.recipient_ids?.length || 0}{" "}
                           người)

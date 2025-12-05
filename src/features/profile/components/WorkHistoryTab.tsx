@@ -253,13 +253,13 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
     : Number(currentScheme.rate) || 0;
 
   // Filter salary schemes that have higher rate than current (for raise request)
+  // Also include all schemes for flexibility - user may want to request any scheme
   const availableSchemesForRaise = useMemo(() => {
-    return allSalarySchemes.filter((scheme: any) => {
-      const schemeRate = Number(scheme.rate) || 0;
-      // Only show schemes with higher rate and different from current
-      return schemeRate > currentSalary && scheme.id !== currentScheme.id;
-    });
-  }, [allSalarySchemes, currentSalary, currentScheme.id]);
+    // Filter out current scheme, show all others sorted by rate (highest first)
+    return allSalarySchemes
+      .filter((scheme: any) => scheme.id !== currentScheme.id)
+      .sort((a: any, b: any) => Number(b.rate) - Number(a.rate));
+  }, [allSalarySchemes, currentScheme.id]);
 
   const assignments = useMemo(
     () => assignmentsQuery.data?.data || [],
@@ -914,19 +914,26 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
                   showSearch
                   optionFilterProp="children"
                 >
-                  {availableSchemesForRaise.map((scheme: any) => (
-                    <Select.Option key={scheme.id} value={scheme.id}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{scheme.name}</span>
-                        <span className="text-green-600 ml-2">
-                          {Number(scheme.rate).toLocaleString()} VNĐ
-                          <span className="text-xs text-gray-500 ml-1">
-                            (+{((Number(scheme.rate) - currentSalary) / currentSalary * 100).toFixed(0)}%)
+                  {availableSchemesForRaise.map((scheme: any) => {
+                    const schemeRate = Number(scheme.rate) || 0;
+                    const diff = schemeRate - currentSalary;
+                    const diffPercent = currentSalary > 0 ? (diff / currentSalary * 100) : 0;
+                    const isRaise = diff > 0;
+                    
+                    return (
+                      <Select.Option key={scheme.id} value={scheme.id}>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{scheme.name}</span>
+                          <span className={`ml-2 ${isRaise ? 'text-green-600' : 'text-orange-500'}`}>
+                            {schemeRate.toLocaleString()} VNĐ
+                            <span className={`text-xs ml-1 ${isRaise ? 'text-green-500' : 'text-orange-400'}`}>
+                              ({isRaise ? '+' : ''}{diffPercent.toFixed(0)}%)
+                            </span>
                           </span>
-                        </span>
-                      </div>
-                    </Select.Option>
-                  ))}
+                        </div>
+                      </Select.Option>
+                    );
+                  })}
                 </Select>
               </Form.Item>
             ) : (

@@ -2,6 +2,7 @@
 
 import { useTable } from "@refinedev/antd";
 import { useCreate, useGetIdentity } from "@refinedev/core";
+import { useRouter } from "next/navigation";
 import {
     Table,
     Card,
@@ -28,6 +29,7 @@ import {
     ClockCircleOutlined,
     FileTextOutlined,
     SendOutlined,
+    FileDoneOutlined,
 } from "@ant-design/icons";
 import { useState, useMemo } from "react";
 import { formatDate } from "@/lib/utils";
@@ -43,6 +45,7 @@ const formatCurrency = (value: number) => {
 export const MySalary = () => {
     const { message } = App.useApp();
     const { data: identity } = useGetIdentity<{ id: string }>();
+    const router = useRouter();
 
     const currentMonth = new Date().toISOString().slice(0, 7);
     const [selectedMonth, setSelectedMonth] = useState(currentMonth);
@@ -195,6 +198,12 @@ export const MySalary = () => {
                 label: "Xem chi tiết",
                 icon: <EyeOutlined />,
                 onClick: () => handleView(record),
+            },
+            {
+                key: "payslip",
+                label: "Xem phiếu lương",
+                icon: <FileDoneOutlined />,
+                onClick: () => router.push(`/payslip/${record.id}`),
             },
         ];
 
@@ -401,32 +410,32 @@ export const MySalary = () => {
                         <Descriptions column={1} bordered size="small" className="text-sm">
                             <Descriptions.Item label="Lương cơ bản">
                                 <span className="font-semibold">
-                                    {formatCurrency(viewingPayroll.base_salary)} VNĐ
+                                    {formatCurrency(Number(viewingPayroll.base_salary))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Phụ cấp">
                                 <span className="text-green-600">
-                                    +{formatCurrency(viewingPayroll.allowances || 0)} VNĐ
+                                    +{formatCurrency(Number(viewingPayroll.allowances || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Thưởng">
                                 <span className="text-green-600">
-                                    +{formatCurrency(viewingPayroll.bonuses || 0)} VNĐ
+                                    +{formatCurrency(Number(viewingPayroll.bonuses || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Lương làm thêm">
                                 <span className="text-green-600">
-                                    +{formatCurrency(viewingPayroll.overtime_pay || 0)} VNĐ
+                                    +{formatCurrency(Number(viewingPayroll.overtime_pay || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Khấu trừ">
                                 <span className="text-red-600">
-                                    -{formatCurrency(viewingPayroll.deductions || 0)} VNĐ
+                                    -{formatCurrency(Number(viewingPayroll.deductions || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Phạt">
                                 <span className="text-red-600">
-                                    -{formatCurrency(viewingPayroll.penalties || 0)} VNĐ
+                                    -{formatCurrency(Number(viewingPayroll.penalties || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                         </Descriptions>
@@ -436,12 +445,12 @@ export const MySalary = () => {
                         <Descriptions column={1} bordered size="middle" className="text-sm md:text-base">
                             <Descriptions.Item label="Tổng lương">
                                 <span className="font-semibold text-base">
-                                    {formatCurrency(viewingPayroll.gross_salary)} VNĐ
+                                    {formatCurrency(Number(viewingPayroll.gross_salary || 0))} VNĐ
                                 </span>
                             </Descriptions.Item>
                             <Descriptions.Item label="Thực lãnh">
                                 <span className="font-bold text-lg text-green-600">
-                                    {formatCurrency(viewingPayroll.net_salary)} VNĐ
+                                    {formatCurrency(Number(viewingPayroll.net_salary))} VNĐ
                                 </span>
                             </Descriptions.Item>
                         </Descriptions>

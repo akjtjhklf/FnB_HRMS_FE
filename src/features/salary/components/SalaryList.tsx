@@ -27,6 +27,11 @@ import {
   Tabs,
   Dropdown,
   Tooltip,
+  Checkbox,
+  Alert,
+  List,
+  Avatar,
+  Progress,
 } from "antd";
 import type { MenuProps } from "antd";
 import {
@@ -46,6 +51,10 @@ import {
   SearchOutlined,
   SwapOutlined,
   MoreOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  BellOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 import { Settings } from "lucide-react";
 import { SalarySchemeList } from "./SalarySchemeList";
@@ -53,30 +62,7 @@ import { SalaryForm } from "./SalaryForm";
 import { SalaryRequests } from "./SalaryRequests";
 import { CustomDrawer } from "@/components/common/CustomDrawer";
 import { formatDate } from "@/lib/utils";
-
-// Define MonthlyPayroll interface locally
-interface MonthlyPayroll {
-  id: string;
-  employee_id: any;
-  month: string;
-  salary_scheme_id?: string | null;
-  base_salary: number | string;
-  allowances: number | string;
-  bonuses: number | string;
-  overtime_pay: number | string;
-  deductions: number | string;
-  penalties: number | string;
-  gross_salary: number | string;
-  net_salary: number | string;
-  total_work_hours?: number | string;
-  status?: string;
-  notes?: string | null;
-  approved_by?: string | null;
-  approved_at?: string | null;
-  paid_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
+import { MonthlyPayroll } from "@/features/salary/types";
 
 interface ActionItem {
   key: string;
@@ -117,6 +103,15 @@ export const SalaryList = () => {
   const [searchText, setSearchText] = useState("");
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [generateMonth, setGenerateMonth] = useState<dayjs.Dayjs | null>(dayjs());
+  // Send payslip modal state
+  const [sendPayslipModalOpen, setSendPayslipModalOpen] = useState(false);
+  const [sendPayslipTarget, setSendPayslipTarget] = useState<MonthlyPayroll | null>(null);
+  const [sendPayslipOptions, setSendPayslipOptions] = useState({
+    sendNotification: true,
+    sendEmail: false,
+  });
+  // Bulk send payslip modal state
+  const [bulkSendModalOpen, setBulkSendModalOpen] = useState(false);
 
   const { mutate: createRequest } = useCreate();
   const { mutate: generatePayroll, mutation } = useCustomMutation();
@@ -175,17 +170,22 @@ export const SalaryList = () => {
 
   const payrolls = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
 
-  const getEmployeeName = (employee: any) => {
+  const getEmployeeName = (record: any) => {
+    // Try to get employee from multiple sources
+    const employee = record?.employee || record?.employee_id;
     if (!employee) return "N/A";
     // If employee is a string (just ID), return placeholder
-    if (typeof employee === "string") {
-      return `Employee ${employee.slice(0, 8)}...`;
-    }
     // If employee is an object with name
     if (typeof employee === "object") {
       return employee.full_name || employee.employee_code || employee.id?.slice(0, 8) || "N/A";
     }
     return "N/A";
+  };
+
+  const getEmployeeCode = (record: any) => {
+    const employee = record?.employee || record?.employee_id;
+    if (!employee || typeof employee !== "object") return "";
+    return employee.employee_code || "";
   };
 
   // Filter payrolls by search text - removed client side, use server-side search instead
@@ -570,67 +570,94 @@ export const SalaryList = () => {
   const { mutate: sendPayslipMutation, mutation: sendPayslipState } = useCustomMutation();
   const isSendingPayslip = sendPayslipState?.isPending || false;
 
-  const handleSendPayslip = (record: MonthlyPayroll) => {
-    const employeeName = getEmployeeName(record.employee_id);
-    Modal.confirm({
-      title: "Gửi phiếu lương",
-      content: `Bạn có muốn gửi phiếu lương cho ${employeeName}?`,
-      okText: "Gửi",
-      cancelText: "Hủy",
-      onOk: () => {
-        sendPayslipMutation(
-          {
-            url: `monthly-payrolls/${record.id}/send-payslip`,
-            method: "post",
-            values: {},
-            successNotification: () => ({
-              message: "Gửi phiếu lương thành công",
-              description: `Đã gửi phiếu lương cho ${employeeName}`,
-              type: "success",
-            }),
-            errorNotification: (error) => ({
-              message: "Gửi phiếu lương thất bại",
-              description: error?.response?.data?.message || "Vui lòng thử lại",
-              type: "error",
-            }),
-          }
-        );
-      },
-    });
+  // Open send payslip modal with payroll data
+  const handleOpenSendPayslipModal = (record: MonthlyPayroll) => {
+    setSendPayslipTarget(record);
+    setSendPayslipOptions({ sendNotification: true, sendEmail: false });
+    setSendPayslipModalOpen(true);
   };
 
-  const handleSendPayslipsBulk = () => {
+  // Handle send payslip from modal
+  const handleConfirmSendPayslip = () => {
+    if (!sendPayslipTarget) return;
+    
+    const employeeName = getEmployeeName(sendPayslipTarget);
+    
+    sendPayslipMutation(
+      {
+        url: `monthly-payrolls/${sendPayslipTarget.id}/send-payslip`,
+        method: "post",
+        values: {
+          sendNotification: sendPayslipOptions.sendNotification,
+          sendEmail: sendPayslipOptions.sendEmail,
+        },
+        successNotification: () => ({
+          message: "Gửi phiếu lương thành công",
+          description: `Đã gửi phiếu lương cho ${employeeName}`,
+          type: "success",
+        }),
+        errorNotification: (error) => ({
+          message: "Gửi phiếu lương thất bại",
+          description: error?.response?.data?.message || "Vui lòng thử lại",
+          type: "error",
+        }),
+      },
+      {
+        onSuccess: () => {
+          setSendPayslipModalOpen(false);
+          setSendPayslipTarget(null);
+          tableQueryResult?.refetch?.();
+        },
+      }
+    );
+  };
+
+  const handleSendPayslip = (record: MonthlyPayroll) => {
+    handleOpenSendPayslipModal(record);
+  };
+
+  // Open bulk send modal
+  const handleOpenBulkSendModal = () => {
     const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
     if (approvedPayrolls.length === 0) {
       message.warning("Không có bảng lương nào ở trạng thái đã duyệt hoặc đã thanh toán");
       return;
     }
+    setSendPayslipOptions({ sendNotification: true, sendEmail: false });
+    setBulkSendModalOpen(true);
+  };
+
+  // Handle bulk send payslip
+  const handleConfirmBulkSendPayslip = () => {
+    const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
     
-    Modal.confirm({
-      title: "Gửi phiếu lương hàng loạt",
-      content: `Bạn có muốn gửi phiếu lương cho ${approvedPayrolls.length} nhân viên?`,
-      okText: "Gửi tất cả",
-      cancelText: "Hủy",
-      onOk: () => {
-        sendPayslipMutation(
-          {
-            url: `monthly-payrolls/send-payslip-bulk`,
-            method: "post",
-            values: { payrollIds: approvedPayrolls.map((p) => p.id) },
-            successNotification: (data) => ({
-              message: "Gửi phiếu lương thành công",
-              description: `Đã gửi ${(data as any)?.data?.sent || 0} phiếu lương`,
-              type: "success",
-            }),
-            errorNotification: (error) => ({
-              message: "Gửi phiếu lương thất bại",
-              description: error?.response?.data?.message || "Vui lòng thử lại",
-              type: "error",
-            }),
-          }
-        );
+    sendPayslipMutation(
+      {
+        url: `monthly-payrolls/send-payslip-bulk`,
+        method: "post",
+        values: { 
+          payrollIds: approvedPayrolls.map((p) => p.id),
+          sendNotification: sendPayslipOptions.sendNotification,
+          sendEmail: sendPayslipOptions.sendEmail,
+        },
+        successNotification: (data) => ({
+          message: "Gửi phiếu lương thành công",
+          description: `Đã gửi ${(data as any)?.data?.sent || 0} phiếu lương`,
+          type: "success",
+        }),
+        errorNotification: (error) => ({
+          message: "Gửi phiếu lương thất bại",
+          description: error?.response?.data?.message || "Vui lòng thử lại",
+          type: "error",
+        }),
       },
-    });
+      {
+        onSuccess: () => {
+          setBulkSendModalOpen(false);
+          tableQueryResult?.refetch?.();
+        },
+      }
+    );
   };
 
   const getActionItems = (record: MonthlyPayroll): ActionItem[] => {
@@ -721,14 +748,14 @@ export const SalaryList = () => {
   const columns: any[] = [
     {
       title: "Nhân viên",
-      dataIndex: "employee_id",
       key: "employee",
       ellipsis: true,
       width: 200,
       fixed: "left" as const,
-      render: (employee: any) => {
-        const name = getEmployeeName(employee);
-        const code = typeof employee === 'object' ? employee.employee_code : '';
+      align: "left" as const,
+      render: (_: any, record: MonthlyPayroll) => {
+        const name = getEmployeeName(record);
+        const code = getEmployeeCode(record);
 
         return (
           <div className="flex flex-col">
@@ -739,7 +766,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Lương cơ bản",
+      title: <div className="whitespace-nowrap">Lương cơ bản</div>,
       dataIndex: "base_salary",
       key: "base_salary",
       width: 130,
@@ -750,7 +777,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Phụ cấp & Thưởng",
+      title: <div className="whitespace-nowrap">Phụ cấp-Thưởng</div>,
       key: "allowances_bonuses",
       width: 130,
       align: "right" as const,
@@ -762,7 +789,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Ngày công",
+      title: <div className="whitespace-nowrap">Ngày công</div>,
       key: "work_days",
       width: 90,
       align: "center" as const,
@@ -771,7 +798,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Phạt",
+      title: <div className="whitespace-nowrap">Phạt</div>,
       key: "penalties_breakdown",
       width: 110,
       align: "right" as const,
@@ -787,7 +814,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Trừ & Khấu trừ",
+      title: <div className="whitespace-nowrap">Khấu trừ</div>,
       key: "deductions",
       width: 110,
       align: "right" as const,
@@ -799,7 +826,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Tổng lương",
+      title: <div className="whitespace-nowrap">Tổng lương</div>,
       dataIndex: "gross_salary",
       key: "gross_salary",
       width: 130,
@@ -812,7 +839,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Thực lãnh",
+      title: <div className="whitespace-nowrap">Thực lãnh</div>,
       dataIndex: "net_salary",
       key: "net_salary",
       width: 140,
@@ -823,10 +850,11 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Trạng thái",
+      title: <div className="whitespace-nowrap">Trạng thái</div>,
       dataIndex: "status",
       key: "status",
       width: 130,
+      align: "center" as const,
       filters: [
         { text: "Nháp", value: "draft" },
         { text: "Chờ duyệt", value: "pending_approval" },
@@ -837,10 +865,11 @@ export const SalaryList = () => {
       render: (status: string) => getStatusTag(status || "draft"),
     },
     {
-      title: "Thao tác",
+      title: <div className="whitespace-nowrap">Thao tác</div>,
       key: "actions",
       fixed: "right" as const,
       width: 180,
+      align: "center" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const status = record.status || "draft";
         const actionItems = getActionItems(record);
@@ -908,7 +937,7 @@ export const SalaryList = () => {
                   </Button>
                   <Button
                     icon={<MailOutlined />}
-                    onClick={handleSendPayslipsBulk}
+                    onClick={handleOpenBulkSendModal}
                     size="large"
                     loading={isSendingPayslip}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -1039,7 +1068,7 @@ export const SalaryList = () => {
             <Descriptions column={1} bordered size="small" className="text-sm">
               <Descriptions.Item label="Nhân viên">
                 <span className="font-semibold">
-                  {getEmployeeName(viewingPayroll.employee_id)}
+                  {getEmployeeName(viewingPayroll)}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Tháng">
@@ -1188,7 +1217,7 @@ export const SalaryList = () => {
         <div className="mb-4 p-3 bg-blue-50 rounded">
           <p className="text-xs md:text-sm text-blue-800 mb-1">
             <strong>Nhân viên:</strong>{" "}
-            {getEmployeeName(currentPayroll?.employee_id)}
+            {getEmployeeName(currentPayroll)}
           </p>
           <p className="text-xs md:text-sm text-blue-800">
             <strong>Tháng:</strong> {currentPayroll?.month}
@@ -1252,87 +1281,153 @@ export const SalaryList = () => {
           <p className="mt-4 text-xs text-gray-500">
             * Hệ thống sẽ dựa trên Hợp đồng lao động và Salary Scheme để tính toán.
             <br />
-            * Bảng lương sẽ được tạo ở trạng thái "Nháp".
+            * Bảng lương sẽ được tạo ở trạng thái Nháp.
           </p>
         </div>
       </Modal>
 
       {/* Status Change Modal */}
       <Modal
-        title={
-          <div className="flex items-center gap-2">
-            <SwapOutlined className="text-blue-500" />
-            <span>Thay đổi trạng thái phiếu lương</span>
-          </div>
-        }
+        title={null}
         open={statusModalOpen}
         onCancel={() => {
           setStatusModalOpen(false);
           setStatusChangePayroll(null);
           setSelectedStatus(null);
         }}
-        onOk={handleChangeStatus}
-        okText="Xác nhận"
-        cancelText="Hủy"
-        okButtonProps={{ disabled: !selectedStatus }}
+        footer={null}
+        width={480}
         centered
+        className="status-change-modal"
       >
-        <div className="py-4">
-          {statusChangePayroll && (
-            <>
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Nhân viên</p>
-                <p className="font-medium">
-                  {typeof statusChangePayroll.employee_id === "object"
-                    ? statusChangePayroll.employee_id.full_name ||
-                      `${statusChangePayroll.employee_id.first_name || ""} ${statusChangePayroll.employee_id.last_name || ""}`.trim()
-                    : "N/A"}
-                </p>
-                <p className="text-sm text-gray-500 mt-2 mb-1">Tháng lương</p>
-                <p className="font-medium">
-                  {statusChangePayroll.month || "N/A"}
-                </p>
+        {statusChangePayroll && (
+          <div className="py-2">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                <SwapOutlined className="text-3xl text-white" />
               </div>
+              <h2 className="text-xl font-bold text-gray-900">Thay đổi trạng thái</h2>
+              <p className="text-gray-500 text-sm mt-1">Cập nhật trạng thái phiếu lương</p>
+            </div>
 
-              <div className="mb-4">
-                <p className="text-sm text-gray-500 mb-2">Trạng thái hiện tại</p>
-                <Tag
-                  color={
-                    statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))
-                      ?.color || "default"
-                  }
-                >
-                  {statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))
-                    ?.label || statusChangePayroll.status}
-                </Tag>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500 mb-2">Trạng thái mới</p>
-                <Select
-                  className="w-full"
-                  placeholder="Chọn trạng thái mới"
-                  value={selectedStatus}
-                  onChange={setSelectedStatus}
-                  options={statusOptions
-                    .filter((s) => s.value !== (statusChangePayroll.status || "draft"))
-                    .map((s) => ({
-                      value: s.value,
-                      label: (
-                        <div className="flex items-center gap-2">
-                          <Tag color={s.color}>{s.label}</Tag>
-                        </div>
-                      ),
-                    }))}
+            {/* Employee Info */}
+            <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 mb-4 border border-gray-200">
+              <div className="flex items-center gap-4">
+                <Avatar 
+                  size={48} 
+                  icon={<UserOutlined />} 
+                  className="bg-indigo-500"
                 />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    {statusChangePayroll.employee?.full_name || "N/A"}
+                  </h3>
+                  <p className="text-gray-500 text-sm">
+                    Tháng {statusChangePayroll.month || "N/A"}
+                  </p>
+                </div>
               </div>
+            </div>
 
-              <p className="mt-4 text-xs text-gray-400">
-                * Thay đổi trạng thái sẽ được ghi nhận trong lịch sử.
-              </p>
-            </>
-          )}
-        </div>
+            {/* Status Flow */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+              <div className="flex items-center justify-center gap-4">
+                {/* Current Status */}
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-2">Hiện tại</p>
+                  <Tag
+                    color={statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))?.color || "default"}
+                    className="text-sm px-3 py-1"
+                    icon={statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))?.icon}
+                  >
+                    {statusOptions.find((s) => s.value === (statusChangePayroll.status || "draft"))?.label || statusChangePayroll.status}
+                  </Tag>
+                </div>
+
+                {/* Arrow */}
+                <div className="text-gray-400 text-2xl">→</div>
+
+                {/* New Status */}
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-2">Mới</p>
+                  {selectedStatus && selectedStatus !== (statusChangePayroll.status || "draft") ? (
+                    <Tag
+                      color={statusOptions.find((s) => s.value === selectedStatus)?.color || "default"}
+                      className="text-sm px-3 py-1"
+                      icon={statusOptions.find((s) => s.value === selectedStatus)?.icon}
+                    >
+                      {statusOptions.find((s) => s.value === selectedStatus)?.label}
+                    </Tag>
+                  ) : (
+                    <Tag className="text-sm px-3 py-1">Chọn trạng thái</Tag>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Status Selection */}
+            <div className="mb-4">
+              <p className="text-sm text-gray-700 font-medium mb-2">Chọn trạng thái mới</p>
+              <div className="grid grid-cols-2 gap-2">
+                {statusOptions
+                  .filter((s) => s.value !== (statusChangePayroll.status || "draft"))
+                  .map((status) => (
+                    <Button
+                      key={status.value}
+                      type={selectedStatus === status.value ? "primary" : "default"}
+                      className={`h-auto py-3 ${selectedStatus === status.value ? '' : 'border-gray-200'}`}
+                      style={selectedStatus === status.value ? { 
+                        backgroundColor: status.color === 'default' ? '#666' : 
+                          status.color === 'gold' ? '#faad14' :
+                          status.color === 'green' ? '#52c41a' :
+                          status.color === 'blue' ? '#1890ff' : '#666'
+                      } : {}}
+                      onClick={() => setSelectedStatus(status.value)}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        {status.icon}
+                        <span>{status.label}</span>
+                      </div>
+                    </Button>
+                  ))}
+              </div>
+            </div>
+
+            {/* Warning */}
+            <Alert
+              type="warning"
+              showIcon
+              message="Lưu ý"
+              description="Thay đổi trạng thái sẽ được ghi nhận trong lịch sử. Hành động này không thể hoàn tác."
+              className="mb-4"
+            />
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                size="large" 
+                className="flex-1"
+                onClick={() => {
+                  setStatusModalOpen(false);
+                  setStatusChangePayroll(null);
+                  setSelectedStatus(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button 
+                type="primary" 
+                size="large" 
+                className="flex-1"
+                disabled={!selectedStatus || selectedStatus === (statusChangePayroll.status || "draft")}
+                onClick={handleChangeStatus}
+              >
+                Xác nhận
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Edit Drawer */}
@@ -1352,6 +1447,295 @@ export const SalaryList = () => {
           />
         )}
       </CustomDrawer>
+
+      {/* Send Payslip Modal - Single Employee */}
+      <Modal
+        title={null}
+        open={sendPayslipModalOpen}
+        onCancel={() => {
+          setSendPayslipModalOpen(false);
+          setSendPayslipTarget(null);
+        }}
+        footer={null}
+        width={520}
+        centered
+        className="send-payslip-modal"
+      >
+        {sendPayslipTarget && (
+          <div className="py-2">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                <MailOutlined className="text-3xl text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Gửi phiếu lương</h2>
+              <p className="text-gray-500 text-sm mt-1">Xác nhận gửi phiếu lương cho nhân viên</p>
+            </div>
+
+            {/* Employee Info Card */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4 border border-blue-100">
+              <div className="flex items-center gap-4">
+                <Avatar 
+                  size={56} 
+                  icon={<UserOutlined />} 
+                  className="bg-blue-500"
+                  src={sendPayslipTarget.employee?.avatar}
+                />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 text-lg">
+                    {sendPayslipTarget.employee?.full_name || "N/A"}
+                  </h3>
+                  <p className="text-gray-500 text-sm">
+                    {sendPayslipTarget.employee?.employee_code || "N/A"}
+                  </p>
+                </div>
+                <Tag color="blue" className="text-sm">
+                  <CalendarOutlined className="mr-1" />
+                  {sendPayslipTarget.month || 'N/A'}
+                </Tag>
+              </div>
+            </div>
+
+            {/* Salary Summary */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h4 className="font-semibold text-gray-700 flex items-center gap-2">
+                  <DollarOutlined className="text-green-500" />
+                  Thông tin lương
+                </h4>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Lương cơ bản</span>
+                  <span className="font-medium">{formatCurrency(Number(sendPayslipTarget.base_salary))} VNĐ</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Phụ cấp & Thưởng</span>
+                  <span className="font-medium text-green-600">
+                    +{formatCurrency(Number(sendPayslipTarget.allowances || 0) + Number(sendPayslipTarget.bonuses || 0))} VNĐ
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Khấu trừ</span>
+                  <span className="font-medium text-red-600">
+                    -{formatCurrency(Number(sendPayslipTarget.deductions || 0) + Number(sendPayslipTarget.penalties || 0))} VNĐ
+                  </span>
+                </div>
+                <Divider className="my-2" />
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-900">Thực lãnh</span>
+                  <span className="font-bold text-xl text-green-600">
+                    {formatCurrency(Number(sendPayslipTarget.net_salary))} VNĐ
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Send Options */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <BellOutlined className="text-blue-500" />
+                Tùy chọn gửi
+              </h4>
+              <div className="space-y-2">
+                <Checkbox 
+                  checked={sendPayslipOptions.sendNotification}
+                  onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendNotification: e.target.checked }))}
+                >
+                  <span className="text-gray-700">Gửi thông báo trong hệ thống</span>
+                </Checkbox>
+                <Checkbox 
+                  checked={sendPayslipOptions.sendEmail}
+                  onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                  disabled
+                >
+                  <span className="text-gray-400">Gửi email (Đang phát triển)</span>
+                </Checkbox>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            <div className="flex items-center justify-center mb-4">
+              {getStatusTag(sendPayslipTarget.status || 'draft')}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                size="large" 
+                className="flex-1"
+                onClick={() => {
+                  setSendPayslipModalOpen(false);
+                  setSendPayslipTarget(null);
+                }}
+              >
+                Hủy
+              </Button>
+              <Button 
+                type="primary" 
+                size="large" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                icon={<SendOutlined />}
+                loading={isSendingPayslip}
+                onClick={handleConfirmSendPayslip}
+              >
+                Gửi phiếu lương
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Bulk Send Payslip Modal */}
+      <Modal
+        title={null}
+        open={bulkSendModalOpen}
+        onCancel={() => setBulkSendModalOpen(false)}
+        footer={null}
+        width={600}
+        centered
+        className="bulk-send-payslip-modal"
+      >
+        {(() => {
+          const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
+          const totalNetSalary = approvedPayrolls.reduce((sum, p) => sum + (parseFloat(p.net_salary as any) || 0), 0);
+          
+          return (
+            <div className="py-2">
+              {/* Header */}
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <MailOutlined className="text-3xl text-white" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Gửi phiếu lương hàng loạt</h2>
+                <p className="text-gray-500 text-sm mt-1">Gửi phiếu lương cho tất cả nhân viên đã duyệt</p>
+              </div>
+
+              {/* Summary Card */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 mb-4 border border-purple-100">
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Statistic
+                      title={<span className="text-gray-600">Số nhân viên</span>}
+                      value={approvedPayrolls.length}
+                      prefix={<UserOutlined className="text-purple-500" />}
+                      valueStyle={{ color: '#7c3aed', fontWeight: 'bold' }}
+                    />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic
+                      title={<span className="text-gray-600">Tháng lương</span>}
+                      value={selectedMonth}
+                      prefix={<CalendarOutlined className="text-blue-500" />}
+                      valueStyle={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '18px' }}
+                    />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic
+                      title={<span className="text-gray-600">Tổng tiền</span>}
+                      value={totalNetSalary}
+                      formatter={(value) => `${formatCurrency(Number(value))}`}
+                      suffix="VNĐ"
+                      valueStyle={{ color: '#10b981', fontWeight: 'bold', fontSize: '16px' }}
+                    />
+                  </Col>
+                </Row>
+              </div>
+
+              {/* Employee List Preview */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                  <h4 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <FileTextOutlined className="text-blue-500" />
+                    Danh sách nhân viên
+                  </h4>
+                  <Tag color="green">{approvedPayrolls.length} phiếu lương</Tag>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  <List
+                    size="small"
+                    dataSource={approvedPayrolls.slice(0, 10)}
+                    renderItem={(item) => (
+                      <List.Item className="px-4">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3">
+                            <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
+                            <span className="font-medium text-gray-800">
+                              {getEmployeeName(item)}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-green-600">
+                            {formatCurrency(Number(item.net_salary))} VNĐ
+                          </span>
+                        </div>
+                      </List.Item>
+                    )}
+                  />
+                  {approvedPayrolls.length > 10 && (
+                    <div className="px-4 py-2 text-center text-gray-500 text-sm bg-gray-50">
+                      ... và {approvedPayrolls.length - 10} nhân viên khác
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Send Options */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <BellOutlined className="text-blue-500" />
+                  Tùy chọn gửi
+                </h4>
+                <div className="space-y-2">
+                  <Checkbox 
+                    checked={sendPayslipOptions.sendNotification}
+                    onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendNotification: e.target.checked }))}
+                  >
+                    <span className="text-gray-700">Gửi thông báo trong hệ thống</span>
+                  </Checkbox>
+                  <Checkbox 
+                    checked={sendPayslipOptions.sendEmail}
+                    onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
+                    disabled
+                  >
+                    <span className="text-gray-400">Gửi email (Đang phát triển)</span>
+                  </Checkbox>
+                </div>
+              </div>
+
+              {/* Info Alert */}
+              <Alert
+                type="info"
+                showIcon
+                icon={<InfoCircleOutlined />}
+                message="Lưu ý"
+                description="Chỉ những phiếu lương ở trạng thái 'Đã duyệt' hoặc 'Đã thanh toán' mới được gửi."
+                className="mb-4"
+              />
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  size="large" 
+                  className="flex-1"
+                  onClick={() => setBulkSendModalOpen(false)}
+                >
+                  Hủy
+                </Button>
+                <Button 
+                  type="primary" 
+                  size="large" 
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                  icon={<SendOutlined />}
+                  loading={isSendingPayslip}
+                  onClick={handleConfirmBulkSendPayslip}
+                >
+                  Gửi {approvedPayrolls.length} phiếu lương
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 };

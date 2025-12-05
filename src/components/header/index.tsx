@@ -18,16 +18,16 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
     <header className="h-16 bg-white border-b border-gray-200 px-6 lg:px-6 pl-16 lg:pl-6 flex items-center justify-between sticky top-0 z-20">
       {/* Left Side - Search */}
       <div className="flex items-center gap-4 flex-1">
-        <div className="relative max-w-md w-full">
-          <Search
+        {/* <div className="relative max-w-md w-full">
+          {/* <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             size={18}
-          />
-          <Input
+          /> */}
+          {/* <Input
             placeholder="Tìm kiếm..."
             className="pl-10 h-10 border-gray-200 rounded-lg"
-          />
-        </div>
+          /> */}
+        {/* </div> */} 
       </div>
 
       {/* Right Side - Actions */}
@@ -43,9 +43,11 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
         <div className="pl-3 border-l border-gray-200 flex flex-col items-end">
           <span className="font-semibold text-sm text-gray-900 leading-tight">
             {user?.name || "Admin User"}
+            {/* {user?.name} */}
           </span>
           <span className="text-xs text-gray-500">
             {(user as any)?.role?.name || "Administrator"}
+            {/* {(user as any)?.role?.name} */}
           </span>
         </div>
       </Space>
