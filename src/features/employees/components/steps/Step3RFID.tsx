@@ -6,8 +6,14 @@ import { useEmployeeWizardStore } from '../../stores/employeeWizardStore';
 const { Title, Text } = Typography;
 
 export const Step3RFID: React.FC = () => {
-    const { formData, updateFormData } = useEmployeeWizardStore();
+    const { formData, updateFormData, setStepForm } = useEmployeeWizardStore();
     const [form] = Form.useForm();
+
+    // Register form instance for validation
+    useEffect(() => {
+        setStepForm(2, form);
+        return () => setStepForm(2, null);
+    }, [form, setStepForm]);
 
     useEffect(() => {
         form.setFieldsValue({

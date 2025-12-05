@@ -771,6 +771,7 @@ export const SalaryList = () => {
       ellipsis: true,
       width: 200,
       fixed: "left" as const,
+      align: "left" as const,
       render: (employee: any) => {
         const name = getEmployeeName(employee);
         const code = typeof employee === 'object' ? employee.employee_code : '';
@@ -784,7 +785,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Lương cơ bản",
+      title: <div className="whitespace-nowrap">Lương cơ bản</div>,
       dataIndex: "base_salary",
       key: "base_salary",
       width: 130,
@@ -795,7 +796,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Phụ cấp & Thưởng",
+      title: <div className="whitespace-nowrap">Phụ cấp-Thưởng</div>,
       key: "allowances_bonuses",
       width: 130,
       align: "right" as const,
@@ -807,7 +808,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Ngày công",
+      title: <div className="whitespace-nowrap">Ngày công</div>,
       key: "work_days",
       width: 90,
       align: "center" as const,
@@ -816,7 +817,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Phạt",
+      title: <div className="whitespace-nowrap">Phạt</div>,
       key: "penalties_breakdown",
       width: 110,
       align: "right" as const,
@@ -832,7 +833,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Trừ & Khấu trừ",
+      title: <div className="whitespace-nowrap">Khấu trừ</div>,
       key: "deductions",
       width: 110,
       align: "right" as const,
@@ -844,7 +845,7 @@ export const SalaryList = () => {
       },
     },
     {
-      title: "Tổng lương",
+      title: <div className="whitespace-nowrap">Tổng lương</div>,
       dataIndex: "gross_salary",
       key: "gross_salary",
       width: 130,
@@ -857,7 +858,7 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Thực lãnh",
+      title: <div className="whitespace-nowrap">Thực lãnh</div>,
       dataIndex: "net_salary",
       key: "net_salary",
       width: 140,
@@ -868,10 +869,11 @@ export const SalaryList = () => {
       ),
     },
     {
-      title: "Trạng thái",
+      title: <div className="whitespace-nowrap">Trạng thái</div>,
       dataIndex: "status",
       key: "status",
       width: 130,
+      align: "center" as const,
       filters: [
         { text: "Nháp", value: "draft" },
         { text: "Chờ duyệt", value: "pending_approval" },
@@ -882,10 +884,11 @@ export const SalaryList = () => {
       render: (status: string) => getStatusTag(status || "draft"),
     },
     {
-      title: "Thao tác",
+      title: <div className="whitespace-nowrap">Thao tác</div>,
       key: "actions",
       fixed: "right" as const,
       width: 180,
+      align: "center" as const,
       render: (_: any, record: MonthlyPayroll) => {
         const status = record.status || "draft";
         const actionItems = getActionItems(record);
@@ -1297,7 +1300,7 @@ export const SalaryList = () => {
           <p className="mt-4 text-xs text-gray-500">
             * Hệ thống sẽ dựa trên Hợp đồng lao động và Salary Scheme để tính toán.
             <br />
-            * Bảng lương sẽ được tạo ở trạng thái "Nháp".
+            * Bảng lương sẽ được tạo ở trạng thái Nháp.
           </p>
         </div>
       </Modal>

@@ -1,15 +1,46 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Select, DatePicker, Card, Row, Col, Typography, InputNumber } from 'antd';
+import { Form, Input, Select, DatePicker, Card, Row, Col, Typography, InputNumber, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import { useEmployeeWizardStore } from '../../stores/employeeWizardStore';
+import { generateEmployeeCode } from '@/utils/employeeCodeGenerator';
+import { generateEmployeeAvatarUrl } from '@/utils/avatarGenerator';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 export const Step2EmployeeInfo: React.FC = () => {
-    const { formData, updateFormData } = useEmployeeWizardStore();
+    const { formData, updateFormData, setStepForm } = useEmployeeWizardStore();
     const [form] = Form.useForm();
+
+    // Register form instance for validation
+    useEffect(() => {
+        setStepForm(1, form);
+        return () => setStepForm(1, null);
+    }, [form, setStepForm]);
+
+    // Auto-generate employee code on component mount if not already set
+    useEffect(() => {
+        if (!formData.employee_code) {
+            const generatedCode = generateEmployeeCode();
+            updateFormData({ employee_code: generatedCode });
+        }
+        
+        // Auto-generate avatar from employee name
+        if (!formData.photo_url && (formData.first_name || formData.last_name)) {
+            const avatarUrl = generateEmployeeAvatarUrl(
+                formData.first_name || '',
+                formData.last_name || ''
+            );
+            updateFormData({ photo_url: avatarUrl });
+        } else if (!formData.photo_url) {
+            // Generate default avatar if no name provided
+            const defaultAvatarUrl = generateEmployeeAvatarUrl('Employee', '');
+            updateFormData({ photo_url: defaultAvatarUrl });
+        }
+        // Only run once on mount
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         let dobValue = null;
@@ -47,15 +78,25 @@ export const Step2EmployeeInfo: React.FC = () => {
             emergency_contact_name: formData.emergency_contact_name,
             emergency_contact_phone: formData.emergency_contact_phone,
             notes: formData.notes,
+            photo_url: formData.photo_url,
             default_work_hours_per_week: formData.default_work_hours_per_week,
-            max_hours_per_week: formData.max_hours_per_week,
-            max_consecutive_days: formData.max_consecutive_days,
-            min_rest_hours_between_shifts: formData.min_rest_hours_between_shifts,
+            max_hours_per_week: formData.max_hours_per_week ?? 56,
+            max_consecutive_days: formData.max_consecutive_days ?? 7,
+            min_rest_hours_between_shifts: formData.min_rest_hours_between_shifts ?? 0,
         });
     }, [formData, form]);
 
     const onValuesChange = (changedValues: any, allValues: any) => {
         const processedValues = { ...allValues };
+
+        // Auto-update avatar when name changes
+        if (changedValues.first_name || changedValues.last_name) {
+            const avatarUrl = generateEmployeeAvatarUrl(
+                processedValues.first_name || '',
+                processedValues.last_name || ''
+            );
+            processedValues.photo_url = avatarUrl;
+        }
 
         // Convert dayjs to string for storage
         if (processedValues.dob && dayjs.isDayjs(processedValues.dob) && processedValues.dob.isValid()) {
@@ -98,21 +139,29 @@ export const Step2EmployeeInfo: React.FC = () => {
                     emergency_contact_phone: formData.emergency_contact_phone,
                     notes: formData.notes,
                     default_work_hours_per_week: formData.default_work_hours_per_week,
-                    max_hours_per_week: formData.max_hours_per_week,
-                    max_consecutive_days: formData.max_consecutive_days,
-                    min_rest_hours_between_shifts: formData.min_rest_hours_between_shifts,
+                    max_hours_per_week: formData.max_hours_per_week ?? 56,
+                    max_consecutive_days: formData.max_consecutive_days ?? 7,
+                    min_rest_hours_between_shifts: formData.min_rest_hours_between_shifts ?? 0,
                 }}
             >
                 {/* Thông tin cơ bản */}
                 <Card title="📋 Thông tin cơ bản" className="mb-6 shadow-sm">
+                    <Form.Item
+                        name="photo_url"
+                        hidden
+                    >
+                        <Input type="hidden" />
+                    </Form.Item>
+
+                    <Row gutter={16}>
+                    </Row>
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
                                 label="Mã nhân viên"
                                 name="employee_code"
-                                rules={[{ required: true, message: 'Bắt buộc' }]}
                             >
-                                <Input placeholder="VD: NV001" />
+                                <Input placeholder="VD: NV001" disabled />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
@@ -124,6 +173,9 @@ export const Step2EmployeeInfo: React.FC = () => {
                             </Form.Item>
                         </Col>
                     </Row>
+
+                    {/* Hidden field to store photo_url */}
+                    
 
                     <Row gutter={16}>
                         <Col span={8}>
@@ -152,6 +204,18 @@ export const Step2EmployeeInfo: React.FC = () => {
                             >
                                 <Input placeholder="Nguyễn Văn An" />
                             </Form.Item>
+                        </Col>
+                        <Col span={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                            <div className="flex items-center gap-3 pb-2">
+                                <span className="text-sm text-gray-600">Avatar:</span>
+                                <Avatar
+                                    src={formData.photo_url}
+                                    size={64}
+                                    style={{ backgroundColor: '#1890ff' }}
+                                >
+                                    {formData.first_name?.[0]}
+                                </Avatar>
+                            </div>
                         </Col>
                     </Row>
 
@@ -221,8 +285,9 @@ export const Step2EmployeeInfo: React.FC = () => {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Ngày vào làm"
+                                label={<span>Ngày vào làm <span className="text-red-500">*</span></span>}
                                 name="hire_date"
+                                rules={[{ required: true, message: 'Vui lòng chọn ngày vào làm!' }]}
                             >
                                 <DatePicker className="w-full" format="DD/MM/YYYY" placeholder="Chọn ngày vào làm" />
                             </Form.Item>
@@ -249,22 +314,26 @@ export const Step2EmployeeInfo: React.FC = () => {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Giờ làm tối đa/tuần"
+                                label={<span>Giờ làm tối đa/tuần <span className="text-red-500">*</span></span>}
                                 name="max_hours_per_week"
+                                rules={[{ required: true, message: 'Vui lòng nhập giờ làm tối đa/tuần!' }]}
+                                initialValue={56}
                             >
                                 <InputNumber
                                     className="w-full"
                                     min={0}
                                     max={168}
-                                    placeholder="48"
+                                    placeholder="56"
                                     addonAfter="giờ"
                                 />
                             </Form.Item>
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Số ngày làm liên tiếp tối đa"
+                                label={<span>Số ngày làm liên tiếp tối đa <span className="text-red-500">*</span></span>}
                                 name="max_consecutive_days"
+                                rules={[{ required: true, message: 'Vui lòng nhập số ngày làm liên tiếp tối đa!' }]}
+                                initialValue={7}
                             >
                                 <InputNumber
                                     className="w-full"
@@ -278,14 +347,16 @@ export const Step2EmployeeInfo: React.FC = () => {
                     </Row>
 
                     <Form.Item
-                        label="Thời gian nghỉ tối thiểu giữa các ca"
+                        label={<span>Thời gian nghỉ tối thiểu giữa các ca <span className="text-red-500">*</span></span>}
                         name="min_rest_hours_between_shifts"
+                        rules={[{ required: true, message: 'Vui lòng nhập thời gian nghỉ tối thiểu!' }]}
+                        initialValue={0}
                     >
                         <InputNumber
                             className="w-full"
                             min={0}
                             max={48}
-                            placeholder="8"
+                            placeholder="0"
                             addonAfter="giờ"
                             style={{ maxWidth: 300 }}
                         />
