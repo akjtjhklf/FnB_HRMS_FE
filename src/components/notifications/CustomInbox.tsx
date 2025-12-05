@@ -1,8 +1,9 @@
 "use client";
 
 import { useNovu, useNotifications, useCounts } from "@novu/react";
-import { Bell, Check, Clock, Archive, ArchiveRestore, Eye, EyeOff } from "lucide-react";
+import { Bell, Check, Clock, Archive, ArchiveRestore, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Tooltip, Spin, Empty, App } from "antd";
 
 interface CustomInboxProps {
@@ -12,6 +13,7 @@ interface CustomInboxProps {
 export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "archived">("all");
+  const router = useRouter();
   
   // Dùng App.useApp() để tránh lỗi context
   const { message } = App.useApp();
@@ -117,11 +119,36 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
   // Xử lý click notification
   const handleNotificationClick = useCallback((notification: any) => {
     handleMarkAsRead(notification);
-    const url = notification.cta?.data?.url || notification.payload?.url;
+    
+    // Try multiple possible URL locations from Novu payload
+    const url = notification.cta?.data?.url 
+      || notification.payload?.actionUrl 
+      || notification.payload?.url
+      || notification.payload?.link
+      || notification.payload?.data?.actionUrl
+      || notification.payload?.data?.url
+      || notification.payload?.data?.link
+      || notification.redirect?.url;
+    
+    console.log("🔔 Notification clicked:", { 
+      id: notification.id, 
+      payload: notification.payload,
+      cta: notification.cta,
+      redirect: notification.redirect,
+      extractedUrl: url 
+    });
+    
     if (url) {
-      window.location.href = url;
+      setIsOpen(false); // Đóng dropdown trước khi navigate
+      // Nếu là internal link (bắt đầu bằng /) thì dùng Next.js router
+      if (url.startsWith('/')) {
+        router.push(url);
+      } else {
+        // External link
+        window.open(url, '_blank');
+      }
     }
-  }, [handleMarkAsRead]);
+  }, [handleMarkAsRead, router]);
 
   const renderNotificationList = () => {
     if (isLoading && notifications.length === 0) {
@@ -172,11 +199,19 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                 className="flex-1 cursor-pointer"
                 onClick={() => handleNotificationClick(item)}
               >
-                <p className={`text-sm text-gray-800 ${!item.isRead ? 'font-medium' : ''}`}>
-                  {item.body || item.content || "Thông báo hệ thống"}
-                </p>
-                {item.subject && (
-                  <p className="text-xs text-gray-500 mt-0.5">{item.subject}</p>
+                <div className="flex items-center gap-1">
+                  <p className={`text-sm text-gray-800 ${!item.isRead ? 'font-medium' : ''} flex-1`}>
+                    {item.payload?.title || item.body || item.content || "Thông báo hệ thống"}
+                  </p>
+                  {/* Show link icon if has actionUrl */}
+                  {(item.payload?.actionUrl || item.cta?.data?.url) && (
+                    <ExternalLink size={12} className="text-blue-500 flex-shrink-0" />
+                  )}
+                </div>
+                {(item.payload?.message || item.subject) && (
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                    {item.payload?.message || item.subject}
+                  </p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
                   <Clock size={10} className="text-gray-400"/>

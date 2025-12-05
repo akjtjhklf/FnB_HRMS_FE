@@ -317,7 +317,6 @@ export const Step2EmployeeInfo: React.FC = () => {
                                 label={<span>Giờ làm tối đa/tuần <span className="text-red-500">*</span></span>}
                                 name="max_hours_per_week"
                                 rules={[{ required: true, message: 'Vui lòng nhập giờ làm tối đa/tuần!' }]}
-                                initialValue={56}
                             >
                                 <InputNumber
                                     className="w-full"
@@ -333,7 +332,6 @@ export const Step2EmployeeInfo: React.FC = () => {
                                 label={<span>Số ngày làm liên tiếp tối đa <span className="text-red-500">*</span></span>}
                                 name="max_consecutive_days"
                                 rules={[{ required: true, message: 'Vui lòng nhập số ngày làm liên tiếp tối đa!' }]}
-                                initialValue={7}
                             >
                                 <InputNumber
                                     className="w-full"
@@ -350,7 +348,6 @@ export const Step2EmployeeInfo: React.FC = () => {
                         label={<span>Thời gian nghỉ tối thiểu giữa các ca <span className="text-red-500">*</span></span>}
                         name="min_rest_hours_between_shifts"
                         rules={[{ required: true, message: 'Vui lòng nhập thời gian nghỉ tối thiểu!' }]}
-                        initialValue={0}
                     >
                         <InputNumber
                             className="w-full"

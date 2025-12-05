@@ -40,7 +40,7 @@ export const NotificationForm = ({
   const router = useRouter();
   const params = useParams();
   const id = propId || (params?.id as string);
-  const [recipientType, setRecipientType] = useState<RecipientType>("all");
+  const [recipientType, setRecipientType] = useState<RecipientType>("ALL");
 
   const { formProps, saveButtonProps, onFinish, form } = useForm<Notification>(
     {
@@ -49,7 +49,7 @@ export const NotificationForm = ({
       id: action === "edit" ? id : undefined,
       redirect: false,
       defaultFormValues: {
-        recipient_type: "all",
+        recipient_type: "ALL",
         level: "info",
       },
       onMutationSuccess: () => {
@@ -90,6 +90,9 @@ export const NotificationForm = ({
         value: "active",
       },
     ],
+    pagination: {
+      mode: "off",
+    }
   });
 
   const levelOptions = [
@@ -109,7 +112,7 @@ export const NotificationForm = ({
   const handleRecipientTypeChange = (value: RecipientType) => {
     setRecipientType(value);
     // Clear recipient_ids when changing type
-    if (value === "all") {
+    if (value === "ALL") {
       form?.setFieldsValue({ recipient_ids: undefined });
     }
   };
@@ -204,12 +207,12 @@ export const NotificationForm = ({
                 onChange={(e) => handleRecipientTypeChange(e.target.value)}
                 size="large"
               >
-                <Radio.Button value="all">Tất cả nhân viên</Radio.Button>
-                <Radio.Button value="individual">Cá nhân</Radio.Button>
+                <Radio.Button value="ALL">Tất cả nhân viên</Radio.Button>
+                <Radio.Button value="SPECIFIC">Cá nhân</Radio.Button>
               </Radio.Group>
             </Form.Item>
 
-            {recipientType === "individual" && (
+            {recipientType === "SPECIFIC" && (
               <Form.Item
                 label="Chọn nhân viên"
                 name="recipient_ids"

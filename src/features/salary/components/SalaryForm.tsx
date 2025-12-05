@@ -19,7 +19,7 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import { useEffect } from "react";
-import { MonthlyPayroll } from "@/types/payroll";
+import { MonthlyPayroll } from "@/features/salary/types";
 import { useSelect } from "@refinedev/antd";
 import { Employee } from "@/types/employee";
 

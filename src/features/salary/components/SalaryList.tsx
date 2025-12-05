@@ -62,30 +62,7 @@ import { SalaryForm } from "./SalaryForm";
 import { SalaryRequests } from "./SalaryRequests";
 import { CustomDrawer } from "@/components/common/CustomDrawer";
 import { formatDate } from "@/lib/utils";
-
-// Define MonthlyPayroll interface locally
-interface MonthlyPayroll {
-  id: string;
-  employee_id: any;
-  month: string;
-  salary_scheme_id?: string | null;
-  base_salary: number | string;
-  allowances: number | string;
-  bonuses: number | string;
-  overtime_pay: number | string;
-  deductions: number | string;
-  penalties: number | string;
-  gross_salary: number | string;
-  net_salary: number | string;
-  total_work_hours?: number | string;
-  status?: string;
-  notes?: string | null;
-  approved_by?: string | null;
-  approved_at?: string | null;
-  paid_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
+import { MonthlyPayroll } from "@/features/salary/types";
 
 interface ActionItem {
   key: string;
@@ -193,17 +170,22 @@ export const SalaryList = () => {
 
   const payrolls = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
 
-  const getEmployeeName = (employee: any) => {
+  const getEmployeeName = (record: any) => {
+    // Try to get employee from multiple sources
+    const employee = record?.employee || record?.employee_id;
     if (!employee) return "N/A";
     // If employee is a string (just ID), return placeholder
-    if (typeof employee === "string") {
-      return `Employee ${employee.slice(0, 8)}...`;
-    }
     // If employee is an object with name
     if (typeof employee === "object") {
       return employee.full_name || employee.employee_code || employee.id?.slice(0, 8) || "N/A";
     }
     return "N/A";
+  };
+
+  const getEmployeeCode = (record: any) => {
+    const employee = record?.employee || record?.employee_id;
+    if (!employee || typeof employee !== "object") return "";
+    return employee.employee_code || "";
   };
 
   // Filter payrolls by search text - removed client side, use server-side search instead
@@ -599,7 +581,7 @@ export const SalaryList = () => {
   const handleConfirmSendPayslip = () => {
     if (!sendPayslipTarget) return;
     
-    const employeeName = getEmployeeName(sendPayslipTarget.employee_id);
+    const employeeName = getEmployeeName(sendPayslipTarget);
     
     sendPayslipMutation(
       {
@@ -766,15 +748,14 @@ export const SalaryList = () => {
   const columns: any[] = [
     {
       title: "Nhân viên",
-      dataIndex: "employee_id",
       key: "employee",
       ellipsis: true,
       width: 200,
       fixed: "left" as const,
       align: "left" as const,
-      render: (employee: any) => {
-        const name = getEmployeeName(employee);
-        const code = typeof employee === 'object' ? employee.employee_code : '';
+      render: (_: any, record: MonthlyPayroll) => {
+        const name = getEmployeeName(record);
+        const code = getEmployeeCode(record);
 
         return (
           <div className="flex flex-col">
@@ -1087,7 +1068,7 @@ export const SalaryList = () => {
             <Descriptions column={1} bordered size="small" className="text-sm">
               <Descriptions.Item label="Nhân viên">
                 <span className="font-semibold">
-                  {getEmployeeName(viewingPayroll.employee_id)}
+                  {getEmployeeName(viewingPayroll)}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="Tháng">
@@ -1236,7 +1217,7 @@ export const SalaryList = () => {
         <div className="mb-4 p-3 bg-blue-50 rounded">
           <p className="text-xs md:text-sm text-blue-800 mb-1">
             <strong>Nhân viên:</strong>{" "}
-            {getEmployeeName(currentPayroll?.employee_id)}
+            {getEmployeeName(currentPayroll)}
           </p>
           <p className="text-xs md:text-sm text-blue-800">
             <strong>Tháng:</strong> {currentPayroll?.month}
@@ -1340,10 +1321,7 @@ export const SalaryList = () => {
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">
-                    {typeof statusChangePayroll.employee_id === "object"
-                      ? statusChangePayroll.employee_id.full_name ||
-                        `${statusChangePayroll.employee_id.first_name || ""} ${statusChangePayroll.employee_id.last_name || ""}`.trim()
-                      : "N/A"}
+                    {statusChangePayroll.employee?.full_name || "N/A"}
                   </h3>
                   <p className="text-gray-500 text-sm">
                     Tháng {statusChangePayroll.month || "N/A"}
@@ -1501,16 +1479,14 @@ export const SalaryList = () => {
                   size={56} 
                   icon={<UserOutlined />} 
                   className="bg-blue-500"
-                  src={typeof sendPayslipTarget.employee_id === 'object' ? (sendPayslipTarget.employee_id as any).avatar : undefined}
+                  src={sendPayslipTarget.employee?.avatar}
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 text-lg">
-                    {getEmployeeName(sendPayslipTarget.employee_id)}
+                    {sendPayslipTarget.employee?.full_name || "N/A"}
                   </h3>
                   <p className="text-gray-500 text-sm">
-                    {typeof sendPayslipTarget.employee_id === 'object' 
-                      ? (sendPayslipTarget.employee_id as any).employee_code || 'N/A'
-                      : 'N/A'}
+                    {sendPayslipTarget.employee?.employee_code || "N/A"}
                   </p>
                 </div>
                 <Tag color="blue" className="text-sm">
@@ -1685,7 +1661,7 @@ export const SalaryList = () => {
                           <div className="flex items-center gap-3">
                             <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
                             <span className="font-medium text-gray-800">
-                              {getEmployeeName(item.employee_id)}
+                              {getEmployeeName(item)}
                             </span>
                           </div>
                           <span className="font-semibold text-green-600">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGetIdentity } from "@refinedev/core";
 import { Result, Spin } from "antd";
@@ -25,6 +25,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   redirectTo,
 }) => {
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { data: identity, isLoading } = useGetIdentity<{
     id: string;
     role?: string | { name?: string };
@@ -52,6 +53,14 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     return allowedRoles.includes(userRole);
   }, [allowedRoles, userRole]);
 
+  // Handle redirect in useEffect to avoid setState during render
+  useEffect(() => {
+    if (!isLoading && !hasAccess && redirectTo && !isRedirecting) {
+      setIsRedirecting(true);
+      router.replace(redirectTo);
+    }
+  }, [isLoading, hasAccess, redirectTo, router, isRedirecting]);
+
   // Loading state
   if (isLoading) {
     return (
@@ -61,18 +70,17 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     );
   }
 
-  // No access
-  if (!hasAccess) {
-    // Redirect if specified
-    if (redirectTo) {
-      router.replace(redirectTo);
-      return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Spin size="large" />
-        </div>
-      );
-    }
+  // No access - redirecting
+  if (!hasAccess && redirectTo) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Spin size="large" />
+      </div>
+    );
+  }
 
+  // No access - show fallback or denied
+  if (!hasAccess) {
     // Show fallback or default access denied
     if (fallback) {
       return <>{fallback}</>;

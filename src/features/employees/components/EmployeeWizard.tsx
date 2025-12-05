@@ -1,14 +1,13 @@
 "use client";
 
 import React from 'react';
-import { Steps, Button, Card, theme } from 'antd';
+import { Steps, Button, Card, theme, App } from 'antd';
 import { UserOutlined, IdcardOutlined, CreditCardOutlined } from '@ant-design/icons';
 import { useEmployeeWizardStore } from '../stores/employeeWizardStore';
 import { Step1UserAccess } from './steps/Step1UserAccess';
 import { Step2EmployeeInfo } from './steps/Step2EmployeeInfo';
 import { Step3RFID } from './steps/Step3RFID';
 import { useCustomMutation, useGo, useGetIdentity } from '@refinedev/core';
-import { toast } from '@/utils/toast';
 
 const { Step } = Steps;
 
@@ -19,6 +18,7 @@ interface UserIdentity {
 
 export const EmployeeWizard: React.FC = () => {
     const { token } = theme.useToken();
+    const { message } = App.useApp();
     const go = useGo();
     const { data: currentUser } = useGetIdentity<UserIdentity>();
     const { currentStep, setStep, formData, reset, validateCurrentStep } = useEmployeeWizardStore();
@@ -48,7 +48,7 @@ export const EmployeeWizard: React.FC = () => {
         if (isValid) {
             setStep(currentStep + 1);
         } else {
-            toast.validationError('Vui lòng điền đầy đủ thông tin bắt buộc trước khi tiếp tục!');
+            message.warning('Vui lòng điền đầy đủ thông tin bắt buộc trước khi tiếp tục!');
         }
     };
 
@@ -60,7 +60,7 @@ export const EmployeeWizard: React.FC = () => {
         // Validate current step before submit
         const isValid = await validateCurrentStep();
         if (!isValid) {
-            toast.validationError('Vui lòng điền đầy đủ thông tin bắt buộc!');
+            message.warning('Vui lòng điền đầy đủ thông tin bắt buộc!');
             return;
         }
 
@@ -88,12 +88,13 @@ export const EmployeeWizard: React.FC = () => {
             },
             {
                 onSuccess: () => {
-                    toast.crudSuccess('create', 'nhân viên');
+                    message.success('✅ Thêm nhân viên thành công!');
                     reset();
                     go({ to: { resource: 'employees', action: 'list' } });
                 },
                 onError: (error: any) => {
-                    toast.crudError('create', 'nhân viên', error);
+                    const errorMsg = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra!';
+                    message.error(`❌ Thêm nhân viên thất bại: ${errorMsg}`);
                 },
             }
         );

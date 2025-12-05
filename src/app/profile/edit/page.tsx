@@ -1,7 +1,7 @@
 "use client";
 
-import { ProfileEdit } from "@/features/profile";
+import { ProfileEditWizard } from "@/features/profile";
 
 export default function ProfileEditPage() {
-  return <ProfileEdit />;
+  return <ProfileEditWizard />;
 }
