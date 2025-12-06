@@ -684,8 +684,7 @@ export function AvailabilityRegistration() {
             <Text strong>Độ ưu tiên của bạn</Text>
           </Space>
         }
-        description="Độ ưu tiên được tự động xác định dựa trên vai trò của bạn. Manager (10), Senior (7), Staff (5), Junior (3)."
-        type="info"
+        description="Độ ưu tiên được tự động xác định dựa trên vai trò của bạn."
         showIcon
         style={{ marginBottom: "24px" }}
       />
