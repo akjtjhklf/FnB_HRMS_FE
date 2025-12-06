@@ -124,7 +124,7 @@ export const EmployeeAttendanceCalendar = ({
                                 {/* Check-in/out times */}
                                 <div className="flex flex-col gap-0.5">
                                     <Tag 
-                                        size="small" 
+                                        
                                         color={(item.late_minutes || 0) > 0 ? "warning" : "success"}
                                         className="text-[10px] px-1 py-0 m-0"
                                     >
@@ -132,7 +132,7 @@ export const EmployeeAttendanceCalendar = ({
                                     </Tag>
                                     {item.clock_out && (
                                         <Tag 
-                                            size="small"
+                                            // size="small"
                                             color={(item.early_leave_minutes || 0) > 0 ? "warning" : "success"}
                                             className="text-[10px] px-1 py-0 m-0"
                                         >
