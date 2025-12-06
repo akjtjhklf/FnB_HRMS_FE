@@ -43,7 +43,8 @@ import {
   UserOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjs";
+import type { Dayjs } from "dayjs";
 import type { BadgeProps } from "antd";
 import type {
   EmployeeAvailability,

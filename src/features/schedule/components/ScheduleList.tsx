@@ -31,7 +31,7 @@ import {
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 
 dayjs.extend(weekOfYear);

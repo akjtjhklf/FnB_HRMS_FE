@@ -6,7 +6,7 @@ import { useCreate, useDelete, useList } from "@refinedev/core";
 import { Table, Button, Modal, Form, Select, InputNumber, DatePicker, Input, App, Tag, Space, Popconfirm, Row, Col, Card, Statistic } from "antd";
 import { PlusOutlined, DeleteOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import type { EmployeeAvailability, Shift, Position } from "@/types/schedule";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 
 interface Employee {
   id: string;

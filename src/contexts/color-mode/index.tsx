@@ -11,6 +11,9 @@ import React, {
   useState,
 } from "react";
 
+// Import configured dayjs to ensure locale is set correctly (weekStart = Monday)
+import "@/lib/dayjs";
+
 type ColorModeContextType = {
   mode: string;
   setMode: (mode: string) => void;

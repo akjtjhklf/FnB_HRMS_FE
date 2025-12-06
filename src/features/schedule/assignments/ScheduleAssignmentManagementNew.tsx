@@ -20,7 +20,7 @@ import {
   WarningOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { WeeklySchedule } from "@/types/schedule/weekly-schedule.types";
