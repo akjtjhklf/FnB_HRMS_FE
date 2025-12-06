@@ -39,8 +39,8 @@ export const PermissionMatrix = ({ policyId }: PermissionMatrixProps) => {
     const { mutate: deletePermission } = useDelete();
 
     // FIX: collectionsData.data is already the array
-    const collections = collectionsData?.data?.data || [];
-    const permissions = permissionsData?.data?.data || [];
+    const collections = useMemo(() => collectionsData?.data?.data || [], [collectionsData?.data?.data]);
+    const permissions = useMemo(() => permissionsData?.data?.data || [], [permissionsData?.data?.data]);
 
     console.log("PermissionMatrix Debug:", {
         collectionsData,

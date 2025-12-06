@@ -113,6 +113,10 @@ export const SalaryList = () => {
   });
   // Bulk send payslip modal state
   const [bulkSendModalOpen, setBulkSendModalOpen] = useState(false);
+  // Bulk action state
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
+  const [bulkSelectedStatus, setBulkSelectedStatus] = useState<string>('pending_approval');
 
   const { mutate: createRequest } = useCreate();
   const { mutate: generatePayroll, mutation } = useCustomMutation();
@@ -482,6 +486,53 @@ export const SalaryList = () => {
     });
   };
 
+  // Hook để chuyển trạng thái hàng loạt
+  const { mutate: bulkChangeStatusMutation } = useCustomMutation();
+
+  const handleBulkChangeStatus = () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning("Vui lòng chọn ít nhất một bảng lương");
+      return;
+    }
+
+    bulkChangeStatusMutation({
+      url: "monthly-payrolls/change-status-bulk",
+      method: "post",
+      values: { 
+        ids: selectedRowKeys,
+        status: bulkSelectedStatus 
+      },
+      successNotification: () => ({
+        message: "Cập nhật trạng thái thành công",
+        description: `Đã chuyển ${selectedRowKeys.length} bảng lương sang trạng thái "${statusOptions.find(s => s.value === bulkSelectedStatus)?.label}"`,
+        type: "success",
+      }),
+      errorNotification: (error: any) => ({
+        message: "Lỗi cập nhật trạng thái",
+        description: error?.response?.data?.error?.message || error?.message || "Vui lòng thử lại",
+        type: "error",
+      }),
+    }, {
+      onSuccess: () => {
+        setBulkStatusModalOpen(false);
+        setSelectedRowKeys([]);
+        tableQueryResult?.refetch?.();
+      }
+    });
+  };
+
+  // Row selection config
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+    getCheckboxProps: (record: MonthlyPayroll) => ({
+      // Chỉ cho phép chọn các bảng lương draft để chuyển trạng thái
+      disabled: record.status !== 'draft',
+    }),
+  };
+
   // Hook để đánh dấu đã thanh toán
   const { mutate: markAsPaidMutation } = useCustomMutation();
 
@@ -683,12 +734,7 @@ export const SalaryList = () => {
           icon: <EditOutlined />,
           onClick: () => handleEdit(record),
         });
-        items.push({
-          key: "lock",
-          label: "Khóa (Gửi duyệt)",
-          icon: <LockOutlined />,
-          onClick: () => onLock(record.id),
-        });
+        // Lock action removed - use bulk action instead
       }
 
       if (status === "pending_approval") {
@@ -936,6 +982,17 @@ export const SalaryList = () => {
                   >
                     Tính lương
                   </Button>
+                  {selectedRowKeys.length > 0 && (
+                    <Button
+                      type="primary"
+                      icon={<LockOutlined />}
+                      onClick={() => setBulkStatusModalOpen(true)}
+                      size="large"
+                      className="bg-orange-500 hover:bg-orange-600"
+                    >
+                      Gửi duyệt ({selectedRowKeys.length})
+                    </Button>
+                  )}
                   <Button
                     icon={<MailOutlined />}
                     onClick={handleOpenBulkSendModal}
@@ -959,6 +1016,30 @@ export const SalaryList = () => {
               )}
             </Space>
           </div>
+
+          {/* Bulk Action Alert */}
+          {isAdminOrManager && selectedRowKeys.length > 0 && (
+            <Alert
+              message={`Đã chọn ${selectedRowKeys.length} bảng lương`}
+              type="info"
+              showIcon
+              className="mb-4"
+              action={
+                <Space>
+                  <Button size="small" onClick={() => setSelectedRowKeys([])}>
+                    Bỏ chọn
+                  </Button>
+                  <Button 
+                    size="small" 
+                    type="primary"
+                    onClick={() => setBulkStatusModalOpen(true)}
+                  >
+                    Gửi duyệt hàng loạt
+                  </Button>
+                </Space>
+              }
+            />
+          )}
 
           {/* Statistics Cards */}
           <Row gutter={[16, 16]} className="mb-6">
@@ -1010,6 +1091,7 @@ export const SalaryList = () => {
               {...tableProps}
               columns={columns}
               rowKey="id"
+              rowSelection={isAdminOrManager ? rowSelection : undefined}
               key={`payroll-table-${roleName || 'loading'}`}
               scroll={{ x: 1200 }}
               pagination={{
@@ -1735,6 +1817,63 @@ export const SalaryList = () => {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Bulk Status Change Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <LockOutlined className="text-orange-500" />
+            <span>Gửi duyệt hàng loạt</span>
+          </div>
+        }
+        open={bulkStatusModalOpen}
+        onCancel={() => setBulkStatusModalOpen(false)}
+        footer={null}
+        width={500}
+      >
+        <div className="py-4">
+          <Alert
+            message={`Đã chọn ${selectedRowKeys.length} bảng lương`}
+            description="Chỉ các bảng lương ở trạng thái 'Nháp' mới được chuyển sang trạng thái khác."
+            type="info"
+            showIcon
+            className="mb-4"
+          />
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Chuyển sang trạng thái:
+            </label>
+            <Select
+              value={bulkSelectedStatus}
+              onChange={setBulkSelectedStatus}
+              className="w-full"
+              options={[
+                { value: "pending_approval", label: "Chờ duyệt" },
+              ]}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button 
+              size="large" 
+              className="flex-1"
+              onClick={() => setBulkStatusModalOpen(false)}
+            >
+              Hủy
+            </Button>
+            <Button 
+              type="primary" 
+              size="large" 
+              className="flex-1 bg-orange-500 hover:bg-orange-600"
+              icon={<LockOutlined />}
+              onClick={handleBulkChangeStatus}
+            >
+              Gửi duyệt {selectedRowKeys.length} bảng lương
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
