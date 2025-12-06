@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLogout, useGetIdentity } from "@refinedev/core";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { BranchesOutlined } from "@ant-design/icons";
+import LogoImage from "@/assets/logo.png";
 
 interface SidebarItem {
   icon: React.ReactNode;
@@ -78,12 +80,6 @@ const allSidebarItems: SidebarItem[] = [
     label: "Thông báo",
     href: "/notifications",
     allowedRoles: ["admin", "manager"], // Chỉ admin và manager
-  },
-  {
-    icon: <Bell size={24} />,
-    label: "Thông báo của tôi",
-    href: "/my-notifications",
-    allowedRoles: ["employee"], // Chỉ employee xem thông báo của mình
   },
   {
     icon: <FileText size={24} />,
@@ -196,9 +192,13 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-200 relative">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">L</span>
-          </div>
+          <Image
+            src={LogoImage}
+            alt="Logo"
+            width={48}
+            height={48}
+            className="rounded-lg object-contain"
+          />
         </div>
 
         {/* Main Navigation */}

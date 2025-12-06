@@ -1,8 +1,8 @@
 import React from "react";
 import { Card } from "@/components/ui/Card";
-import { Typography, Avatar, Progress, Empty, Button } from "antd";
+import { Typography, Progress, Empty, Button } from "antd";
 import { Trophy, TrendingUp } from "lucide-react";
-import { generateColorFromString } from "@/lib/utils";
+import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 
 const { Title, Text } = Typography;
 
@@ -117,15 +117,11 @@ export const TopEmployees: React.FC = () => {
               className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <div className="relative">
-                <Avatar
+                <EmployeeAvatar
+                  photoUrl={employee.avatar}
+                  name={employee.name}
                   size={48}
-                  src={employee.avatar}
-                  style={{
-                    backgroundColor: generateColorFromString(employee.name),
-                  }}
-                >
-                  {employee.name.charAt(0)}
-                </Avatar>
+                />
                 <div
                   className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center ${getRankColor(
                     employee.rank

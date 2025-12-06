@@ -50,16 +50,16 @@ export const StatCard: React.FC<StatCardProps> = ({
     <Card
       hover
       className={cn(
-        "transition-all duration-300",
+        "transition-all duration-300 flex h-full !w-full",
         borderColors[color],
         onClick && "cursor-pointer"
       )}
       onClick={onClick}
       styles={{
-        body: { padding: "24px" },
+        body: { padding: "24px" ,width: "100%" },
       }}
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between w-full">
         <div className="flex-1">
           <Text className="text-gray-500 text-sm font-medium uppercase tracking-wide">
             {title}
