@@ -408,6 +408,8 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       title: "Loại hợp đồng",
       dataIndex: "contract_type",
       key: "contract_type",
+      fixed: "left" as const,
+      width: 150,
       render: (type: string) => (
         <div className="flex items-center gap-2">
           <FileText className="w-4 h-4 text-blue-600" />
@@ -419,6 +421,7 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       title: "Ngày bắt đầu",
       dataIndex: "start_date",
       key: "start_date",
+      width: 130,
       render: (date: string) => (
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-400" />
@@ -430,6 +433,8 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       title: "Ngày kết thúc",
       dataIndex: "end_date",
       key: "end_date",
+      width: 130,
+      responsive: ["md"] as ("md")[],
       render: (date: string) => (
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-400" />
@@ -441,6 +446,8 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       title: "Chế độ lương",
       dataIndex: "salary_scheme_id",
       key: "salary_scheme_id",
+      width: 150,
+      responsive: ["lg"] as ("lg")[],
       render: (value: string | { id: string; name?: string } | null) => {
         // Handle case when Directus populates the relation as object
         if (value && typeof value === "object") {
@@ -458,9 +465,11 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       },
     },
     {
-      title: "Lương (Override)",
+      title: "Lương",
       dataIndex: "base_salary",
       key: "base_salary",
+      width: 140,
+      responsive: ["sm"] as ("sm")[],
       render: (base_salary: number) => (
         <div className="flex items-center gap-2">
           <DollarSign className="w-4 h-4 text-green-600" />
@@ -478,29 +487,31 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
     {
       title: "Trạng thái",
       key: "status",
+      width: 120,
       render: (_: any, record: Contract) => getContractStatusTag(record),
     },
     {
       title: "Thao tác",
       key: "actions",
-      align: "right" as const,
+      fixed: "right" as const,
+      width: 120,
       render: (_: any, record: Contract) => (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <AntButton
             type="link"
+            size="small"
             icon={<Edit className="w-4 h-4" />}
             onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </AntButton>
+            title="Sửa"
+          />
           <AntButton
             type="link"
             danger
+            size="small"
             icon={<Trash2 className="w-4 h-4" />}
             onClick={() => handleDelete(record.id)}
-          >
-            Xóa
-          </AntButton>
+            title="Xóa"
+          />
         </div>
       ),
     },
@@ -531,10 +542,13 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
           dataSource={contracts}
           rowKey="id"
           loading={isLoading}
+          scroll={{ x: 800 }}
+          size="middle"
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
             showTotal: (total) => `Tổng ${total} hợp đồng`,
+            responsive: true,
           }}
           locale={{
             emptyText: (
