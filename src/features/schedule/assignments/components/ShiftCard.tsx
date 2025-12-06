@@ -1,6 +1,6 @@
 import { Card, Tag, Badge } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";

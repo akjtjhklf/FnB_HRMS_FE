@@ -41,7 +41,7 @@ export const QuickActions: React.FC = () => {
       icon: <Calendar size={20} />,
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
-      href: "/schedule/weekly/create",
+      href: "/schedule/assignments",
     },
     {
       title: "Tính lương",
@@ -49,7 +49,7 @@ export const QuickActions: React.FC = () => {
       icon: <DollarSign size={20} />,
       color: "text-orange-600",
       bgColor: "bg-orange-50 hover:bg-orange-100",
-      href: "/salary/schemes",
+      href: "/salary",
     },
     {
       title: "Báo cáo",
@@ -57,7 +57,8 @@ export const QuickActions: React.FC = () => {
       icon: <FileText size={20} />,
       color: "text-purple-600",
       bgColor: "bg-purple-50 hover:bg-purple-100",
-      onClick: () => alert("Chức năng báo cáo đang phát triển"),
+      // onClick: () => alert("Chức năng báo cáo đang phát triển"),
+      href: "/reports",
     },
     // {
     //   title: "Cài đặt",

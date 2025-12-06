@@ -43,7 +43,8 @@ import {
   UserOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjs";
+import type { Dayjs } from "dayjs";
 import type { BadgeProps } from "antd";
 import type {
   EmployeeAvailability,
@@ -288,6 +289,15 @@ export function AvailabilityRegistration() {
 
       // Check if availability already exists for this shift
       let availabilityId = availabilityByShift[selectedShift.id];
+
+      // Debug log
+      console.log("🔍 Register Debug:", {
+        selectedShiftId: selectedShift.id,
+        selectedShiftDate: selectedShift.shift_date,
+        availabilityByShift,
+        existingAvailabilityId: availabilityId,
+        userAvailabilities: availabilities.map(a => ({ id: a.id, shift_id: a.shift_id })),
+      });
 
       if (!availabilityId) {
         // Step 1: Create availability record if not exists
@@ -684,8 +694,7 @@ export function AvailabilityRegistration() {
             <Text strong>Độ ưu tiên của bạn</Text>
           </Space>
         }
-        description="Độ ưu tiên được tự động xác định dựa trên vai trò của bạn. Manager (10), Senior (7), Staff (5), Junior (3)."
-        type="info"
+        description="Độ ưu tiên được tự động xác định dựa trên vai trò của bạn."
         showIcon
         style={{ marginBottom: "24px" }}
       />

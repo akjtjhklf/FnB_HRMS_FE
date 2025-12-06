@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation"; // Sử dụng next/navigation cho App Router
 import { useLogin } from "@refinedev/core";
 import { Form, Input, Button, Typography, App, Space, Divider } from "antd";
 import { Card } from "@/components/ui";
 import { UserOutlined, LockOutlined, LoginOutlined } from "@ant-design/icons";
 import { useAuthStore } from "@/store";
+import LogoImage from "@/assets/logo.png";
 
 const { Title, Text } = Typography;
 
@@ -51,11 +53,17 @@ export default function LoginPage() {
         <Card className="shadow-2xl border-0">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
-              <span className="text-3xl">🏢</span>
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+              <Image
+                src={LogoImage}
+                alt="Logo"
+                width={80}
+                height={80}
+                className="object-contain"
+              />
             </div>
             <Title level={2} className="!mb-2">
-              HRMS System
+              Greasy Worm HRMS
             </Title>
             <Text className="text-gray-500">Đăng nhập để tiếp tục</Text>
           </div>

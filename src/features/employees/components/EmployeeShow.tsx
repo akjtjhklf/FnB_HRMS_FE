@@ -2,7 +2,7 @@
 
 import { useShow, useDelete } from "@refinedev/core";
 import { Employee } from "@/types/employee";
-import { Button, Avatar, Tag, Tabs, Card, Space, message, Divider } from "antd";
+import { Button, Tag, Tabs, Card, Space, message, Divider } from "antd";
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -24,6 +24,7 @@ import { formatDate, formatPhoneNumber } from "@/lib/utils";
 import { ContractList } from "./ContractList";
 import { WorkHistoryTab } from "@/features/profile/components/WorkHistoryTab";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
+import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 
 interface EmployeeShowProps {
   id: string;
@@ -116,13 +117,14 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
             {/* Left Sidebar */}
             <div className="lg:col-span-1">
               <Card className="text-center">
-                <Avatar
-                  src={employeeData.photo_url}
+                <EmployeeAvatar
+                  photoUrl={employeeData.photo_url}
+                  firstName={employeeData.first_name}
+                  lastName={employeeData.last_name}
+                  name={employeeData.full_name}
                   size={100}
                   className="mx-auto mb-4"
-                >
-                  {employeeData.first_name?.[0]}
-                </Avatar>
+                />
 
                 <h2 className="text-xl font-bold text-gray-900 mb-2">
                   {employeeData.full_name || `${employeeData.first_name} ${employeeData.last_name}`}

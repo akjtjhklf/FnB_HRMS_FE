@@ -6,9 +6,10 @@ import { Employee } from "@/types/employee";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Clock, Users } from "lucide-react";
 import { useMemo } from "react";
-import { Space, Avatar, Button as AntButton, Table, Tag } from "antd";
+import { Space, Button as AntButton, Table, Tag } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 
 export const AttendanceList = () => {
   const router = useRouter();
@@ -79,9 +80,12 @@ export const AttendanceList = () => {
             className="flex items-center gap-3 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={() => router.push(`/attendance/${employee.id}`)}
           >
-            <Avatar src={employee.photo_url} size={40} className="bg-blue-500">
-              {employee.first_name?.[0]}
-            </Avatar>
+            <EmployeeAvatar
+              photoUrl={employee.photo_url}
+              firstName={employee.first_name}
+              lastName={employee.last_name}
+              size={40}
+            />
             <div>
               <p className="font-medium text-gray-900">
                 {employee.first_name} {employee.last_name}

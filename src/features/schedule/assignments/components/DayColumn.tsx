@@ -1,5 +1,5 @@
 import { Empty, Card } from "antd";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";

@@ -30,7 +30,7 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type { ShiftType, CreateShiftTypeDto, UpdateShiftTypeDto } from "@/types/schedule";
 import { useCanManageSchedule } from "@/hooks/usePermissions";
 

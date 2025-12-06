@@ -31,6 +31,7 @@ import { ScheduleAssignment, Shift, Position } from "@/types/schedule";
 import { Employee } from "@/types/employee";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils/cn";
+import dayjs from "dayjs";
 
 const DAYS_OF_WEEK = [
   { value: 0, label: "Chủ nhật", short: "CN" },
@@ -83,7 +84,7 @@ export function ViewScheduleTab() {
   const scheduleByDay = useMemo(() => {
     const grouped = DAYS_OF_WEEK.map((day) => {
       const dayShifts = shifts
-        .filter((s) => s.day_of_week === day.value && s.is_active) // Updated to use `is_active`
+        .filter((s) => dayjs(s.shift_date).day() === day.value) // Updated to use dayjs().day()
         .sort((a, b) => (a.start_at || '').localeCompare(b.start_at || '')); // Updated to use `start_at`
 
       const shiftsWithAssignments = dayShifts.map((shift) => {
@@ -236,7 +237,7 @@ export function ViewScheduleTab() {
                       {/* Shift Info */}
                       <div className="mb-2 pb-2 border-b border-gray-200">
                         <h4 className="font-semibold text-sm text-gray-800">
-                          {shift.name}
+                          {shift.shift_type?.name || "Ca làm việc"}
                         </h4>
                         <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                           <ClockCircleOutlined />
@@ -369,7 +370,7 @@ export function ViewScheduleTab() {
           {selectedAssignment && (
             <Card size="small" className="mb-4 bg-gray-50">
               <p className="text-sm text-gray-600">
-                Ca: <strong>{typeof selectedAssignment.shift_id === "object" ? selectedAssignment.shift_id.name : "N/A"}</strong>
+                Ca: <strong>{typeof selectedAssignment.shift_id === "object" ? (selectedAssignment.shift_id.shift_type?.name || "Ca làm việc") : "N/A"}</strong>
               </p>
             </Card>
           )}

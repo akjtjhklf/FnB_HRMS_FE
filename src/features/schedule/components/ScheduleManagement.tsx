@@ -6,7 +6,6 @@ import { CalendarOutlined, SwapOutlined, ClockCircleOutlined, TeamOutlined } fro
 import { ScheduleList } from "./ScheduleList";
 import { AvailabilityRegistry } from "./AvailabilityRegistry";
 import { ChangeRequests } from "./ChangeRequests";
-import { ShiftManagement } from "./ShiftManagement";
 
 
 /**
@@ -50,16 +49,7 @@ export function ScheduleManagement() {
       ),
       children: <ChangeRequests />,
     },
-    {
-      key: "shifts",
-      label: (
-        <span>
-          <ClockCircleOutlined />
-          Quản lý ca
-        </span>
-      ),
-      children: <ShiftManagement />,
-    },
+    
   ];
 
   return (

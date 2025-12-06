@@ -16,8 +16,7 @@ import {
     Button,
 } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
-import "dayjs/locale/vi";
+import dayjs from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
 import type { WeeklySchedule } from "@/types/schedule/weekly-schedule.types";
@@ -29,8 +28,6 @@ import { ShiftTypeHeader } from "./components/ShiftTypeHeader";
 import { RequirementCell } from "./components/RequirementCell";
 
 const { Title, Text } = Typography;
-
-dayjs.locale("vi");
 
 export function ShiftRequirementsMatrixView() {
     const [selectedSchedule, setSelectedSchedule] = useState<string>("");

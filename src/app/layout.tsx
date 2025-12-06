@@ -9,10 +9,14 @@ import "./globals.css";
 import "@/lib/dayjs";
 
 export const metadata: Metadata = {
-  title: "HRMS - Human Resource Management System",
+  title: "Greasy Worm HRMS - Human Resource Management System",
   description: "Complete HRMS solution for managing employees, attendance, and payroll",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
   },
 };
 

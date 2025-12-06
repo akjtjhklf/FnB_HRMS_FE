@@ -30,7 +30,7 @@ import {
   ThunderboltOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 
 interface ScheduleAssignment {
   id: string;

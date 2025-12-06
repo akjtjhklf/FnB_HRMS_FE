@@ -6,11 +6,12 @@ import { Employee } from "@/types/employee";
 import { formatDate, formatTime } from "@/lib/utils";
 import { Clock, ArrowLeft, Calendar } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Avatar, Select, Button as AntButton } from "antd";
+import { Select, Button as AntButton } from "antd";
 import CustomDataTable, {
   CustomColumnType,
 } from "@/components/common/CustomDataTable";
 import { useRouter } from "next/navigation";
+import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 
 interface EmployeeAttendanceDetailProps {
   employeeId: string;
@@ -226,9 +227,12 @@ export const EmployeeAttendanceDetail = ({
       <div className="mb-6 px-2">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="flex items-center gap-4 mb-4">
-            <Avatar src={employee?.photo_url} size={80} className="bg-blue-500">
-              {employee?.first_name?.[0]}
-            </Avatar>
+            <EmployeeAvatar
+              photoUrl={employee?.photo_url}
+              firstName={employee?.first_name}
+              lastName={employee?.last_name}
+              size={80}
+            />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {employee?.first_name} {employee?.last_name}

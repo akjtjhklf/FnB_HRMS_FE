@@ -81,13 +81,13 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
                         <Input placeholder="Ví dụ: Quản lý nhân sự" />
                     </Form.Item>
 
-                    <Form.Item
+                    {/* <Form.Item
                         name="icon"
                         label="Icon"
                         initialValue="badge"
                     >
                         <Input placeholder="badge" />
-                    </Form.Item>
+                    </Form.Item> */}
 
                     <Form.Item
                         name="description"

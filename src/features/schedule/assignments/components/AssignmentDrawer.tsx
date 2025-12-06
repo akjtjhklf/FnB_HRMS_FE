@@ -1,6 +1,6 @@
 import { Drawer, Card, Tag, Divider, Empty } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
@@ -93,6 +93,7 @@ export function AssignmentDrawer({
                   requirement={req}
                   position={position}
                   assignments={positionAssignments}
+                  allShiftAssignments={assignments}
                   employees={employees}
                   availableEmployees={availableEmployees}
                   employeeShiftCounts={employeeShiftCounts}

@@ -100,10 +100,10 @@ export function EmployeeAnalytics({ data, loading }: EmployeeAnalyticsProps) {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={(entry) =>
+                    label={(entry: any) =>
                       `${entry.status}: ${
                         entry.count
-                      } (${entry.percentage.toFixed(1)}%)`
+                      } (${entry.percentage?.toFixed(1) || 0}%)`
                     }
                   >
                     {data.byStatus.map((entry, index) => (
@@ -134,10 +134,10 @@ export function EmployeeAnalytics({ data, loading }: EmployeeAnalyticsProps) {
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
-                    label={(entry) =>
+                    label={(entry: any) =>
                       `${entry.gender}: ${
                         entry.count
-                      } (${entry.percentage.toFixed(1)}%)`
+                      } (${entry.percentage?.toFixed(1) || 0}%)`
                     }
                   >
                     {data.byGender.map((entry, index) => (

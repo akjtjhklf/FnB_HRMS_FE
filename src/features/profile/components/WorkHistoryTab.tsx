@@ -552,7 +552,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
         </div>
       </Card>
 
-      {/* Bonuses and Penalties */}
+      {/* Bonuses and Penalties - NGANG NHAU */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Bonuses */}
         <Card
@@ -582,115 +582,6 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
           <p className="text-gray-500 text-sm mt-2">
             Tổng {bonusDetails.length} lần nhận thưởng
           </p>
-        </Card>
-
-        {/* Salary Request History */}
-        <Card
-          title={
-            <div className="flex items-center gap-2">
-              <RiseOutlined className="text-blue-600" />
-              Lịch sử yêu cầu lương
-            </div>
-          }
-          className="border-l-4 border-l-blue-500"
-        >
-          <Table
-            dataSource={salaryRequests}
-            rowKey="id"
-            pagination={{ pageSize: 5 }}
-            columns={[
-              {
-                title: "Ngày tạo",
-                dataIndex: "created_at",
-                key: "created_at",
-                render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
-              },
-              {
-                title: "Loại",
-                dataIndex: "type",
-                key: "type",
-                render: (type: string) => (
-                  <Tag color={type === "raise" ? "blue" : "orange"}>
-                    {type === "raise" ? "Tăng lương" : "Điều chỉnh"}
-                  </Tag>
-                ),
-              },
-              {
-                title: "Chi tiết",
-                key: "details",
-                render: (_: any, record: any) => {
-                  if (record.type === "raise") {
-                    return (
-                      <div className="text-sm">
-                        <div>HT: {Number(record.current_rate).toLocaleString()}</div>
-                        <div className="font-semibold text-green-600">
-                          ĐX: {Number(record.proposed_rate).toLocaleString()}
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <span className={record.adjustment_amount >= 0 ? "text-green-600" : "text-red-600"}>
-                      {record.adjustment_amount > 0 ? "+" : ""}
-                      {Number(record.adjustment_amount).toLocaleString()}
-                    </span>
-                  );
-                },
-              },
-              {
-                title: "Trạng thái",
-                dataIndex: "status",
-                key: "status",
-                render: (status: string) => {
-                  const colors: Record<string, string> = {
-                    pending: "gold",
-                    approved: "green",
-                    rejected: "red",
-                  };
-                  const texts: Record<string, string> = {
-                    pending: "Chờ duyệt",
-                    approved: "Đã duyệt",
-                    rejected: "Từ chối",
-                  };
-                  return <Tag color={colors[status]}>{texts[status]}</Tag>;
-                },
-              },
-              {
-                title: "Ghi chú",
-                dataIndex: "manager_note",
-                key: "manager_note",
-                render: (text: string, record: any) => text || record.note || "-",
-              },
-              {
-                title: "Thao tác",
-                key: "actions",
-                render: (_: any, record: any) => {
-                  if (isAdminOrManager && record.status === 'pending') {
-                    return (
-                      <Space>
-                        <Button
-                          size="small"
-                          type="primary"
-                          ghost
-                          onClick={() => handleApproveRequest(record.id)}
-                        >
-                          Duyệt
-                        </Button>
-                        <Button
-                          size="small"
-                          danger
-                          onClick={() => handleRejectRequest(record.id)}
-                        >
-                          Từ chối
-                        </Button>
-                      </Space>
-                    );
-                  }
-                  return null;
-                }
-              }
-            ]}
-          />
         </Card>
 
         {/* Penalties */}
@@ -724,6 +615,122 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
         </Card>
       </div>
 
+      {/* Salary Request History - XUỐNG DƯỚI */}
+      <Card
+        title={
+          <div className="flex items-center gap-2">
+            <RiseOutlined className="text-blue-600" />
+            Lịch sử yêu cầu lương
+          </div>
+        }
+        className="border-l-4 border-l-blue-500"
+      >
+        <Table
+          dataSource={salaryRequests}
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
+          scroll={{ x: 800 }}
+          columns={[
+            {
+              title: "Ngày tạo",
+              dataIndex: "created_at",
+              key: "created_at",
+              width: 110,
+              render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
+            },
+            {
+              title: "Loại",
+              dataIndex: "type",
+              key: "type",
+              width: 100,
+              render: (type: string) => (
+                <Tag color={type === "raise" ? "blue" : "orange"}>
+                  {type === "raise" ? "Tăng lương" : "Điều chỉnh"}
+                </Tag>
+              ),
+            },
+            {
+              title: "Chi tiết",
+              key: "details",
+              width: 150,
+              render: (_: any, record: any) => {
+                if (record.type === "raise") {
+                  return (
+                    <div className="text-sm">
+                      <div>HT: {Number(record.current_rate).toLocaleString()}</div>
+                      <div className="font-semibold text-green-600">
+                        ĐX: {Number(record.proposed_rate).toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <span className={record.adjustment_amount >= 0 ? "text-green-600" : "text-red-600"}>
+                    {record.adjustment_amount > 0 ? "+" : ""}
+                    {Number(record.adjustment_amount).toLocaleString()}
+                  </span>
+                );
+              },
+            },
+            {
+              title: "Trạng thái",
+              dataIndex: "status",
+              key: "status",
+              width: 100,
+              render: (status: string) => {
+                const colors: Record<string, string> = {
+                  pending: "gold",
+                  approved: "green",
+                  rejected: "red",
+                };
+                const texts: Record<string, string> = {
+                  pending: "Chờ duyệt",
+                  approved: "Đã duyệt",
+                  rejected: "Từ chối",
+                };
+                return <Tag color={colors[status]}>{texts[status]}</Tag>;
+              },
+            },
+            {
+              title: "Ghi chú",
+              dataIndex: "manager_note",
+              key: "manager_note",
+              ellipsis: true,
+              render: (text: string, record: any) => text || record.note || "-",
+            },
+            {
+              title: "Thao tác",
+              key: "actions",
+              width: 150,
+              fixed: 'right' as const,
+              render: (_: any, record: any) => {
+                if (isAdminOrManager && record.status === 'pending') {
+                  return (
+                    <Space>
+                      <Button
+                        size="small"
+                        type="primary"
+                        ghost
+                        onClick={() => handleApproveRequest(record.id)}
+                      >
+                        Duyệt
+                      </Button>
+                      <Button
+                        size="small"
+                        danger
+                        onClick={() => handleRejectRequest(record.id)}
+                      >
+                        Từ chối
+                      </Button>
+                    </Space>
+                  );
+                }
+                return null;
+              }
+            }
+          ]}
+        />
+      </Card>
       {/* Shifts Statistics */}
       <Card
         title={

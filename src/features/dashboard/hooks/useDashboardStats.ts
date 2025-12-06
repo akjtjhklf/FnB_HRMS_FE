@@ -5,6 +5,16 @@ import { Employee } from "@/types/employee";
 import { AttendanceLog } from "@/types/attendance";
 import { Device } from "@/types/attendance";
 
+interface SalaryRequest {
+  id: string;
+  status: string;
+}
+
+interface ScheduleChangeRequest {
+  id: string;
+  status: string;
+}
+
 export const useDashboardStats = () => {
   const { setStats, setLoading, selectedPeriod } = useDashboardStore();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -50,19 +60,57 @@ export const useDashboardStats = () => {
   const devicesData = devicesQuery.query.data;
   const devicesLoading = devicesQuery.query.isLoading;
 
+  // Fetch pending salary requests
+  const salaryRequestsQuery = useList<SalaryRequest>({
+    resource: "salary-requests",
+    filters: [
+      {
+        field: "status",
+        operator: "eq",
+        value: "pending",
+      },
+    ],
+    pagination: { pageSize: 100 },
+    queryOptions: {
+      queryKey: ["dashboard-salary-requests", refreshKey],
+    },
+  });
+  const salaryRequestsData = salaryRequestsQuery.query.data;
+  const salaryRequestsLoading = salaryRequestsQuery.query.isLoading;
+
+  // Fetch pending schedule change requests  
+  const scheduleRequestsQuery = useList<ScheduleChangeRequest>({
+    resource: "schedule-change-requests",
+    filters: [
+      {
+        field: "status",
+        operator: "eq",
+        value: "pending",
+      },
+    ],
+    pagination: { pageSize: 100 },
+    queryOptions: {
+      queryKey: ["dashboard-schedule-requests", refreshKey],
+    },
+  });
+  const scheduleRequestsData = scheduleRequestsQuery.query.data;
+  const scheduleRequestsLoading = scheduleRequestsQuery.query.isLoading;
+
   // Calculate stats
   useEffect(() => {
-    const isLoading = employeesLoading || attendanceLoading || devicesLoading;
+    const isLoading = employeesLoading || attendanceLoading || devicesLoading || salaryRequestsLoading || scheduleRequestsLoading;
     setLoading(isLoading);
 
     if (!isLoading) {
       const employees = employeesData?.data || [];
       const attendance = attendanceData?.data || [];
       const devices = devicesData?.data || [];
+      const salaryRequests = salaryRequestsData?.data || [];
+      const scheduleRequests = scheduleRequestsData?.data || [];
 
       const totalEmployees = employees.length;
       const activeEmployees = employees.filter(
-        (emp: Employee) => emp.employment_status === "active"
+        (emp: Employee) => emp.status === "active"
       ).length;
 
       const presentToday = attendance.filter(
@@ -79,6 +127,9 @@ export const useDashboardStats = () => {
         (dev: Device) => dev.status === "active"
       ).length;
 
+      // Calculate pending requests
+      const pendingRequests = salaryRequests.length + scheduleRequests.length;
+
       setStats({
         totalEmployees,
         activeEmployees,
@@ -86,7 +137,7 @@ export const useDashboardStats = () => {
         absentToday,
         lateToday,
         overtimeHours: 0, // Calculate based on shifts
-        pendingRequests: 0, // Calculate from salary-requests
+        pendingRequests,
         devicesOnline,
       });
     }
@@ -94,9 +145,13 @@ export const useDashboardStats = () => {
     employeesData,
     attendanceData,
     devicesData,
+    salaryRequestsData,
+    scheduleRequestsData,
     employeesLoading,
     attendanceLoading,
     devicesLoading,
+    salaryRequestsLoading,
+    scheduleRequestsLoading,
     setStats,
     setLoading,
   ]);
