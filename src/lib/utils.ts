@@ -65,3 +65,21 @@ export const formatDate = (date: string | Date): string => {
   
   return `${day}/${month}/${year}`;
 };
+
+/**
+ * Format time for display
+ * Example: 2024-01-15T08:30:00 -> 08:30
+ */
+export const formatTime = (time: string | Date): string => {
+  if (!time) return "-";
+  
+  const d = typeof time === 'string' ? new Date(time) : time;
+  
+  // Check if valid date
+  if (isNaN(d.getTime())) return "-";
+  
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  
+  return `${hours}:${minutes}`;
+};

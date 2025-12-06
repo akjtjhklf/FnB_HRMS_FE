@@ -342,7 +342,7 @@ export const SalaryRequests = () => {
         {
             title: "Thao tác",
             key: "actions",
-            width: 80,
+            width: 120,
             fixed: "right" as const,
             render: (_: any, record: SalaryRequest) => (
                 <ActionPopover actions={getActionItems(record)} />

@@ -33,6 +33,7 @@ import {
   Avatar,
   Progress,
 } from "antd";
+import { EmployeeAvatar } from "@/components/EmployeeAvatar";
 import type { MenuProps } from "antd";
 import {
   DollarOutlined,
@@ -1314,10 +1315,10 @@ export const SalaryList = () => {
             {/* Employee Info */}
             <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 mb-4 border border-gray-200">
               <div className="flex items-center gap-4">
-                <Avatar 
-                  size={48} 
-                  icon={<UserOutlined />} 
-                  className="bg-indigo-500"
+                <EmployeeAvatar 
+                  photoUrl={statusChangePayroll.employee?.avatar}
+                  name={statusChangePayroll.employee?.full_name}
+                  size={48}
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">
@@ -1475,11 +1476,10 @@ export const SalaryList = () => {
             {/* Employee Info Card */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4 border border-blue-100">
               <div className="flex items-center gap-4">
-                <Avatar 
-                  size={56} 
-                  icon={<UserOutlined />} 
-                  className="bg-blue-500"
-                  src={sendPayslipTarget.employee?.avatar}
+                <EmployeeAvatar 
+                  photoUrl={sendPayslipTarget.employee?.avatar}
+                  name={sendPayslipTarget.employee?.full_name}
+                  size={56}
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 text-lg">
