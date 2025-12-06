@@ -44,7 +44,7 @@ export const EmployeeList = () => {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const { tableProps, sorters, filters, tableQuery, setFilters, current, setCurrent, pageSize, setPageSize } = useTable<Employee>({
+  const { tableProps, sorters, filters, tableQuery, setFilters } = useTable<Employee>({
     resource: "employees",
     syncWithLocation: true,
     pagination: {
@@ -98,7 +98,10 @@ export const EmployeeList = () => {
   // Calculate statistics from loaded employees (this is just current page stats)
   // For accurate stats across all data, consider a separate API call
   const stats = useMemo(() => {
-    const total = tableProps.pagination?.total || employees.length;
+    const pagination = tableProps.pagination;
+    const total = (pagination && typeof pagination === 'object' && 'total' in pagination) 
+      ? pagination.total 
+      : employees.length;
     const active = employees.filter((e) => e.status === "active").length;
     const onLeave = employees.filter((e) => e.status === "on_leave").length;
     const terminated = employees.filter(
@@ -107,7 +110,7 @@ export const EmployeeList = () => {
     const suspended = employees.filter((e) => e.status === "suspended").length;
 
     return { total, active, onLeave, terminated, suspended };
-  }, [employees, tableProps.pagination?.total]);
+  }, [employees, tableProps.pagination]);
 
   const handleView = (record: Employee) => {
     router.push(`/employees/${record.id}`);

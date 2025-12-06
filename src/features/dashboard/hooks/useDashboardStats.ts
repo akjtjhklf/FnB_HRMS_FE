@@ -120,7 +120,7 @@ export const useDashboardStats = () => {
       const absentToday = activeEmployees - presentToday;
 
       const lateToday = attendance.filter(
-        (att: AttendanceLog) => att.status === "late" || att.is_late
+        (att: AttendanceLog) => att.status === "late"
       ).length;
 
       const devicesOnline = devices.filter(

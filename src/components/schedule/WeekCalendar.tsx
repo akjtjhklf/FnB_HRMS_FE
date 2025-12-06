@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dayjs from "dayjs";
 import { Card, Badge, Modal, Checkbox, Button, Tag, Empty } from "antd";
 import {
   ClockCircleOutlined,
@@ -32,6 +33,24 @@ const DAYS_OF_WEEK = [
   { value: 6, label: "Thứ 7", short: "T7" },
 ];
 
+// Helper function to get shift name from shift_type
+const getShiftName = (shift: Shift): string => {
+  if (shift.shift_type?.name) return shift.shift_type.name;
+  if (typeof shift.shift_type_id === 'object' && shift.shift_type_id?.name) {
+    return shift.shift_type_id.name;
+  }
+  return 'Unnamed Shift';
+};
+
+// Helper function to get shift description from shift_type
+const getShiftDescription = (shift: Shift): string | undefined => {
+  if (shift.shift_type?.description) return shift.shift_type.description;
+  if (typeof shift.shift_type_id === 'object' && shift.shift_type_id?.description) {
+    return shift.shift_type_id.description || undefined;
+  }
+  return undefined;
+};
+
 export function WeekCalendar({
   shifts,
   requirements,
@@ -50,7 +69,7 @@ export function WeekCalendar({
   const shiftsByDay = DAYS_OF_WEEK.map((day) => ({
     ...day,
     shifts: shifts
-      .filter((s) => s.day_of_week === day.value) // Ensure day_of_week exists
+      .filter((s) => dayjs(s.shift_date).day() === day.value) // Use dayjs to get day of week from shift_date
       .sort((a, b) => (a.start_at || '').localeCompare(b.start_at || '')), // Handle null/undefined start_at
   }));
 
@@ -132,7 +151,7 @@ export function WeekCalendar({
                         {/* Shift Name */}
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold text-sm text-gray-800 truncate">
-                            {shift.name || 'Unnamed Shift'}
+                            {getShiftName(shift)}
                           </h4>
                           {registered && (
                             <CheckCircleOutlined className="text-green-600 text-lg" />
@@ -151,16 +170,16 @@ export function WeekCalendar({
                         {shiftReqs.length > 0 && (
                           <div className="space-y-1">
                             {shiftReqs.map((req) => {
-                              const position =
-                                typeof req.position_id === "object"
-                                  ? req.position_id
-                                  : positions.find((p) => p.id === req.position_id);
+                              // Handle position_id which can be a string or populated object from API
+                              const positionId = typeof req.position_id === "object" 
+                                ? (req.position_id as any).id 
+                                : req.position_id;
+                              
+                              const position = req.position 
+                                || (typeof req.position_id === "object" ? req.position_id as Position : null)
+                                || positions.find((p) => p.id === positionId);
 
-                              const isSelected = registeredPositions.includes(
-                                typeof req.position_id === "string"
-                                  ? req.position_id
-                                  : req.position_id.id
-                              );
+                              const isSelected = registeredPositions.includes(positionId);
 
                               return (
                                 <div
@@ -240,7 +259,7 @@ export function WeekCalendar({
             <Card size="small" className="bg-blue-50 border-blue-200">
               <div className="space-y-2">
                 <h3 className="font-semibold text-lg text-gray-800">
-                  {selectedShift.name}
+                  {getShiftName(selectedShift)}
                 </h3>
                 <div className="flex items-center gap-2 text-gray-600">
                   <ClockCircleOutlined />
@@ -248,9 +267,9 @@ export function WeekCalendar({
                     {selectedShift.start_at} - {selectedShift.end_at}
                   </span>
                 </div>
-                {selectedShift.description && (
+                {getShiftDescription(selectedShift) && (
                   <p className="text-sm text-gray-600">
-                    {selectedShift.description || 'No description available'}
+                    {getShiftDescription(selectedShift)}
                   </p>
                 )}
               </div>
@@ -272,15 +291,14 @@ export function WeekCalendar({
                   >
                     <div className="grid grid-cols-1 gap-2">
                       {getShiftRequirements(selectedShift.id).map((req) => {
-                        const position =
-                          typeof req.position_id === "object"
-                            ? req.position_id
-                            : positions.find((p) => p.id === req.position_id);
-
-                        const positionId =
-                          typeof req.position_id === "string"
-                            ? req.position_id
-                            : req.position_id.id;
+                        // Handle position_id which can be a string or populated object from API
+                        const positionId = typeof req.position_id === "object" 
+                          ? (req.position_id as any).id 
+                          : req.position_id;
+                        
+                        const position = req.position 
+                          || (typeof req.position_id === "object" ? req.position_id as Position : null)
+                          || positions.find((p) => p.id === positionId);
 
                         return (
                           <Card

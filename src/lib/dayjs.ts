@@ -23,7 +23,7 @@ dayjs.tz.setDefault("Asia/Ho_Chi_Minh");
 
 // Configure week to start on Monday (day 1) instead of Sunday
 // This is used by Ant Design Calendar
-const viLocale = dayjs.Ls["vi"];
+const viLocale = dayjs.Ls["vi"] as any;
 if (viLocale) {
   viLocale.week = {
     dow: 1, // Monday

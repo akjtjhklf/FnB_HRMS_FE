@@ -32,6 +32,9 @@ import {
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
+import weekOfYear from "dayjs/plugin/weekOfYear";
+
+dayjs.extend(weekOfYear);
 
 interface WeeklySchedule {
   id: string;
@@ -461,11 +464,10 @@ export const ScheduleList = () => {
                 />
               </Col>
               <Col xs={12} sm={6} md={4}>
-                <Statistic
-                  title="Trạng thái"
-                  value={getStatusTag(selectedSchedule.status)}
-                  valueStyle={{ fontSize: "14px" }}
-                />
+                <div>
+                  <div style={{ color: 'rgba(0, 0, 0, 0.45)', fontSize: '14px', marginBottom: '4px' }}>Trạng thái</div>
+                  {getStatusTag(selectedSchedule.status)}
+                </div>
               </Col>
               <Col xs={12} sm={6} md={4}>
                 <Statistic

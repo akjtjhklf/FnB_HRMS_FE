@@ -56,7 +56,14 @@ export function AvailabilityRegistry() {
   // Fetch shifts for dropdown
   const { selectProps: shiftSelectProps } = useSelect<Shift>({
     resource: "shifts",
-    optionLabel: "name",
+    optionLabel: (item) => {
+      // Get name from shift_type
+      if (item.shift_type?.name) return `${item.shift_type.name} - ${item.shift_date}`;
+      if (typeof item.shift_type_id === 'object' && item.shift_type_id?.name) {
+        return `${item.shift_type_id.name} - ${item.shift_date}`;
+      }
+      return `Ca ${item.shift_date}`;
+    },
     optionValue: "id",
   });
 
@@ -150,13 +157,17 @@ export function AvailabilityRegistry() {
       dataIndex: "shift_id",
       key: "shift_id",
       render: (_: any, record: EmployeeAvailability) => {
-        const shift = record.shift_id;
+        const shift = record.shift_id as any;
         if (typeof shift === "object" && shift) {
+          // Get shift name from shift_type
+          const shiftName = shift.shift_type?.name 
+            || (typeof shift.shift_type_id === 'object' ? shift.shift_type_id?.name : null)
+            || `Ca ${shift.shift_date || 'N/A'}`;
           return (
             <div>
-              <div>{shift.name}</div>
+              <div>{shiftName}</div>
               <div style={{ fontSize: "12px", color: "#888" }}>
-                {shift.start_at} - {shift.end_at}
+                {shift.start_at || 'N/A'} - {shift.end_at || 'N/A'}
               </div>
             </div>
           );

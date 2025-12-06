@@ -66,27 +66,31 @@ export const RequestList = () => {
   const [pageSize, setPageSize] = useState(15);
 
   // Fetch all schedule change requests (combined data approach - fetch all, paginate client-side)
-  const { data: scheduleData, isLoading: scheduleLoading } = useList<ScheduleChangeRequest>({
+  const { result: scheduleResult, query: scheduleQuery } = useList<ScheduleChangeRequest>({
     resource: "schedule-change-requests",
     pagination: { 
       mode: "off" // Get all data for combining
     },
     sorters: [{ field: "created_at", order: "desc" }],
   });
+  const scheduleData = scheduleResult?.data;
+  const scheduleLoading = scheduleQuery?.isLoading;
 
   // Fetch all salary requests
-  const { data: salaryData, isLoading: salaryLoading } = useList<SalaryRequest>({
+  const { result: salaryResult, query: salaryQuery } = useList<SalaryRequest>({
     resource: "salary-requests",
     pagination: { 
       mode: "off" // Get all data for combining
     },
     sorters: [{ field: "request_date", order: "desc" }],
   });
+  const salaryData = salaryResult?.data;
+  const salaryLoading = salaryQuery?.isLoading;
 
   // Combine data
   const combinedRequests = useMemo<CombinedRequest[]>(() => {
-    const scheduleItems = scheduleData?.data || [];
-    const salaryItems = salaryData?.data || [];
+    const scheduleItems = scheduleData || [];
+    const salaryItems = salaryData || [];
 
     const scheduleRequests: CombinedRequest[] = scheduleItems.map((req) => {
       const employee =
@@ -153,7 +157,7 @@ export const RequestList = () => {
     return [...scheduleRequests, ...salRequests].sort(
       (a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
     );
-  }, [scheduleData?.data, salaryData?.data]);
+  }, [scheduleData, salaryData]);
 
   // Filter by tab
   const filteredRequests = useMemo(() => {
