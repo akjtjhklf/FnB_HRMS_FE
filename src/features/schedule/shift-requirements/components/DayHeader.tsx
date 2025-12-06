@@ -1,8 +1,4 @@
-import dayjs from "dayjs";
-import "dayjs/locale/vi";
-
-// Set locale globally or just use for formatting
-dayjs.locale("vi");
+import dayjs from "@/lib/dayjs";
 
 interface DayHeaderProps {
     date: dayjs.Dayjs;

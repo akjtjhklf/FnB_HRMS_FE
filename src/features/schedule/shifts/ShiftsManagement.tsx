@@ -36,7 +36,7 @@ import {
   InfoCircleOutlined,
   CheckOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import type {
   Shift,
   CreateShiftDto,

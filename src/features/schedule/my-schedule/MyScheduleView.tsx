@@ -27,7 +27,8 @@ import {
   UserOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "@/lib/dayjs";
+import type { Dayjs } from "dayjs";
 
 interface ScheduleAssignment {
   id: string;
@@ -237,7 +238,7 @@ export function MyScheduleView() {
     if (info.type !== 'date') return info.originNode;
 
     const dayAssignments = getAssignmentsForDate(value);
-    if (dayAssignments.length === 0) return info.originNode;
+    if (dayAssignments.length === 0) return null;
 
     return (
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
