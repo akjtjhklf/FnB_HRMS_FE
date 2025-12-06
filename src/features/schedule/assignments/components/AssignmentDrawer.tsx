@@ -93,6 +93,7 @@ export function AssignmentDrawer({
                   requirement={req}
                   position={position}
                   assignments={positionAssignments}
+                  allShiftAssignments={assignments}
                   employees={employees}
                   availableEmployees={availableEmployees}
                   employeeShiftCounts={employeeShiftCounts}

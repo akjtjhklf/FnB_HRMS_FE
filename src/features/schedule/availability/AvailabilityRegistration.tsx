@@ -290,6 +290,15 @@ export function AvailabilityRegistration() {
       // Check if availability already exists for this shift
       let availabilityId = availabilityByShift[selectedShift.id];
 
+      // Debug log
+      console.log("🔍 Register Debug:", {
+        selectedShiftId: selectedShift.id,
+        selectedShiftDate: selectedShift.shift_date,
+        availabilityByShift,
+        existingAvailabilityId: availabilityId,
+        userAvailabilities: availabilities.map(a => ({ id: a.id, shift_id: a.shift_id })),
+      });
+
       if (!availabilityId) {
         // Step 1: Create availability record if not exists
         const availabilityData: CreateEmployeeAvailabilityDto = {
