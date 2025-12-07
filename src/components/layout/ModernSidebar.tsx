@@ -35,7 +35,7 @@ interface SidebarItem {
 const allSidebarItems: SidebarItem[] = [
   {
     icon: <LayoutDashboard size={24} />,
-    label: "Dashboard",
+    label: "Tổng quan",
     href: "/dashboard",
     allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
@@ -98,7 +98,7 @@ const allSidebarItems: SidebarItem[] = [
 const bottomItems: SidebarItem[] = [
   {
     icon: <LogOut size={24} />,
-    label: "Logout",
+    label: "Đăng xuất",
     href: "/logout",
   },
 ];

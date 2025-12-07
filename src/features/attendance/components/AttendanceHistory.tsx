@@ -75,7 +75,7 @@ export function AttendanceHistory() {
             ),
         },
         {
-            title: "Check In",
+            title: "Giờ vào",
             dataIndex: "clock_in",
             key: "clock_in",
             width: 130,

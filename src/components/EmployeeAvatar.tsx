@@ -30,14 +30,14 @@ export const EmployeeAvatar: React.FC<EmployeeAvatarProps> = ({
   ...props
 }) => {
   // Get display name
-  const displayName = name || `${firstName || ""} ${lastName || ""}`.trim() || "User";
+  const displayName = name || `${firstName || ""} ${lastName || ""}`.trim() || "Người dùng";
   
   // Get initials
   const getInitials = (): string => {
     if (firstName) {
       return firstName[0].toUpperCase();
     }
-    if (displayName && displayName !== "User") {
+    if (displayName && displayName !== "Người dùng") {
       const parts = displayName.split(" ");
       if (parts.length >= 2) {
         return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();

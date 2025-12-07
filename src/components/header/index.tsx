@@ -42,11 +42,11 @@ export const Header: React.FC<RefineThemedLayoutHeaderProps> = () => {
         {/* User Info */}
         <div className="pl-3 border-l border-gray-200 flex flex-col items-end">
           <span className="font-semibold text-sm text-gray-900 leading-tight">
-            {user?.name || "Admin User"}
+            {user?.name || "Quản trị viên"}
             {/* {user?.name} */}
           </span>
           <span className="text-xs text-gray-500">
-            {(user as any)?.role?.name || "Administrator"}
+            {(user as any)?.role?.name || "Quản trị viên"}
             {/* {(user as any)?.role?.name} */}
           </span>
         </div>
