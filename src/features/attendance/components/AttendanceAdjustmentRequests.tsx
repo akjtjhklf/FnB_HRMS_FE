@@ -29,9 +29,17 @@ import debounce from "lodash/debounce";
 import { formatDate } from "@/lib/utils";
 import { ActionPopover, ActionItem } from "@/components/common/ActionPopover";
 
+interface AttendanceShift {
+    id: string;
+    employee_id?: any;
+    clock_in?: string | null;
+    clock_out?: string | null;
+    date?: string | null;
+}
+
 interface AttendanceAdjustment {
     id: string;
-    attendance_shift_id: string;
+    attendance_shift_id: string | AttendanceShift;
     requested_by?: any;
     requested_at?: string | null;
     old_value?: { clock_in?: string | null; clock_out?: string | null } | null;
@@ -51,6 +59,27 @@ const formatTime = (timeString?: string | null) => {
     } catch {
         return timeString;
     }
+};
+
+// Helper to get old clock times - uses old_value or falls back to attendance_shift
+const getOldClockTimes = (record: AttendanceAdjustment) => {
+    // First try old_value
+    if (record.old_value?.clock_in || record.old_value?.clock_out) {
+        return {
+            clock_in: record.old_value.clock_in,
+            clock_out: record.old_value.clock_out,
+        };
+    }
+
+    // Fallback to attendance_shift data
+    if (typeof record.attendance_shift_id === "object" && record.attendance_shift_id) {
+        return {
+            clock_in: record.attendance_shift_id.clock_in,
+            clock_out: record.attendance_shift_id.clock_out,
+        };
+    }
+
+    return { clock_in: null, clock_out: null };
 };
 
 export const AttendanceAdjustmentRequests = () => {
@@ -269,8 +298,9 @@ export const AttendanceAdjustmentRequests = () => {
             key: "old_value",
             width: 150,
             render: (_: any, record: AttendanceAdjustment) => {
-                const oldIn = formatTime(record.old_value?.clock_in);
-                const oldOut = formatTime(record.old_value?.clock_out);
+                const oldTimes = getOldClockTimes(record);
+                const oldIn = formatTime(oldTimes.clock_in);
+                const oldOut = formatTime(oldTimes.clock_out);
                 return (
                     <div className="text-sm text-gray-600">
                         <div>Vào: {oldIn}</div>
@@ -391,7 +421,10 @@ export const AttendanceAdjustmentRequests = () => {
                         </p>
                         <Descriptions bordered size="small" column={1}>
                             <Descriptions.Item label="Giờ cũ">
-                                {formatTime(selectedRequest.old_value?.clock_in)} - {formatTime(selectedRequest.old_value?.clock_out)}
+                                {(() => {
+                                    const oldTimes = getOldClockTimes(selectedRequest);
+                                    return `${formatTime(oldTimes.clock_in)} - ${formatTime(oldTimes.clock_out)}`;
+                                })()}
                             </Descriptions.Item>
                             <Descriptions.Item label="Giờ đề xuất">
                                 <span className="font-semibold text-blue-600">
@@ -430,7 +463,10 @@ export const AttendanceAdjustmentRequests = () => {
                         </p>
                         <Descriptions bordered size="small" column={1}>
                             <Descriptions.Item label="Giờ cũ">
-                                {formatTime(selectedRequest.old_value?.clock_in)} - {formatTime(selectedRequest.old_value?.clock_out)}
+                                {(() => {
+                                    const oldTimes = getOldClockTimes(selectedRequest);
+                                    return `${formatTime(oldTimes.clock_in)} - ${formatTime(oldTimes.clock_out)}`;
+                                })()}
                             </Descriptions.Item>
                             <Descriptions.Item label="Giờ đề xuất">
                                 {formatTime(selectedRequest.proposed_value?.clock_in)} - {formatTime(selectedRequest.proposed_value?.clock_out)}
