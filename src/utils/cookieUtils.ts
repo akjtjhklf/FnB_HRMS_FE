@@ -2,20 +2,15 @@ import Cookies from "js-cookie";
 
 export const CookieUtil = {
   set: (name: string, value: string, days?: number) => {
-    // Tự động phát hiện xem đang chạy trên HTTP hay HTTPS
-    // - Nếu chạy trên IP Azure (http://57.159...) -> isSecure = false -> Cookie ĐƯỢC LƯU
-    // - Nếu chạy trên Domain thật (https://...) -> isSecure = true -> BẢO MẬT
-    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
-
     Cookies.set(name, value, {
-      expires: days || 365 * 100, // Default 100 năm nếu không truyền days
-      path: "/",
+      expires: days || 365, // Hết hạn sau 1 năm
+      path: "/",            // Quan trọng: Để cookie dùng được cho toàn bộ web
       
-      // 🔴 ĐIỂM SỬA QUAN TRỌNG NHẤT:
-      secure: isSecure, 
+      // ⚠️ ÉP CỨNG FALSE ĐỂ CHẠY ĐƯỢC TRÊN HTTP (IP AZURE)
+      // Khi nào có domain HTTPS thật thì mới sửa thành true sau
+      secure: false, 
       
-      // Dùng Lax để tránh bị trình duyệt chặn khi redirect login
-      sameSite: "Lax", 
+      sameSite: "Lax",
     });
   },
 
