@@ -1,7 +1,7 @@
 "use client";
 
-import { useList } from "@refinedev/core";
-import { Table, Tag, Button, Space, Card, Statistic, Row, Col, Tabs, Tooltip } from "antd";
+import { useList, useCustomMutation, useInvalidate } from "@refinedev/core";
+import { Table, Tag, Button, Space, Card, Statistic, Row, Col, Tabs, Tooltip, Modal, message } from "antd";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -12,6 +12,8 @@ import {
   CheckOutlined,
   StopOutlined,
   FileTextOutlined,
+  FieldTimeOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useMemo, useState } from "react";
 import { formatDate } from "@/lib/utils";
@@ -45,12 +47,27 @@ interface SalaryRequest {
   approved_at?: string | null;
 }
 
+interface AttendanceAdjustment {
+  id: string;
+  attendance_shift_id: string;
+  requested_by?: string | Employee | null;
+  requested_at?: string | null;
+  old_value?: { clock_in?: string | null; clock_out?: string | null } | null;
+  proposed_value?: { clock_in?: string | null; clock_out?: string | null } | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  status: "pending" | "approved" | "rejected";
+  reason?: string | null;
+  created_at?: string | null;
+}
+
 type RequestStatus = "all" | "pending" | "approved" | "rejected";
-type RequestType = "schedule" | "salary";
+type RequestType = "schedule" | "salary" | "attendance";
 
 interface CombinedRequest {
   id: string;
   type: RequestType;
+  originalType: string;
   employeeName: string;
   employeeId: string;
   description: string;
@@ -60,17 +77,32 @@ interface CombinedRequest {
   approvedAt?: string | null;
 }
 
+// Helper to format time
+const formatTime = (timeString?: string | null) => {
+  if (!timeString) return "--:--";
+  try {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return timeString;
+  }
+};
+
 export const RequestList = () => {
   const [activeTab, setActiveTab] = useState<RequestStatus>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  const [selectedRequest, setSelectedRequest] = useState<CombinedRequest | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Fetch all schedule change requests (combined data approach - fetch all, paginate client-side)
+  const invalidate = useInvalidate();
+  const { mutate: approveAdjustment } = useCustomMutation();
+  const { mutate: rejectAdjustment } = useCustomMutation();
+
+  // Fetch all schedule change requests
   const { result: scheduleResult, query: scheduleQuery } = useList<ScheduleChangeRequest>({
     resource: "schedule-change-requests",
-    pagination: { 
-      mode: "off" // Get all data for combining
-    },
+    pagination: { mode: "off" },
     sorters: [{ field: "created_at", order: "desc" }],
   });
   const scheduleData = scheduleResult?.data;
@@ -79,18 +111,103 @@ export const RequestList = () => {
   // Fetch all salary requests
   const { result: salaryResult, query: salaryQuery } = useList<SalaryRequest>({
     resource: "salary-requests",
-    pagination: { 
-      mode: "off" // Get all data for combining
-    },
+    pagination: { mode: "off" },
     sorters: [{ field: "request_date", order: "desc" }],
   });
   const salaryData = salaryResult?.data;
   const salaryLoading = salaryQuery?.isLoading;
 
+  // Fetch all attendance adjustments
+  const { result: attendanceResult, query: attendanceQuery } = useList<AttendanceAdjustment>({
+    resource: "attendance-adjustments",
+    pagination: { mode: "off" },
+    sorters: [{ field: "created_at", order: "desc" }],
+    meta: { join: ["requested_by"] },
+  });
+  const attendanceData = attendanceResult?.data;
+  const attendanceLoading = attendanceQuery?.isLoading;
+
+  // Handle approve attendance adjustment
+  const handleApprove = (record: CombinedRequest) => {
+    if (record.type !== "attendance") {
+      message.info("Chức năng duyệt chỉ khả dụng cho yêu cầu chấm công");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Xác nhận duyệt yêu cầu",
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc chắn muốn duyệt yêu cầu chỉnh sửa chấm công của ${record.employeeName}?`,
+      okText: "Duyệt",
+      cancelText: "Hủy",
+      okButtonProps: { className: "bg-green-600" },
+      onOk: () => {
+        setActionLoading(record.id);
+        approveAdjustment(
+          {
+            url: `attendance-adjustments/${record.id}/approve`,
+            method: "patch",
+            values: {},
+          },
+          {
+            onSuccess: () => {
+              message.success("Duyệt yêu cầu thành công");
+              invalidate({ resource: "attendance-adjustments", invalidates: ["list"] });
+              setActionLoading(null);
+            },
+            onError: (error: any) => {
+              message.error(error.message || "Có lỗi xảy ra khi duyệt yêu cầu");
+              setActionLoading(null);
+            },
+          }
+        );
+      },
+    });
+  };
+
+  // Handle reject attendance adjustment
+  const handleReject = (record: CombinedRequest) => {
+    if (record.type !== "attendance") {
+      message.info("Chức năng từ chối chỉ khả dụng cho yêu cầu chấm công");
+      return;
+    }
+
+    Modal.confirm({
+      title: "Xác nhận từ chối yêu cầu",
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc chắn muốn từ chối yêu cầu chỉnh sửa chấm công của ${record.employeeName}?`,
+      okText: "Từ chối",
+      cancelText: "Hủy",
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setActionLoading(record.id);
+        rejectAdjustment(
+          {
+            url: `attendance-adjustments/${record.id}/reject`,
+            method: "patch",
+            values: {},
+          },
+          {
+            onSuccess: () => {
+              message.success("Từ chối yêu cầu thành công");
+              invalidate({ resource: "attendance-adjustments", invalidates: ["list"] });
+              setActionLoading(null);
+            },
+            onError: (error: any) => {
+              message.error(error.message || "Có lỗi xảy ra khi từ chối yêu cầu");
+              setActionLoading(null);
+            },
+          }
+        );
+      },
+    });
+  };
+
   // Combine data
   const combinedRequests = useMemo<CombinedRequest[]>(() => {
     const scheduleItems = scheduleData || [];
     const salaryItems = salaryData || [];
+    const attendanceItems = attendanceData || [];
 
     const scheduleRequests: CombinedRequest[] = scheduleItems.map((req) => {
       const employee =
@@ -115,7 +232,8 @@ export const RequestList = () => {
 
       return {
         id: req.id,
-        type: "schedule",
+        type: "schedule" as RequestType,
+        originalType: req.type,
         employeeName,
         employeeId,
         description,
@@ -143,7 +261,8 @@ export const RequestList = () => {
 
       return {
         id: req.id,
-        type: "salary",
+        type: "salary" as RequestType,
+        originalType: "salary",
         employeeName,
         employeeId,
         description,
@@ -154,10 +273,48 @@ export const RequestList = () => {
       };
     });
 
-    return [...scheduleRequests, ...salRequests].sort(
+    const attendanceRequests: CombinedRequest[] = attendanceItems.map((req) => {
+      const employee =
+        typeof req.requested_by === "object" ? (req.requested_by as Employee) : null;
+      const employeeName = employee?.full_name || employee?.name || "Nhân viên";
+      const employeeId =
+        employee?.id ||
+        (typeof req.requested_by === "string" ? req.requested_by : "");
+
+      // Build description from old_value and proposed_value
+      let description = "Yêu cầu chỉnh sửa chấm công";
+
+      const oldIn = formatTime(req.old_value?.clock_in);
+      const oldOut = formatTime(req.old_value?.clock_out);
+      const newIn = formatTime(req.proposed_value?.clock_in);
+      const newOut = formatTime(req.proposed_value?.clock_out);
+
+      if (req.old_value || req.proposed_value) {
+        description = `Chấm công: ${oldIn}-${oldOut} → ${newIn}-${newOut}`;
+      }
+
+      if (req.reason) {
+        description += ` | Lý do: ${req.reason}`;
+      }
+
+      return {
+        id: req.id,
+        type: "attendance" as RequestType,
+        originalType: "attendance_adjustment",
+        employeeName,
+        employeeId,
+        description,
+        status: req.status,
+        requestDate: req.created_at || req.requested_at || "",
+        approvedBy: req.approved_by,
+        approvedAt: req.approved_at,
+      };
+    });
+
+    return [...scheduleRequests, ...salRequests, ...attendanceRequests].sort(
       (a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime()
     );
-  }, [scheduleData, salaryData]);
+  }, [scheduleData, salaryData, attendanceData]);
 
   // Filter by tab
   const filteredRequests = useMemo(() => {
@@ -194,6 +351,7 @@ export const RequestList = () => {
     const typeMap = {
       schedule: { color: "blue", icon: <CalendarOutlined />, text: "Lịch làm việc" },
       salary: { color: "purple", icon: <DollarOutlined />, text: "Lương" },
+      attendance: { color: "cyan", icon: <FieldTimeOutlined />, text: "Chấm công" },
     };
     const config = typeMap[type];
     return (
@@ -221,6 +379,7 @@ export const RequestList = () => {
       filters: [
         { text: "Lịch làm việc", value: "schedule" },
         { text: "Lương", value: "salary" },
+        { text: "Chấm công", value: "attendance" },
       ],
       onFilter: (value: any, record: CombinedRequest) => record.type === value,
       render: (type: RequestType) => getTypeTag(type),
@@ -269,15 +428,41 @@ export const RequestList = () => {
       render: (_: any, record: CombinedRequest) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết">
-            <Button type="text" icon={<EyeOutlined />} />
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => setSelectedRequest(record)}
+            />
           </Tooltip>
-          {record.status === "pending" && (
+          {record.status === "pending" && record.type === "attendance" && (
             <>
               <Tooltip title="Duyệt">
-                <Button type="text" icon={<CheckOutlined />} className="text-green-600" />
+                <Button
+                  type="text"
+                  icon={<CheckOutlined />}
+                  className="text-green-600 hover:text-green-700"
+                  loading={actionLoading === record.id}
+                  onClick={() => handleApprove(record)}
+                />
               </Tooltip>
               <Tooltip title="Từ chối">
-                <Button type="text" danger icon={<StopOutlined />} />
+                <Button
+                  type="text"
+                  danger
+                  icon={<StopOutlined />}
+                  loading={actionLoading === record.id}
+                  onClick={() => handleReject(record)}
+                />
+              </Tooltip>
+            </>
+          )}
+          {record.status === "pending" && record.type !== "attendance" && (
+            <>
+              <Tooltip title="Duyệt (Chưa hỗ trợ)">
+                <Button type="text" icon={<CheckOutlined />} className="text-gray-400" disabled />
+              </Tooltip>
+              <Tooltip title="Từ chối (Chưa hỗ trợ)">
+                <Button type="text" icon={<StopOutlined />} className="text-gray-400" disabled />
               </Tooltip>
             </>
           )}
@@ -293,7 +478,7 @@ export const RequestList = () => {
     { key: "rejected", label: `Từ chối (${stats.rejected})` },
   ];
 
-  const isLoading = scheduleLoading || salaryLoading;
+  const isLoading = scheduleLoading || salaryLoading || attendanceLoading;
 
   // Reset to page 1 when tab changes
   const handleTabChange = (key: string) => {
@@ -311,7 +496,7 @@ export const RequestList = () => {
           Quản lý yêu cầu
         </h1>
         <p className="text-gray-500 mt-2 ml-[52px]">
-          Theo dõi và duyệt yêu cầu lịch làm việc và lương
+          Theo dõi và duyệt yêu cầu lịch làm việc, lương và chấm công
         </p>
       </div>
 
@@ -390,6 +575,71 @@ export const RequestList = () => {
           }}
         />
       </Card>
+
+      {/* Detail Modal */}
+      <Modal
+        title="Chi tiết yêu cầu"
+        open={!!selectedRequest}
+        onCancel={() => setSelectedRequest(null)}
+        footer={
+          selectedRequest?.status === "pending" && selectedRequest?.type === "attendance" ? (
+            <Space>
+              <Button onClick={() => setSelectedRequest(null)}>Đóng</Button>
+              <Button
+                danger
+                onClick={() => {
+                  if (selectedRequest) {
+                    handleReject(selectedRequest);
+                    setSelectedRequest(null);
+                  }
+                }}
+              >
+                Từ chối
+              </Button>
+              <Button
+                type="primary"
+                className="bg-green-600"
+                onClick={() => {
+                  if (selectedRequest) {
+                    handleApprove(selectedRequest);
+                    setSelectedRequest(null);
+                  }
+                }}
+              >
+                Duyệt yêu cầu
+              </Button>
+            </Space>
+          ) : (
+            <Button onClick={() => setSelectedRequest(null)}>Đóng</Button>
+          )
+        }
+      >
+        {selectedRequest && (
+          <div className="space-y-4">
+            <div>
+              <span className="text-gray-500 text-sm">Nhân viên:</span>
+              <p className="font-medium">{selectedRequest.employeeName}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 text-sm">Loại yêu cầu:</span>
+              <p>{getTypeTag(selectedRequest.type)}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 text-sm">Mô tả:</span>
+              <p className="text-gray-800">{selectedRequest.description}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 text-sm">Ngày tạo:</span>
+              <p>{selectedRequest.requestDate ? formatDate(selectedRequest.requestDate) : "-"}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 text-sm">Trạng thái:</span>
+              <p>{getStatusTag(selectedRequest.status)}</p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
+

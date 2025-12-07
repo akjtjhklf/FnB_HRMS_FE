@@ -4,9 +4,10 @@
 import { AttendanceCheckInOut } from "../components/AttendanceCheckInOut";
 import { AttendanceHistory } from "../components/AttendanceHistory";
 import { AttendanceManagement } from "../components/AttendanceManagement";
+import { AttendanceAdjustmentRequests } from "../components/AttendanceAdjustmentRequests";
 import { Tabs } from "antd";
 import { Card } from "@/components/ui/Card";
-import { Clock, History, Users } from "lucide-react";
+import { Clock, History, Users, FileEdit } from "lucide-react";
 import { useGetIdentity } from "@refinedev/core";
 import { UserIdentity } from "@/types/auth";
 
@@ -53,23 +54,39 @@ export function AttendanceDashboard() {
         );
     }
 
-    // Managers see Management tab
+    // Managers see Management tab and Adjustment Requests tab
     if (isManager) {
-        tabItems.push({
-            key: "management",
-            label: (
-                <span className="flex items-center gap-2">
-                    <Users size={16} />
-                    <span>Quản lý chấm công</span>
-                </span>
-            ),
-            children: (
-                <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Quản lý chấm công nhân viên</h2>
-                    <AttendanceManagement />
-                </Card>
-            ),
-        });
+        tabItems.push(
+            {
+                key: "management",
+                label: (
+                    <span className="flex items-center gap-2">
+                        <Users size={16} />
+                        <span>Quản lý chấm công</span>
+                    </span>
+                ),
+                children: (
+                    <Card className="p-6">
+                        <h2 className="text-xl font-semibold mb-4">Quản lý chấm công nhân viên</h2>
+                        <AttendanceManagement />
+                    </Card>
+                ),
+            },
+            {
+                key: "adjustment-requests",
+                label: (
+                    <span className="flex items-center gap-2">
+                        <FileEdit size={16} />
+                        <span>Yêu cầu chỉnh sửa</span>
+                    </span>
+                ),
+                children: (
+                    <Card className="p-6">
+                        <AttendanceAdjustmentRequests />
+                    </Card>
+                ),
+            }
+        );
     }
 
     return (
@@ -85,3 +102,4 @@ export function AttendanceDashboard() {
         </div>
     );
 }
+
