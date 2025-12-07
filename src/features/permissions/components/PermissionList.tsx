@@ -162,7 +162,7 @@ export const PermissionList = () => {
 
   const columns = [
     {
-      title: "Collection",
+      title: "Bảng dữ liệu",
       dataIndex: "collection",
       key: "collection",
       width: 200,
@@ -175,7 +175,7 @@ export const PermissionList = () => {
       sorter: true,
     },
     {
-      title: "Action",
+      title: "Hành động",
       dataIndex: "action",
       key: "action",
       width: 150,
@@ -185,15 +185,15 @@ export const PermissionList = () => {
         </Tag>
       ),
       filters: [
-        { text: "Create", value: "create" },
-        { text: "Read", value: "read" },
-        { text: "Update", value: "update" },
-        { text: "Delete", value: "delete" },
-        { text: "Share", value: "share" },
+        { text: "Tạo mới", value: "create" },
+        { text: "Xem", value: "read" },
+        { text: "Cập nhật", value: "update" },
+        { text: "Xóa", value: "delete" },
+        { text: "Chia sẻ", value: "share" },
       ],
     },
     {
-      title: "Policy ID",
+      title: "Mã chính sách",
       dataIndex: "policy",
       key: "policy",
       width: 300,
@@ -208,7 +208,7 @@ export const PermissionList = () => {
       ),
     },
     {
-      title: "Fields",
+      title: "Trường dữ liệu",
       dataIndex: "fields",
       key: "fields",
       width: 150,
@@ -216,21 +216,21 @@ export const PermissionList = () => {
       render: (text: string | null) => (
         text ? (
           <Tooltip title={text}>
-            <Tag color="cyan">{text.split(",").length} fields</Tag>
+            <Tag color="cyan">{text.split(",").length} trường</Tag>
           </Tooltip>
         ) : (
-          <Tag color="default">Thêm trường</Tag>
+          <Tag color="default">Tất cả</Tag>
         )
       ),
     },
     {
-      title: "Permissions",
+      title: "Quyền hạn",
       dataIndex: "permissions",
       key: "permissions",
       width: 120,
       align: "center" as const,
       render: (permissions: Record<string, any> | null) => {
-        if (!permissions) return <Tag color="default">None</Tag>;
+        if (!permissions) return <Tag color="default">Không</Tag>;
         const count = Object.keys(permissions).length;
         return (
           <Badge count={count} showZero color="blue">
@@ -365,18 +365,18 @@ export const PermissionList = () => {
                     </Tag>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">Policy ID</p>
+                    <p className="text-gray-500 text-sm">Mã chính sách</p>
                     <p className="font-mono text-xs text-gray-600 break-all">{selectedPermission.policy}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">Fields</p>
-                    <p className="font-medium">{selectedPermission.fields || "All fields"}</p>
+                    <p className="text-gray-500 text-sm">Trường dữ liệu</p>
+                    <p className="font-medium">{selectedPermission.fields || "Tất cả trường"}</p>
                   </div>
                 </Space>
               </Card>
 
               {selectedPermission.permissions && (
-                <Card type="inner" title="Permissions Object">
+                <Card type="inner" title="Cấu hình quyền">
                   <pre className="bg-gray-50 p-3 rounded text-xs overflow-auto">
                     {JSON.stringify(selectedPermission.permissions, null, 2)}
                   </pre>
@@ -384,7 +384,7 @@ export const PermissionList = () => {
               )}
 
               {selectedPermission.validation && (
-                <Card type="inner" title="Validation Rules">
+                <Card type="inner" title="Quy tắc xác thực">
                   <pre className="bg-gray-50 p-3 rounded text-xs overflow-auto">
                     {JSON.stringify(selectedPermission.validation, null, 2)}
                   </pre>
@@ -392,7 +392,7 @@ export const PermissionList = () => {
               )}
 
               {selectedPermission.presets && (
-                <Card type="inner" title="Presets">
+                <Card type="inner" title="Giá trị mặc định">
                   <pre className="bg-gray-50 p-3 rounded text-xs overflow-auto">
                     {JSON.stringify(selectedPermission.presets, null, 2)}
                   </pre>

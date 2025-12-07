@@ -44,7 +44,7 @@ export const RoleList = () => {
 
     const columns = [
         {
-            title: "Icon",
+            title: "Biểu tượng",
             dataIndex: "icon",
             key: "icon",
             width: 80,

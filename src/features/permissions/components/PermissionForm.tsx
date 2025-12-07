@@ -116,13 +116,13 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
     >
       <Card type="inner" title="Thông tin cơ bản" className="mb-4">
         <Form.Item
-          label="Collection"
+          label="Bảng dữ liệu"
           name="collection"
-          rules={[{ required: true, message: "Vui lòng chọn collection!" }]}
-          tooltip="Chọn collection/table cần áp dụng quyền"
+          rules={[{ required: true, message: "Vui lòng chọn bảng dữ liệu!" }]}
+          tooltip="Chọn bảng dữ liệu cần áp dụng quyền"
         >
           <Select
-            placeholder="Chọn collection"
+            placeholder="Chọn bảng dữ liệu"
             showSearch
             options={Object.entries(COLLECTIONS).map(([key, value]) => ({
               label: key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, " "),
@@ -132,13 +132,13 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Action"
+          label="Hành động"
           name="action"
-          rules={[{ required: true, message: "Vui lòng chọn action!" }]}
+          rules={[{ required: true, message: "Vui lòng chọn hành động!" }]}
           tooltip="Loại hành động được phép thực hiện"
         >
           <Select
-            placeholder="Chọn action"
+            placeholder="Chọn hành động"
             options={Object.entries(PERMISSION_ACTIONS).map(([key, value]) => ({
               label: key.charAt(0) + key.slice(1).toLowerCase(),
               value: value,
@@ -147,25 +147,25 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Policy"
+          label="Chính sách"
           name="policy"
-          rules={[{ required: true, message: "Vui lòng chọn policy!" }]}
-          tooltip="Chọn policy áp dụng cho quyền này"
+          rules={[{ required: true, message: "Vui lòng chọn chính sách!" }]}
+          tooltip="Chọn chính sách áp dụng cho quyền này"
         >
           <Select
             {...enhancedPolicySelectProps}
-            placeholder="Chọn policy"
+            placeholder="Chọn chính sách"
             showSearch
           />
         </Form.Item>
 
         <Form.Item
-          label="Fields"
+          label="Trường dữ liệu"
           name="fields"
-          tooltip="Danh sách các fields được phép truy cập (cách nhau bởi dấu phẩy). Để trống để cho phép tất cả fields"
+          tooltip="Danh sách các trường được phép truy cập (cách nhau bởi dấu phẩy). Để trống để cho phép tất cả"
         >
           <Input.TextArea
-            placeholder="field1, field2, field3..."
+            placeholder="trường1, trường2, trường3..."
             rows={2}
           />
         </Form.Item>
@@ -173,10 +173,10 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
 
       <Card type="inner" title="Cấu hình nâng cao (JSON)" className="mb-4">
         <Form.Item
-          label="Permissions Object"
+          label="Cấu hình quyền"
           name="permissions_json"
           tooltip="JSON object chứa các điều kiện permissions (ví dụ: filter theo user)"
-          extra="Format: JSON object"
+          extra="Định dạng: JSON object"
         >
           <Input.TextArea
             placeholder='{"_and":[{"status":{"_eq":"published"}}]}'
@@ -186,10 +186,10 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Validation Rules"
+          label="Quy tắc xác thực"
           name="validation_json"
-          tooltip="JSON object chứa các rule validation"
-          extra="Format: JSON object"
+          tooltip="JSON object chứa các quy tắc xác thực"
+          extra="Định dạng: JSON object"
         >
           <Input.TextArea
             placeholder='{"_and":[{"field":{"_nnull":true}}]}'
@@ -199,10 +199,10 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
         </Form.Item>
 
         <Form.Item
-          label="Presets"
+          label="Giá trị mặc định"
           name="presets_json"
-          tooltip="JSON object chứa các giá trị preset"
-          extra="Format: JSON object"
+          tooltip="JSON object chứa các giá trị mặc định"
+          extra="Định dạng: JSON object"
         >
           <Input.TextArea
             placeholder='{"status":"draft","user":"$CURRENT_USER"}'

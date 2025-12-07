@@ -456,7 +456,7 @@ export function AvailabilityRegistration() {
                   const isFull = registered >= req.required_count;
 
                   // Helper to get position name safely
-                  const positionName = req.position?.name || (req as any).position_id?.name || "Unknown";
+                  const positionName = req.position?.name || (req as any).position_id?.name || "Không xác định";
 
                   return (
                     <Tag
@@ -966,7 +966,7 @@ export function AvailabilityRegistration() {
                         );
 
                         // Helper to get position name safely
-                        const positionName = req.position?.name || (req as any).position_id?.name || "Unknown";
+                        const positionName = req.position?.name || (req as any).position_id?.name || "Không xác định";
                         const positionDesc = req.position?.description || (req as any).position_id?.description;
 
                         return (

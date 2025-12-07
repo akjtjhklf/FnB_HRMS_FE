@@ -18,7 +18,7 @@ export function AttendanceDashboard() {
     const isManager = ["Manager", "Administrator", "Admin"].includes(role);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div>Đang tải...</div>;
     }
 
     const tabItems = [];

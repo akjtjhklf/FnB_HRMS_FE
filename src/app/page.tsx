@@ -7,7 +7,7 @@ import { Authenticated, useGetIdentity } from "@refinedev/core";
 export default function IndexPage() {
   return (
     <Suspense>
-      <Authenticated key="home-page" fallback={<div>Loading...</div>}>
+      <Authenticated key="home-page" fallback={<div>Đang tải...</div>}>
         <RedirectBasedOnRole />
       </Authenticated>
     </Suspense>
