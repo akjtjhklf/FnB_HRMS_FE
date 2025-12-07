@@ -74,9 +74,9 @@ export const RecentActivities: React.FC = () => {
             </Text>
           </div>
         </div>
-        <Button type="link" size="small">
+        {/* <Button type="link" size="small">
           Xem tất cả
-        </Button>
+        </Button> */}
       </div>
 
       <div className="space-y-3 max-h-[400px] overflow-y-auto">
