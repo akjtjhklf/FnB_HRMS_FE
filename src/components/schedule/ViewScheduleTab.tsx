@@ -370,7 +370,7 @@ export function ViewScheduleTab() {
           {selectedAssignment && (
             <Card size="small" className="mb-4 bg-gray-50">
               <p className="text-sm text-gray-600">
-                Ca: <strong>{typeof selectedAssignment.shift_id === "object" ? (selectedAssignment.shift_id.shift_type?.name || "Ca làm việc") : "N/A"}</strong>
+                Ca: <strong>{typeof selectedAssignment.shift_id === "object" ? (selectedAssignment.shift_id.shift_type?.name || "Ca làm việc") : "Chưa có"}</strong>
               </p>
             </Card>
           )}

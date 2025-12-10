@@ -331,7 +331,7 @@ export function MyScheduleView() {
           </Space>
         </Descriptions.Item>
         <Descriptions.Item label="Vị trí">
-          <Tag color="blue">{position?.name || "N/A"}</Tag>
+          <Tag color="blue">{position?.name || "Chưa có"}</Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Phân công lúc">
           {selectedAssignment.assigned_at

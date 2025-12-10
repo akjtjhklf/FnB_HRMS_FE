@@ -149,7 +149,7 @@ export const Step1BasicInfo: React.FC = () => {
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="Email"
+                                label="Thư điện tử"
                                 name="email"
                                 rules={[
                                     { required: true, message: 'Vui lòng nhập email!' },

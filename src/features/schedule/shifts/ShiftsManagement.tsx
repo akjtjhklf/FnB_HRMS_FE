@@ -457,7 +457,7 @@ export function ShiftsManagement() {
           start_at: shiftType?.start_time,
           end_at: shiftType?.end_time,
           total_required: totalRequired,
-          notes: `Tự động tạo cho ${DAYS_OF_WEEK[dayIndex]?.label || "N/A"
+          notes: `Tự động tạo cho ${DAYS_OF_WEEK[dayIndex]?.label || "Ngày"
             } (${shiftDate.format("DD/MM/YYYY")})`,
         });
       });
@@ -674,7 +674,7 @@ export function ShiftsManagement() {
                           {/* Shift Type */}
                           <div className="flex items-center justify-between">
                             <Tag color={shiftType?.cross_midnight ? "red" : "blue"}>
-                              {shiftType?.name || "N/A"}
+                              {shiftType?.name || "Chưa có"}
                             </Tag>
                             <Space size="small">
                               <Tooltip title="Chỉnh sửa">
@@ -710,10 +710,10 @@ export function ShiftsManagement() {
                               {(() => {
                                 const startTime = shift.start_at
                                   ? (shift.start_at.includes('T') ? dayjs(shift.start_at).format('HH:mm') : shift.start_at.substring(0, 5))
-                                  : (shiftType?.start_time ? (shiftType.start_time.includes('T') ? dayjs(shiftType.start_time).format('HH:mm') : shiftType.start_time.substring(0, 5)) : "N/A");
+                                  : (shiftType?.start_time ? (shiftType.start_time.includes('T') ? dayjs(shiftType.start_time).format('HH:mm') : shiftType.start_time.substring(0, 5)) : "--:--");
                                 const endTime = shift.end_at
                                   ? (shift.end_at.includes('T') ? dayjs(shift.end_at).format('HH:mm') : shift.end_at.substring(0, 5))
-                                  : (shiftType?.end_time ? (shiftType.end_time.includes('T') ? dayjs(shiftType.end_time).format('HH:mm') : shiftType.end_time.substring(0, 5)) : "N/A");
+                                  : (shiftType?.end_time ? (shiftType.end_time.includes('T') ? dayjs(shiftType.end_time).format('HH:mm') : shiftType.end_time.substring(0, 5)) : "--:--");
                                 return `${startTime} - ${endTime}`;
                               })()}
                             </span>
@@ -738,7 +738,7 @@ export function ShiftsManagement() {
                                     className="flex items-center justify-between text-xs px-2 py-1 rounded bg-gray-50"
                                   >
                                     <span className="truncate">
-                                      {position?.name || "N/A"}
+                                      {position?.name || "Chưa có"}
                                     </span>
                                     <Badge
                                       count={req.required_count}
@@ -1114,8 +1114,8 @@ export function ShiftsManagement() {
                             <ClockCircleOutlined />
                             {st.start_time ||
                               st.default_start_time ||
-                              "N/A"} -{" "}
-                            {st.end_time || st.default_end_time || "N/A"}
+                              "--:--"} -{" "}
+                            {st.end_time || st.default_end_time || "--:--"}
                           </div>
                         </div>
                       </div>

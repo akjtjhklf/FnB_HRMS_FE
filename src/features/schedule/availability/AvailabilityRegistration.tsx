@@ -442,8 +442,8 @@ export function AvailabilityRegistration() {
                   <Tag color={shiftType.color || "blue"}>{shiftType.name}</Tag>
                 )}
                 <Text type="secondary">
-                  {shiftType?.start_time || shift.start_at || "N/A"} -{" "}
-                  {shiftType?.end_time || shift.end_at || "N/A"}
+                  {shiftType?.start_time || shift.start_at || "--:--"} -{" "}
+                  {shiftType?.end_time || shift.end_at || "--:--"}
                 </Text>
               </Space>
               <Space size={8} wrap>
@@ -500,7 +500,7 @@ export function AvailabilityRegistration() {
   };
 
   const getDateTimeDisplay = (isoDateTime: string | null | undefined) => {
-    return isoDateTime ? dayjs(isoDateTime).format("DD/MM/YYYY HH:mm") : "N/A";
+    return isoDateTime ? dayjs(isoDateTime).format("DD/MM/YYYY HH:mm") : "Chưa có";
   };
 
   const getStatusTag = (status: string) => {
@@ -536,7 +536,7 @@ export function AvailabilityRegistration() {
       key: "shift",
       render: (_: any, record: EmployeeAvailability) => {
         const shift = getShiftForAvailability(record);
-        if (!shift) return "N/A";
+        if (!shift) return "Chưa có";
         return (
           <div>
             <div>
@@ -544,7 +544,7 @@ export function AvailabilityRegistration() {
             </div>
             <div style={{ fontSize: "12px", color: "#888" }}>
               {dayjs(shift.shift_date).format("DD/MM/YYYY")} •{" "}
-              {shift.start_at || "N/A"} - {shift.end_at || "N/A"}
+              {shift.start_at || "--:--"} - {shift.end_at || "--:--"}
             </div>
           </div>
         );
@@ -920,8 +920,8 @@ export function AvailabilityRegistration() {
                       <Text type="secondary">
                         {shiftType?.start_time ||
                           selectedShift.start_at ||
-                          "N/A"}{" "}
-                        - {shiftType?.end_time || selectedShift.end_at || "N/A"}
+                          "--:--"}{" "}
+                        - {shiftType?.end_time || selectedShift.end_at || "--:--"}
                       </Text>
                     </Space>
                   </Space>
@@ -1090,10 +1090,10 @@ export function AvailabilityRegistration() {
             <Descriptions.Item label="Ca làm việc">
               {(() => {
                 const shift = getShiftForAvailability(selectedAvailability);
-                if (!shift) return "N/A";
+                if (!shift) return "Chưa có";
                 return `Ca làm việc - ${dayjs(shift.shift_date).format(
                   "DD/MM/YYYY"
-                )} (${shift.start_at || "N/A"} - ${shift.end_at || "N/A"})`;
+                )} (${shift.start_at || "--:--"} - ${shift.end_at || "--:--"})`;
               })()}
             </Descriptions.Item>
             <Descriptions.Item label="Vị trí đăng ký">

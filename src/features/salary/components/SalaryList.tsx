@@ -178,13 +178,13 @@ export const SalaryList = () => {
   const getEmployeeName = (record: any) => {
     // Try to get employee from multiple sources
     const employee = record?.employee || record?.employee_id;
-    if (!employee) return "N/A";
+    if (!employee) return "Chưa có";
     // If employee is a string (just ID), return placeholder
     // If employee is an object with name
     if (typeof employee === "object") {
-      return employee.full_name || employee.employee_code || employee.id?.slice(0, 8) || "N/A";
+      return employee.full_name || employee.employee_code || employee.id?.slice(0, 8) || "Chưa có";
     }
-    return "N/A";
+    return "Chưa có";
   };
 
   const getEmployeeCode = (record: any) => {
@@ -1265,7 +1265,7 @@ export const SalaryList = () => {
                 <Divider orientation="left" className="text-sm md:text-base my-3">Thông tin duyệt</Divider>
                 <Descriptions column={1} bordered size="small" className="text-sm">
                   <Descriptions.Item label="Người duyệt">
-                    {viewingPayroll.approved_by || "N/A"}
+                    {viewingPayroll.approved_by || "Chưa có"}
                   </Descriptions.Item>
                   <Descriptions.Item label="Ngày duyệt">
                     {formatDate(viewingPayroll.approved_at)}
@@ -1404,10 +1404,10 @@ export const SalaryList = () => {
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">
-                    {statusChangePayroll.employee?.full_name || "N/A"}
+                    {statusChangePayroll.employee?.full_name || "Chưa có"}
                   </h3>
                   <p className="text-gray-500 text-sm">
-                    Tháng {statusChangePayroll.month || "N/A"}
+                    Tháng {statusChangePayroll.month || "Chưa có"}
                   </p>
                 </div>
               </div>
@@ -1565,15 +1565,15 @@ export const SalaryList = () => {
                 />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 text-lg">
-                    {sendPayslipTarget.employee?.full_name || "N/A"}
+                    {sendPayslipTarget.employee?.full_name || "Chưa có"}
                   </h3>
                   <p className="text-gray-500 text-sm">
-                    {sendPayslipTarget.employee?.employee_code || "N/A"}
+                    {sendPayslipTarget.employee?.employee_code || "Chưa có"}
                   </p>
                 </div>
                 <Tag color="blue" className="text-sm">
                   <CalendarOutlined className="mr-1" />
-                  {sendPayslipTarget.month || 'N/A'}
+                  {sendPayslipTarget.month || 'Chưa có'}
                 </Tag>
               </div>
             </div>

@@ -176,7 +176,7 @@ export function AttendanceCheckInOut() {
 
     const handleCheckIn = async () => {
         if (!selectedAssignmentId) {
-            message.error("Vui lòng chọn ca làm việc để check-in");
+            message.error("Vui lòng chọn ca làm việc để chấm công vào");
             return;
         }
 
@@ -187,12 +187,12 @@ export function AttendanceCheckInOut() {
                 method: "post",
                 values: {
                     assignment_id: selectedAssignmentId,
-                    location: "Office",
+                    location: "Văn phòng",
                 },
             },
             {
                 onSuccess: () => {
-                    message.success("Check-in thành công!");
+                    message.success("Chấm công vào thành công!");
                     setCurrentStatus("checked-in");
                     setLastAction({ time: new Date().toISOString(), type: "check-in" });
                     setLoading(false);
@@ -202,11 +202,11 @@ export function AttendanceCheckInOut() {
                     console.log("Check-in error:", error);
                     const errorCode = error?.response?.data?.error?.code || error?.code;
                     if (errorCode === "ALREADY_CHECKED_IN") {
-                        message.warning("Bạn đã check-in cho ca làm việc này rồi.");
+                        message.warning("Bạn đã chấm công vào cho ca làm việc này rồi.");
                         setCurrentStatus("checked-in"); // Optimistically update status
                         attendanceQuery.refetch();
                     } else {
-                        message.error(error?.message || "Check-in thất bại");
+                        message.error(error?.message || "Chấm công vào thất bại");
                     }
                     setLoading(false);
                 },
@@ -216,7 +216,7 @@ export function AttendanceCheckInOut() {
 
     const handleCheckOut = async () => {
         if (!selectedAssignmentId) {
-            message.error("Vui lòng chọn ca làm việc để check-out");
+            message.error("Vui lòng chọn ca làm việc để chấm công ra");
             return;
         }
 
@@ -231,14 +231,14 @@ export function AttendanceCheckInOut() {
             },
             {
                 onSuccess: () => {
-                    message.success("Check-out thành công!");
+                    message.success("Chấm công ra thành công!");
                     setCurrentStatus("checked-out");
                     setLastAction({ time: new Date().toISOString(), type: "check-out" });
                     setLoading(false);
                     attendanceQuery.refetch(); // Refresh records
                 },
                 onError: (error: any) => {
-                    message.error(error?.message || "Check-out thất bại");
+                    message.error(error?.message || "Chấm công ra thất bại");
                     setLoading(false);
                 },
             }
@@ -256,12 +256,12 @@ export function AttendanceCheckInOut() {
                     {currentStatus === "checked-in" ? (
                         <div className="flex items-center gap-2 bg-green-100 text-green-700 px-6 py-3 rounded-full">
                             <CheckCircle2 size={20} />
-                            <span className="font-semibold">Đã Check-in</span>
+                            <span className="font-semibold">Đã chấm công vào</span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-6 py-3 rounded-full">
                             <XCircle size={20} />
-                            <span className="font-semibold">Chưa Check-in</span>
+                            <span className="font-semibold">Chưa chấm công vào</span>
                         </div>
                     )}
                 </div>
@@ -304,7 +304,7 @@ export function AttendanceCheckInOut() {
                 {lastAction && (
                     <div className="text-sm text-gray-600">
                         <p>
-                            {lastAction.type === "check-in" ? "Check-in" : "Check-out"} lúc:{" "}
+                            {lastAction.type === "check-in" ? "Chấm công vào" : "Chấm công ra"} lúc:{" "}
                             {dayjs(lastAction.time).format("HH:mm:ss")}
                         </p>
                     </div>
@@ -322,7 +322,7 @@ export function AttendanceCheckInOut() {
                             className="min-w-[200px] h-14 text-lg bg-green-600 hover:bg-green-700"
                             icon={<Clock size={20} />}
                         >
-                            Check In
+                            Chấm công vào
                         </Button>
                     ) : (
                         <Button
@@ -334,7 +334,7 @@ export function AttendanceCheckInOut() {
                             className="min-w-[200px] h-14 text-lg"
                             icon={<Clock size={20} />}
                         >
-                            Check Out
+                            Chấm công ra
                         </Button>
                     )}
                 </div>
@@ -344,7 +344,7 @@ export function AttendanceCheckInOut() {
                     <div className="bg-blue-50 p-4 rounded-lg">
                         <MapPin size={24} className="mx-auto text-blue-600 mb-2" />
                         <p className="text-sm text-gray-600">Vị trí</p>
-                        <p className="font-semibold">Office</p>
+                        <p className="font-semibold">Văn phòng</p>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg">
                         <Calendar size={24} className="mx-auto text-purple-600 mb-2" />

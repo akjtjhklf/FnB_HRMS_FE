@@ -61,7 +61,7 @@ export function ShiftCard({
         ? dayjs(fallbackTime).format("HH:mm")
         : fallbackTime.substring(0, 5);
     }
-    return "N/A";
+    return "--:--";
   };
 
   return (
@@ -74,7 +74,7 @@ export function ShiftCard({
         {/* Shift Type */}
         <div className="flex items-center justify-between">
           <Tag color={shiftType?.cross_midnight ? "red" : "blue"}>
-            {shiftType?.name || "N/A"}
+            {shiftType?.name || "Chưa có"}
           </Tag>
           <Badge
             count={`${totalAssigned}/${totalRequired}`}
@@ -104,7 +104,7 @@ export function ShiftCard({
               ? registeredCountByShiftPosition[registeredKey]
               : 0; // Đảm bảo giá trị là number
           const positionName =
-            typeof data.position === "object" ? data.position.name : "N/A";
+            typeof data.position === "object" ? data.position.name : "Chưa có";
 
           return (
             <div

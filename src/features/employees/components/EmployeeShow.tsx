@@ -140,7 +140,7 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                   <div className="flex items-start gap-2">
                     <Mail className="w-4 h-4 text-gray-400 mt-1" />
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="text-xs text-gray-500">Thư điện tử</p>
                       <p className="text-sm font-medium">{employeeData.email || "-"}</p>
                     </div>
                   </div>
@@ -257,16 +257,16 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                                       <p className="font-medium">{employeeData.user.email}</p>
                                     </div>
                                     <div>
-                                      <p className="text-gray-500 text-sm">Vai trò (Role)</p>
+                                      <p className="text-gray-500 text-sm">Vai trò</p>
                                       <Tag color="blue">
                                         {typeof employeeData.user.role === 'object'
                                           ? (employeeData.user.role as any)?.name
-                                          : employeeData.user.role || "N/A"}
+                                          : employeeData.user.role || "Chưa có"}
                                       </Tag>
                                     </div>
                                     {employeeData.user.policies && employeeData.user.policies.length > 0 && (
                                       <div>
-                                        <p className="text-gray-500 text-sm mb-1">Chính sách (Policies)</p>
+                                        <p className="text-gray-500 text-sm mb-1">Chính sách</p>
                                         <div className="flex flex-wrap gap-1">
                                           {employeeData.user.policies.map((policy: any) => (
                                             <Tag key={policy.id} color="cyan">{policy.name}</Tag>
@@ -297,7 +297,7 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
                             <Card type="inner" title="Thông tin liên hệ" size="small">
                               <Space direction="vertical" className="w-full" size="middle">
                                 <div>
-                                  <p className="text-gray-500 text-sm">Email</p>
+                                  <p className="text-gray-500 text-sm">Thư điện tử</p>
                                   <p className="font-medium">{employeeData.email || "-"}</p>
                                 </div>
                                 <div>

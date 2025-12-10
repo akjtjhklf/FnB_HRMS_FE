@@ -67,7 +67,7 @@ export function AssignmentDrawer({
             <div className="flex items-center justify-between">
               <span className="font-semibold">Loại ca:</span>
               <Tag color={shiftType?.cross_midnight ? "red" : "blue"}>
-                {shiftType?.name || "N/A"}
+                {shiftType?.name || "Chưa có"}
               </Tag>
             </div>
             <div className="flex items-center justify-between">

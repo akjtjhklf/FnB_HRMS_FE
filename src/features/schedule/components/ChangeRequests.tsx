@@ -201,7 +201,7 @@ export function ChangeRequests() {
       title: "Người yêu cầu",
       dataIndex: "requester_id",
       key: "requester_id",
-      render: (id: string) => id || "N/A",
+      render: (id: string) => id || "Chưa có",
     },
     {
       title: "Từ ca",

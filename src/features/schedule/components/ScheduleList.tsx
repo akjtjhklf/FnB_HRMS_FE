@@ -306,7 +306,7 @@ export const ScheduleList = () => {
       dataIndex: "shift_id",
       key: "shift",
       render: (shift: any) => {
-        const shiftName = typeof shift === "object" ? shift.name : "N/A";
+        const shiftName = typeof shift === "object" ? shift.name : "Chưa có";
         const timeRange =
           typeof shift === "object"
             ? `${shift.start_at} - ${shift.end_at}`
@@ -327,7 +327,7 @@ export const ScheduleList = () => {
         const employee = employeeSelectProps.options?.find(
           (e: any) => e.value === employeeId
         );
-        return employee?.label || "N/A";
+        return employee?.label || "Chưa có";
       },
     },
     {
@@ -336,7 +336,7 @@ export const ScheduleList = () => {
       key: "position",
       render: (position: any) => {
         const positionName =
-          typeof position === "object" ? position.name : "N/A";
+          typeof position === "object" ? position.name : "Chưa có";
         return <Tag color="blue">{positionName}</Tag>;
       },
     },

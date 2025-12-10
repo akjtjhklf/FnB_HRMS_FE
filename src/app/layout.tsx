@@ -9,8 +9,8 @@ import "./globals.css";
 import "@/lib/dayjs";
 
 export const metadata: Metadata = {
-  title: "Greasy Worm HRMS - Human Resource Management System",
-  description: "Complete HRMS solution for managing employees, attendance, and payroll",
+  title: "Greasy Worm HRMS - Hệ thống Quản lý Nhân sự",
+  description: "Giải pháp HRMS hoàn chỉnh để quản lý nhân viên, chấm công và bảng lương",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -30,7 +30,7 @@ export default async function RootLayout({
   const defaultMode = theme?.value === "dark" ? "dark" : "light";
 
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <Suspense>
           <AntdRegistry>

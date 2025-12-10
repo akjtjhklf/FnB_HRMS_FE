@@ -327,7 +327,7 @@ export function ShiftManagementTab() {
         const shiftType = shiftTypes?.find(
           (st: ShiftType) => st.id === shiftTypeId
         );
-        return <Tag color="blue">{shiftType?.name || "N/A"}</Tag>;
+        return <Tag color="blue">{shiftType?.name || "Chưa có"}</Tag>;
       },
     },
     {

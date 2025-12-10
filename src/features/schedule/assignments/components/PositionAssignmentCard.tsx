@@ -32,7 +32,7 @@ export function PositionAssignmentCard({
     return allShiftAssignments.some((a) => a.employee_id === employeeId);
   };
   return (
-    <Card key={requirement.id} size="small" title={position?.name || "N/A"}>
+    <Card key={requirement.id} size="small" title={position?.name || "Chưa có"}>
       <div className="space-y-3">
         {/* Current assignments */}
         <div>
@@ -49,7 +49,7 @@ export function PositionAssignmentCard({
                 <div className="flex items-center gap-2">
                   <Avatar size="small" icon={<UserOutlined />} />
                   <span className="text-sm font-medium">
-                    {employee?.full_name || "N/A"}
+                    {employee?.full_name || "Chưa có"}
                   </span>
                   {assignment.note && (
                     <span className="text-xs text-gray-500 ml-1" title={assignment.note}>
