@@ -93,7 +93,7 @@ export const EmployeeShow = ({ id }: EmployeeShowProps) => {
   };
 
   if (isLoading || !employee) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">Đang tải...</div>;
   }
 
   const employeeData = employee.data;

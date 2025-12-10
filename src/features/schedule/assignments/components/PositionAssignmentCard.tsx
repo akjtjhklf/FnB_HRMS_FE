@@ -53,7 +53,7 @@ export function PositionAssignmentCard({
                   </span>
                   {assignment.note && (
                     <span className="text-xs text-gray-500 ml-1" title={assignment.note}>
-                      ({assignment.note.includes("Score") ? assignment.note.split("(")[1].replace(")", "") : "Note"})
+                      ({assignment.note.includes("Score") ? assignment.note.split("(")[1].replace(")", "") : "Ghi chú"})
                     </span>
                   )}
                 </div>

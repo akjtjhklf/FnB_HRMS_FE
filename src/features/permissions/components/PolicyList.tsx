@@ -46,7 +46,7 @@ export const PolicyList = () => {
 
     const columns = [
         {
-            title: "Icon",
+            title: "Biểu tượng",
             dataIndex: "icon",
             key: "icon",
             width: 80,
@@ -76,8 +76,8 @@ export const PolicyList = () => {
             key: "access",
             render: (_: any, record: any) => (
                 <Space wrap>
-                    {record.admin_access && <Tag color="red">Admin Access</Tag>}
-                    {record.app_access && <Tag color="blue">App Access</Tag>}
+                    {record.admin_access && <Tag color="red">Quyền Admin</Tag>}
+                    {record.app_access && <Tag color="blue">Quyền Ứng dụng</Tag>}
                     {record.enforce_tfa && <Tag color="orange">2FA</Tag>}
                 </Space>
             ),

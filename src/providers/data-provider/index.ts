@@ -70,12 +70,31 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
 
       // BE returns: { statusCode, message, data: { items, total, page, limit, total_pages }, is_success }
       // Or wrapped in success: { success: true, data: {...}, message }
+      // Or direct array: { success: true, data: [...], message }
       const actualData =
         (data as any).success !== undefined ? (data as any).data : data.data;
 
+      // Handle both formats: actualData can be { items: [...], total: N } or just [...]
+      let items: any[];
+      let total: number;
+
+      if (Array.isArray(actualData)) {
+        // Direct array format: { data: [...] }
+        items = actualData;
+        total = actualData.length;
+      } else if (actualData?.items) {
+        // Object format: { data: { items: [...], total: N } }
+        items = actualData.items;
+        total = actualData.total || actualData.items.length;
+      } else {
+        // Fallback
+        items = [];
+        total = 0;
+      }
+
       return {
-        data: actualData?.items || [],
-        total: actualData?.total || 0,
+        data: items,
+        total: total,
         // ⚠️ Quan trọng: cần để refine hiểu pagination
         meta: {
           current: actualData?.page ?? current,
@@ -88,6 +107,7 @@ export const dataProvider = (apiUrl: string): DataProvider => ({
       throw error;
     }
   },
+
 
   getOne: async ({ resource, id, meta }) => {
     const url = `/${resource}/${id}`;

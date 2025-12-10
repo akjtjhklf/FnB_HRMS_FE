@@ -148,7 +148,7 @@ export default function AnalyticsPage() {
         return {
           data: [],
           fileName: "report",
-          pdfTitle: "Report",
+          pdfTitle: "Báo cáo",
           pdfColumns: [],
         };
     }
