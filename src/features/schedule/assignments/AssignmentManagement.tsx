@@ -284,7 +284,7 @@ export function AssignmentManagement() {
       title: "Ca làm việc",
       key: "shift",
       render: (_: any, record: ScheduleAssignment) => {
-        if (!record.shift) return "N/A";
+        if (!record.shift) return "Chưa có";
         return (
           <div>
             <div>
@@ -303,7 +303,7 @@ export function AssignmentManagement() {
       render: (_: any, record: ScheduleAssignment) => (
         <Space>
           <UserOutlined />
-          <span>{record.employee?.full_name || "N/A"}</span>
+          <span>{record.employee?.full_name || "Chưa có"}</span>
         </Space>
       ),
     },
@@ -311,7 +311,7 @@ export function AssignmentManagement() {
       title: "Vị trí",
       key: "position",
       render: (_: any, record: ScheduleAssignment) => (
-        <Tag color="blue">{record.position?.name || "N/A"}</Tag>
+        <Tag color="blue">{record.position?.name || "Chưa có"}</Tag>
       ),
     },
     {
@@ -555,14 +555,14 @@ export function AssignmentManagement() {
                   {dayjs(selectedAssignment.shift.date).format("DD/MM/YYYY")} - {selectedAssignment.shift.start_time} → {selectedAssignment.shift.end_time}
                 </>
               ) : (
-                "N/A"
+                "Chưa có"
               )}
             </Descriptions.Item>
             <Descriptions.Item label="Nhân viên">
-              {selectedAssignment.employee?.full_name || "N/A"}
+              {selectedAssignment.employee?.full_name || "Chưa có"}
             </Descriptions.Item>
             <Descriptions.Item label="Vị trí">
-              <Tag color="blue">{selectedAssignment.position?.name || "N/A"}</Tag>
+              <Tag color="blue">{selectedAssignment.position?.name || "Chưa có"}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Phân công lúc">
               {selectedAssignment.assigned_at ? dayjs(selectedAssignment.assigned_at).format("DD/MM/YYYY HH:mm") : "-"}

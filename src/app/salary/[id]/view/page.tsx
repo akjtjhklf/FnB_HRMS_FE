@@ -262,7 +262,7 @@ export default function PayslipViewPage() {
                 <div>
                   <Text type="secondary" style={{ fontSize: 12 }}>Nhân viên</Text>
                   <div style={{ fontWeight: 600, fontSize: 16 }}>
-                    {employee?.full_name || "N/A"}
+                    {employee?.full_name || "Chưa có"}
                   </div>
                   <Text type="secondary">{employee?.employee_code || ""}</Text>
                 </div>

@@ -236,7 +236,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
-              label="Email"
+              label="Thư điện tử"
               name="email"
               rules={[
                 { required: true, message: "Vui lòng nhập email!" },

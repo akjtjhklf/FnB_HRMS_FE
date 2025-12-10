@@ -162,7 +162,7 @@ export function WeekCalendar({
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <ClockCircleOutlined className="text-blue-500" />
                           <span>
-                            {(shift.start_at || 'N/A')} - {(shift.end_at || 'N/A')}
+                            {(shift.start_at || '--:--')} - {(shift.end_at || '--:--')}
                           </span>
                         </div>
 
@@ -192,7 +192,7 @@ export function WeekCalendar({
                                   )}
                                 >
                                   <span className="truncate">
-                                    {position?.name || "N/A"}
+                                    {position?.name || "Chưa có"}
                                   </span>
                                   <Badge
                                     count={req.required_count}
@@ -315,7 +315,7 @@ export function WeekCalendar({
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="font-medium text-gray-800">
-                                    {position?.name || "N/A"}
+                                    {position?.name || "Chưa có"}
                                   </p>
                                   {position?.description && (
                                     <p className="text-xs text-gray-500 mt-1">

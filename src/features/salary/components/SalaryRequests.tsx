@@ -144,11 +144,11 @@ export const SalaryRequests = () => {
     const requests = useMemo(() => tableProps.dataSource || [], [tableProps.dataSource]);
 
     const getEmployeeName = (employee: any) => {
-        if (!employee) return "N/A";
+        if (!employee) return "Chưa có";
         if (typeof employee === "object") {
-            return employee.full_name || employee.employee_code || "N/A";
+            return employee.full_name || employee.employee_code || "Chưa có";
         }
-        return "N/A";
+        return "Chưa có";
     };
 
     // Removed client-side filtering - use server-side instead

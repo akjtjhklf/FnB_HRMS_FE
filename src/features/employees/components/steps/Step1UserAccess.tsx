@@ -76,7 +76,7 @@ export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false
                     <Row gutter={16}>
                         <Col span={24}>
                             <Form.Item
-                                label="Email"
+                                label="Thư điện tử"
                                 name="email"
                                 rules={[
                                     { required: true, message: 'Vui lòng nhập email!' },
@@ -151,12 +151,12 @@ export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false
                     <div className="p-4 bg-green-50 border border-green-200 rounded mb-4">
                         <Text className="text-sm text-green-800">
                             ✅ <strong>Vai trò:</strong> Chọn vai trò để gán quyền truy cập cho nhân viên.
-                            Các chính sách (policies) sẽ được kế thừa từ vai trò.
+                            Các chính sách sẽ được kế thừa từ vai trò.
                         </Text>
                     </div>
 
                     <Form.Item
-                        label="Vai trò (Role)"
+                        label="Vai trò"
                         name="roleId"
                         rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
                         tooltip="Vai trò xác định quyền truy cập của nhân viên"
@@ -175,17 +175,17 @@ export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false
 
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded mt-4 mb-4">
                         <Text className="text-sm text-gray-600">
-                            📌 <strong>Lưu ý:</strong> Chính sách (policies) được quản lý tại cấp độ vai trò.
+                            📌 <strong>Lưu ý:</strong> Chính sách được quản lý tại cấp độ vai trò.
                             Tuy nhiên, bạn có thể gán thêm các chính sách bổ sung cho nhân viên này bên dưới.
                         </Text>
                     </div>
 
                     {/* Policy Select */}
                     <Form.Item
-                        label={<span>Chính sách bổ sung (Extra Policies) <span className="text-red-500">*</span></span>}
+                        label={<span>Chính sách bổ sung <span className="text-red-500">*</span></span>}
                         name="policyIds"
                         rules={[
-                            { required: true, message: 'Vui lòng chọn ít nhất một chính sách!' },
+                            // { required: true, message: 'Vui lòng chọn ít nhất một chính sách!' },
                             {
                                 validator: (_, value) => {
                                     if (!value || value.length === 0) {

@@ -30,7 +30,7 @@ export const RequirementCell = ({
                 <div className="flex flex-col gap-1">
                     {requirements.map((req) => {
                         const position = req.position || (req as any).position_id;
-                        const positionName = typeof position === "object" ? position.name : "N/A";
+                        const positionName = typeof position === "object" ? position.name : "Chưa có";
 
                         return (
                             <div

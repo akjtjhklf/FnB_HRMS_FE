@@ -212,7 +212,7 @@ export const RequestList = () => {
     const scheduleRequests: CombinedRequest[] = scheduleItems.map((req) => {
       const employee =
         typeof req.requester_id === "object" ? (req.requester_id as Employee) : null;
-      const employeeName = employee?.full_name || employee?.name || "N/A";
+      const employeeName = employee?.full_name || employee?.name || "Chưa có";
       const employeeId =
         employee?.id ||
         (typeof req.requester_id === "string" ? req.requester_id : "");
@@ -247,7 +247,7 @@ export const RequestList = () => {
     const salRequests: CombinedRequest[] = salaryItems.map((req) => {
       const employee =
         typeof req.employee_id === "object" ? (req.employee_id as Employee) : null;
-      const employeeName = employee?.full_name || employee?.name || "N/A";
+      const employeeName = employee?.full_name || employee?.name || "Chưa có";
       const employeeId =
         employee?.id || (typeof req.employee_id === "string" ? req.employee_id : "");
 

@@ -149,7 +149,7 @@ export function AvailabilityRegistry() {
       key: "employee_id",
       render: (_: any, record: EmployeeAvailability) => {
         // Try to get employee info from expand if available
-        return record.employee_id || "N/A";
+        return record.employee_id || "Chưa có";
       },
     },
     {
@@ -162,17 +162,17 @@ export function AvailabilityRegistry() {
           // Get shift name from shift_type
           const shiftName = shift.shift_type?.name 
             || (typeof shift.shift_type_id === 'object' ? shift.shift_type_id?.name : null)
-            || `Ca ${shift.shift_date || 'N/A'}`;
+            || `Ca ${shift.shift_date || 'Chưa có'}`;
           return (
             <div>
               <div>{shiftName}</div>
               <div style={{ fontSize: "12px", color: "#888" }}>
-                {shift.start_at || 'N/A'} - {shift.end_at || 'N/A'}
+                {shift.start_at || '--:--'} - {shift.end_at || '--:--'}
               </div>
             </div>
           );
         }
-        return shift || "N/A";
+        return shift || "Chưa có";
       },
     },
     {

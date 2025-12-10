@@ -190,7 +190,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
 
       <Form.Item
         name="email"
-        label="Email"
+        label="Thư điện tử"
         rules={[
           { required: true, message: "Vui lòng nhập email" },
           { type: "email", message: "Email không hợp lệ" },

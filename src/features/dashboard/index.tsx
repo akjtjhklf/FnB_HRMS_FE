@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <Title level={2} className="!mb-2">
-              Dashboard
+              Tổng quan
             </Title>
             <Text className="text-gray-500">
               Chào mừng trở lại! Đây là tổng quan hệ thống HRMS của bạn.

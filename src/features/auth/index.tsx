@@ -78,7 +78,7 @@ export default function LoginPage() {
           >
             <Form.Item
               name="email"
-              label="Email"
+              label="Thư điện tử"
               rules={[
                 { required: true, message: "Vui lòng nhập email!" },
                 { type: "email", message: "Email không hợp lệ!" },
@@ -133,7 +133,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <Text className="text-xs text-gray-400">
-              © 2025 HRMS. All rights reserved.
+              © 2025 HRMS. Bảo lưu mọi quyền.
             </Text>
           </div>
         </Card>
@@ -147,7 +147,7 @@ export default function LoginPage() {
             Email: admin@example.com
           </Text>
           <Text className="text-sm text-blue-600 block">
-            Password: admin123
+            Mật khẩu: admin123
           </Text>
         </div>
       </div>

@@ -211,15 +211,15 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
       title: "Loại ca",
       dataIndex: "shift_type",
       key: "shift_type",
-      render: (shiftType: any) => shiftType?.name || "N/A",
+      render: (shiftType: any) => shiftType?.name || "Chưa có",
     },
     {
       title: "Thời gian",
       key: "time",
       render: (_: any, record: Shift) => {
         const shiftType = record.shift_type as any;
-        const startTime = record.start_at || shiftType?.start_time || "N/A";
-        const endTime = record.end_at || shiftType?.end_time || "N/A";
+        const startTime = record.start_at || shiftType?.start_time || "--:--";
+        const endTime = record.end_at || shiftType?.end_time || "--:--";
         return `${startTime} - ${endTime}`;
       },
     },

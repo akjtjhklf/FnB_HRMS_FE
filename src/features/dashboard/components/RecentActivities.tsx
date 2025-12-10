@@ -107,7 +107,7 @@ export const RecentActivities: React.FC = () => {
                     {activity.time ? formatDistance(new Date(activity.time), new Date(), {
                       addSuffix: true,
                       locale: vi,
-                    }) : 'N/A'}
+                    }) : 'Chưa có'}
                   </div>
                 </div>
               </div>
