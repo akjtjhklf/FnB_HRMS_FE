@@ -856,7 +856,7 @@ export const SalaryList = () => {
         return total > 0 ? (
           <span className="text-red-600 whitespace-nowrap">-{formatCurrency(total)}</span>
         ) : (
-          <span className="text-gray-400">0</span>
+          <span className="text-gray-700">0</span>
         );
       },
     },
@@ -963,7 +963,7 @@ export const SalaryList = () => {
                 value={searchText}
                 onChange={handleSearchChange}
                 style={{ width: 250 }}
-                prefix={<SearchOutlined className="text-gray-400" />}
+                prefix={<SearchOutlined className="text-gray-700" />}
               />
               <Select
                 value={selectedMonth}
@@ -1352,7 +1352,7 @@ export const SalaryList = () => {
         centered
       >
         <div className="py-4">
-          <p className="mb-4 text-gray-600">Chọn tháng để tính lương cho tất cả nhân viên đang hoạt động.</p>
+          <p className="mb-4 text-gray-700">Chọn tháng để tính lương cho tất cả nhân viên đang hoạt động.</p>
           <DatePicker
             picker="month"
             className="w-full"
@@ -1429,7 +1429,7 @@ export const SalaryList = () => {
                 </div>
 
                 {/* Arrow */}
-                <div className="text-gray-400 text-2xl">→</div>
+                <div className="text-gray-700 text-2xl">→</div>
 
                 {/* New Status */}
                 <div className="text-center">
@@ -1588,17 +1588,17 @@ export const SalaryList = () => {
               </div>
               <div className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Lương cơ bản</span>
+                  <span className="text-gray-700">Lương cơ bản</span>
                   <span className="font-medium">{formatCurrency(Number(sendPayslipTarget.base_salary))} VNĐ</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Phụ cấp & Thưởng</span>
+                  <span className="text-gray-700">Phụ cấp & Thưởng</span>
                   <span className="font-medium text-green-600">
                     +{formatCurrency(Number(sendPayslipTarget.allowances || 0) + Number(sendPayslipTarget.bonuses || 0))} VNĐ
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Khấu trừ</span>
+                  <span className="text-gray-700">Khấu trừ</span>
                   <span className="font-medium text-red-600">
                     -{formatCurrency(Number(sendPayslipTarget.deductions || 0) + Number(sendPayslipTarget.penalties || 0))} VNĐ
                   </span>
@@ -1631,7 +1631,7 @@ export const SalaryList = () => {
                   onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
                   disabled
                 >
-                  <span className="text-gray-400">Gửi email (Đang phát triển)</span>
+                  <span className="text-gray-700">Gửi email (Đang phát triển)</span>
                 </Checkbox>
               </div>
             </div>
@@ -1698,7 +1698,7 @@ export const SalaryList = () => {
                 <Row gutter={16}>
                   <Col span={8}>
                     <Statistic
-                      title={<span className="text-gray-600">Số nhân viên</span>}
+                      title={<span className="text-gray-700">Số nhân viên</span>}
                       value={approvedPayrolls.length}
                       prefix={<UserOutlined className="text-purple-500" />}
                       valueStyle={{ color: '#7c3aed', fontWeight: 'bold' }}
@@ -1706,7 +1706,7 @@ export const SalaryList = () => {
                   </Col>
                   <Col span={8}>
                     <Statistic
-                      title={<span className="text-gray-600">Tháng lương</span>}
+                      title={<span className="text-gray-700">Tháng lương</span>}
                       value={selectedMonth}
                       prefix={<CalendarOutlined className="text-blue-500" />}
                       valueStyle={{ color: '#3b82f6', fontWeight: 'bold', fontSize: '18px' }}
@@ -1714,7 +1714,7 @@ export const SalaryList = () => {
                   </Col>
                   <Col span={8}>
                     <Statistic
-                      title={<span className="text-gray-600">Tổng tiền</span>}
+                      title={<span className="text-gray-700">Tổng tiền</span>}
                       value={totalNetSalary}
                       formatter={(value) => `${formatCurrency(Number(value))}`}
                       suffix="VNĐ"
@@ -1742,7 +1742,7 @@ export const SalaryList = () => {
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3">
                             <Avatar size="small" icon={<UserOutlined />} className="bg-blue-500" />
-                            <span className="font-medium text-gray-800">
+                            <span className="font-medium text-gray-700">
                               {getEmployeeName(item)}
                             </span>
                           </div>
@@ -1779,7 +1779,7 @@ export const SalaryList = () => {
                     onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
                     disabled
                   >
-                    <span className="text-gray-400">Gửi email (Đang phát triển)</span>
+                    <span className="text-gray-700">Gửi email (Đang phát triển)</span>
                   </Checkbox>
                 </div>
               </div>

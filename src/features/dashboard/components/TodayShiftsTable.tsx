@@ -56,7 +56,7 @@ export const TodayShiftsTable: React.FC = () => {
       title: "Giờ làm",
       key: "hours",
       render: (_: any, record: TodayShift) => (
-        <div className="flex items-center gap-1 text-gray-600">
+        <div className="flex items-center gap-1 text-gray-700">
           <Clock size={14} />
           <Text>
             {record.start_time.substring(0, 5)} -{" "}

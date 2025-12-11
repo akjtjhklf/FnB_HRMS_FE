@@ -72,7 +72,7 @@ export const ProfileContractList: React.FC<ProfileContractListProps> = ({
       key: "start_date",
       render: (date: string) => (
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-400" />
+          <Calendar className="w-4 h-4 text-gray-700" />
           {formatDate(date)}
         </div>
       ),
@@ -83,7 +83,7 @@ export const ProfileContractList: React.FC<ProfileContractListProps> = ({
       key: "end_date",
       render: (date: string) => (
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-400" />
+          <Calendar className="w-4 h-4 text-gray-700" />
           {date ? formatDate(date) : "Không có"}
         </div>
       ),

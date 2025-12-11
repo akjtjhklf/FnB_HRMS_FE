@@ -102,7 +102,7 @@ export const RecentActivities: React.FC = () => {
                   <Text className="text-sm text-gray-700 font-medium">
                     {activity.actor}
                   </Text>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1 text-xs text-gray-700">
                     <Clock size={12} />
                     {activity.time ? formatDistance(new Date(activity.time), new Date(), {
                       addSuffix: true,

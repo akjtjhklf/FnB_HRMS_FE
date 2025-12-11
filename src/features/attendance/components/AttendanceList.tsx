@@ -72,7 +72,7 @@ export const AttendanceList = () => {
             : null;
 
         if (!employee) {
-          return <span className="text-gray-400">Chưa xác định</span>;
+          return <span className="text-gray-700">Chưa xác định</span>;
         }
 
         return (
@@ -165,7 +165,7 @@ export const AttendanceList = () => {
       width: 200,
       ellipsis: true,
       render: (notes: string) => (
-        <span className="text-gray-600">{notes || "-"}</span>
+        <span className="text-gray-700">{notes || "-"}</span>
       ),
     },
     {

@@ -174,7 +174,7 @@ export const Step1UserAccess: React.FC<Step1UserAccessProps> = ({ isEdit = false
                     </Form.Item>
 
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded mt-4 mb-4">
-                        <Text className="text-sm text-gray-600">
+                        <Text className="text-sm text-gray-700">
                             📌 <strong>Lưu ý:</strong> Chính sách được quản lý tại cấp độ vai trò.
                             Tuy nhiên, bạn có thể gán thêm các chính sách bổ sung cho nhân viên này bên dưới.
                         </Text>

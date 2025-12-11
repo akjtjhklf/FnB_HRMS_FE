@@ -90,7 +90,7 @@ export function ShiftCard({
         </div>
 
         {/* Time */}
-        <div className="flex items-center gap-1 text-xs text-gray-600">
+        <div className="flex items-center gap-1 text-xs text-gray-700">
           <ClockCircleOutlined />
           {getTimeDisplay(shift.start_at, shiftType?.start_time)} -{" "}
           {getTimeDisplay(shift.end_at, shiftType?.end_time)}
@@ -111,7 +111,7 @@ export function ShiftCard({
               key={posId}
               className="flex items-center justify-between text-xs"
             >
-              <span className="text-gray-600 truncate flex-1">
+              <span className="text-gray-700 truncate flex-1">
                 {positionName}
               </span>
               <Badge

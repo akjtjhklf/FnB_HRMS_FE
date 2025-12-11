@@ -93,7 +93,7 @@ export const DateRangeSelector = ({
         )}
 
         {rangeType !== "custom" && startDate && endDate && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-700">
             📅 Từ <strong>{dayjs(startDate).format("DD/MM/YYYY")}</strong> đến{" "}
             <strong>{dayjs(endDate).format("DD/MM/YYYY")}</strong>
           </div>

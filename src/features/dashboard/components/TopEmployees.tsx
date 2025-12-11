@@ -66,7 +66,7 @@ export const TopEmployees: React.FC = () => {
       case 1:
         return "text-yellow-500";
       case 2:
-        return "text-gray-400";
+        return "text-gray-700";
       case 3:
         return "text-orange-500";
       default:

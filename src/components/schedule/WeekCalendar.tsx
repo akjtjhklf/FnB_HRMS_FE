@@ -120,7 +120,7 @@ export function WeekCalendar({
                 <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
                   {day.short}
                 </span>
-                <span className="text-sm font-bold text-gray-800 mt-1">
+                <span className="text-sm font-bold text-gray-700 mt-1">
                   {day.label}
                 </span>
               </div>
@@ -150,7 +150,7 @@ export function WeekCalendar({
                       <div className="space-y-2">
                         {/* Shift Name */}
                         <div className="flex items-center justify-between">
-                          <h4 className="font-semibold text-sm text-gray-800 truncate">
+                          <h4 className="font-semibold text-sm text-gray-700 truncate">
                             {getShiftName(shift)}
                           </h4>
                           {registered && (
@@ -159,7 +159,7 @@ export function WeekCalendar({
                         </div>
 
                         {/* Time */}
-                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <div className="flex items-center gap-1 text-xs text-gray-700">
                           <ClockCircleOutlined className="text-blue-500" />
                           <span>
                             {(shift.start_at || '--:--')} - {(shift.end_at || '--:--')}
@@ -188,7 +188,7 @@ export function WeekCalendar({
                                     "flex items-center justify-between text-xs px-2 py-1 rounded",
                                     isSelected
                                       ? "bg-green-100 text-green-800"
-                                      : "bg-gray-100 text-gray-600"
+                                      : "bg-gray-100 text-gray-700"
                                   )}
                                 >
                                   <span className="truncate">
@@ -224,7 +224,7 @@ export function WeekCalendar({
                   <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                     description={
-                      <span className="text-xs text-gray-400">Không có ca</span>
+                      <span className="text-xs text-gray-700">Không có ca</span>
                     }
                   />
                 </Card>
@@ -258,17 +258,17 @@ export function WeekCalendar({
             {/* Shift Info */}
             <Card size="small" className="bg-blue-50 border-blue-200">
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg text-gray-800">
+                <h3 className="font-semibold text-lg text-gray-700">
                   {getShiftName(selectedShift)}
                 </h3>
-                <div className="flex items-center gap-2 text-gray-600">
+                <div className="flex items-center gap-2 text-gray-700">
                   <ClockCircleOutlined />
                   <span>
                     {selectedShift.start_at} - {selectedShift.end_at}
                   </span>
                 </div>
                 {getShiftDescription(selectedShift) && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-700">
                     {getShiftDescription(selectedShift)}
                   </p>
                 )}
@@ -277,7 +277,7 @@ export function WeekCalendar({
 
             {/* Position Selection */}
             <div>
-              <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <UserOutlined />
                 Chọn vị trí muốn đăng ký:
               </h4>
@@ -314,7 +314,7 @@ export function WeekCalendar({
                             <Checkbox value={positionId} className="w-full">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-gray-800">
+                                  <p className="font-medium text-gray-700">
                                     {position?.name || "Chưa có"}
                                   </p>
                                   {position?.description && (

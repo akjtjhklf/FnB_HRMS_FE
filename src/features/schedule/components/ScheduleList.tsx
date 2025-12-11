@@ -313,7 +313,7 @@ export const ScheduleList = () => {
             : "";
         return (
           <div>
-            <p className="font-medium text-gray-800">{shiftName}</p>
+            <p className="font-medium text-gray-700">{shiftName}</p>
             <p className="text-xs text-gray-500">{timeRange}</p>
           </div>
         );
@@ -379,7 +379,7 @@ export const ScheduleList = () => {
         confirmed ? (
           <CheckCircleOutlined className="text-green-600 text-lg" />
         ) : (
-          <CloseCircleOutlined className="text-gray-400 text-lg" />
+          <CloseCircleOutlined className="text-gray-700 text-lg" />
         ),
     },
     {
@@ -571,7 +571,7 @@ export const ScheduleList = () => {
             <p className="text-sm text-gray-700">
               Hệ thống sẽ tự động xếp lịch dựa trên:
             </p>
-            <ul className="mt-2 ml-6 text-sm text-gray-600 space-y-1 list-disc">
+            <ul className="mt-2 ml-6 text-sm text-gray-700 space-y-1 list-disc">
               <li>Đăng ký khả dụng của nhân viên</li>
               <li>Vị trí và ưu tiên đã chọn</li>
               <li>Yêu cầu số lượng cho mỗi ca</li>

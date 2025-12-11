@@ -222,7 +222,7 @@ export const NotificationList = () => {
       key: "body",
       ellipsis: true,
       render: (body: string) => (
-        <span className="text-gray-600">{body || "-"}</span>
+        <span className="text-gray-700">{body || "-"}</span>
       ),
     },
     {

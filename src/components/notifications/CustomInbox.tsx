@@ -190,7 +190,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                 {!item.isRead ? (
                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                 ) : (
-                  <Check size={14} className="text-gray-400 mt-1" />
+                  <Check size={14} className="text-gray-700 mt-1" />
                 )}
               </div>
 
@@ -200,7 +200,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                 onClick={() => handleNotificationClick(item)}
               >
                 <div className="flex items-center gap-1">
-                  <p className={`text-sm text-gray-800 ${!item.isRead ? 'font-medium' : ''} flex-1`}>
+                  <p className={`text-sm text-gray-700 ${!item.isRead ? 'font-medium' : ''} flex-1`}>
                     {item.payload?.title || item.body || item.content || "Thông báo hệ thống"}
                   </p>
                   {/* Show link icon if has actionUrl */}
@@ -214,8 +214,8 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                   </p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
-                  <Clock size={10} className="text-gray-400"/>
-                  <span className="text-xs text-gray-400">
+                  <Clock size={10} className="text-gray-700"/>
+                  <span className="text-xs text-gray-700">
                     {new Date(item.createdAt).toLocaleString('vi-VN')}
                   </span>
                 </div>
@@ -232,7 +232,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                     className="p-1.5 rounded hover:bg-gray-200 transition-colors"
                   >
                     {item.isRead ? (
-                      <EyeOff size={14} className="text-gray-400" />
+                      <EyeOff size={14} className="text-gray-700" />
                     ) : (
                       <Eye size={14} className="text-blue-500" />
                     )}
@@ -250,7 +250,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
                     {item.isArchived ? (
                       <ArchiveRestore size={14} className="text-green-500" />
                     ) : (
-                      <Archive size={14} className="text-gray-400" />
+                      <Archive size={14} className="text-gray-700" />
                     )}
                   </button>
                 </Tooltip>
@@ -284,7 +284,7 @@ export const CustomInbox = ({ colorMode = "light" }: CustomInboxProps) => {
       >
         <Bell
           size={20}
-          className={`transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-600 group-hover:text-gray-900'}`}
+          className={`transition-colors ${isOpen ? 'text-blue-600' : 'text-gray-700 group-hover:text-gray-900'}`}
         />
         {unseenCount > 0 && (
           <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white ring-2 ring-white">

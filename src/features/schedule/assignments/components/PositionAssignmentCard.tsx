@@ -36,7 +36,7 @@ export function PositionAssignmentCard({
       <div className="space-y-3">
         {/* Current assignments */}
         <div>
-          <div className="text-sm text-gray-600 mb-2">
+          <div className="text-sm text-gray-700 mb-2">
             Đã xếp: {assignments.length} / {requirement.required_count}
           </div>
           {assignments.map((assignment) => {

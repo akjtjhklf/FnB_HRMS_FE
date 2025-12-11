@@ -157,7 +157,7 @@ export const Step1BasicInfo: React.FC = () => {
                                 ]}
                             >
                                 <Input 
-                                    prefix={<MailOutlined className="text-gray-400" />}
+                                    prefix={<MailOutlined className="text-gray-700" />}
                                     placeholder="employee@company.com" 
                                 />
                             </Form.Item>
@@ -207,7 +207,7 @@ export const Step1BasicInfo: React.FC = () => {
                                 ]}
                             >
                                 <Input 
-                                    prefix={<PhoneOutlined className="text-gray-400" />}
+                                    prefix={<PhoneOutlined className="text-gray-700" />}
                                     placeholder="0912345678" 
                                 />
                             </Form.Item>

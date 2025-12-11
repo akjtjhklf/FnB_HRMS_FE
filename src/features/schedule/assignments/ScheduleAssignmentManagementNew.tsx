@@ -397,11 +397,11 @@ export function ScheduleAssignmentManagement() {
       <Card>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-2">
               <CalendarOutlined className="text-blue-600" />
               Xếp Lịch Làm Việc
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-700 mt-1">
               Click vào ca để xếp nhân viên cho từng vị trí
             </p>
           </div>
@@ -453,7 +453,7 @@ export function ScheduleAssignmentManagement() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Tỷ lệ hoàn thành</span>
+                <span className="text-sm text-gray-700">Tỷ lệ hoàn thành</span>
                 <span className="text-sm font-medium">
                   {readiness.totalAssigned} / {readiness.totalRequired} vị trí
                 </span>

@@ -94,7 +94,7 @@ export function AttendanceDashboard() {
             {/* Page Header */}
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Chấm Công</h1>
-                <p className="text-gray-600 mt-1">Quản lý giờ làm việc và chấm công</p>
+                <p className="text-gray-700 mt-1">Quản lý giờ làm việc và chấm công</p>
             </div>
 
             {/* Tabs */}

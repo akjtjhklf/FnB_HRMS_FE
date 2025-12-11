@@ -589,11 +589,11 @@ export function ShiftsManagement() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-2">
               <CalendarOutlined className="text-blue-600" />
               Quản lý Ca Làm Việc
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-700 mt-1">
               Tạo và quản lý ca làm việc trong tuần
             </p>
           </div>
@@ -632,11 +632,11 @@ export function ShiftsManagement() {
                   <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
                     {day.short}
                   </span>
-                  <span className="text-sm font-bold text-gray-800 mt-1">
+                  <span className="text-sm font-bold text-gray-700 mt-1">
                     {day.label}
                   </span>
                   {day.date && (
-                    <span className="text-xs text-gray-600 mt-0.5">
+                    <span className="text-xs text-gray-700 mt-0.5">
                       {day.date.format("DD/MM/YYYY")}
                     </span>
                   )}
@@ -704,7 +704,7 @@ export function ShiftsManagement() {
                           </div>
 
                           {/* Time */}
-                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <div className="flex items-center gap-1 text-xs text-gray-700">
                             <ClockCircleOutlined className="text-blue-500" />
                             <span>
                               {(() => {
@@ -720,7 +720,7 @@ export function ShiftsManagement() {
                           </div>
 
                           {/* Total Required */}
-                          <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <div className="flex items-center gap-1 text-xs text-gray-700">
                             <UserOutlined className="text-green-500" />
                             <span>Cần {shift.total_required || 0} người</span>
                           </div>
@@ -759,7 +759,7 @@ export function ShiftsManagement() {
                     <Empty
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                       description={
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-700">
                           Chưa có ca
                         </span>
                       }
@@ -840,7 +840,7 @@ export function ShiftsManagement() {
           {/* Position Requirements Section */}
           <div className="space-y-3 border-t pt-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-gray-800">
+              <label className="text-sm font-semibold text-gray-700">
                 👥 Yêu cầu vị trí cho ca này
               </label>
               <Button
@@ -860,7 +860,7 @@ export function ShiftsManagement() {
 
             {singleShiftPositionRequirements.length === 0 ? (
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-gray-50">
-                <p className="text-sm text-gray-600 text-center">
+                <p className="text-sm text-gray-700 text-center">
                   Chưa có yêu cầu vị trí. Click &quot;Thêm vị trí&quot; để thêm.
                 </p>
               </div>
@@ -1017,7 +1017,7 @@ export function ShiftsManagement() {
                       key={day.value}
                       className="bg-white border border-gray-200 rounded p-2 text-center"
                     >
-                      <div className="text-xs text-gray-600">{day.short}</div>
+                      <div className="text-xs text-gray-700">{day.short}</div>
                       <div className="text-sm font-semibold text-gray-900 mt-1">
                         {actualDate.format("DD/MM")}
                       </div>
@@ -1031,7 +1031,7 @@ export function ShiftsManagement() {
           {/* Shift types selector */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-semibold text-gray-800">
+              <label className="text-sm font-semibold text-gray-700">
                 Chọn loại ca (có thể chọn nhiều)
               </label>
               {shiftTypes.length > 0 && (
@@ -1046,7 +1046,7 @@ export function ShiftsManagement() {
                 <Empty
                   description={
                     <div>
-                      <p className="text-gray-600">Không có loại ca nào</p>
+                      <p className="text-gray-700">Không có loại ca nào</p>
                       <p className="text-sm text-gray-500 mt-1">
                         Vui lòng tạo loại ca trước khi tạo nhanh
                       </p>
@@ -1109,7 +1109,7 @@ export function ShiftsManagement() {
                           </div>
                         </div>
 
-                        <div className="text-xs text-gray-600 mt-auto">
+                        <div className="text-xs text-gray-700 mt-auto">
                           <div className="flex items-center gap-1">
                             <ClockCircleOutlined />
                             {st.start_time ||
@@ -1130,7 +1130,7 @@ export function ShiftsManagement() {
           {selectedShiftTypes.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-gray-800">
+                <label className="text-sm font-semibold text-gray-700">
                   👥 Yêu cầu vị trí cho mỗi ca
                 </label>
                 <Button
@@ -1225,12 +1225,12 @@ export function ShiftsManagement() {
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-300 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Tổng cộng sẽ tạo:</p>
+                  <p className="text-sm text-gray-700">Tổng cộng sẽ tạo:</p>
                   <p className="text-2xl font-bold text-green-600 mt-1">
                     {selectedShiftTypes.length * 7}{" "}
-                    <span className="text-base text-gray-600">ca</span>
+                    <span className="text-base text-gray-700">ca</span>
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-gray-700 mt-1">
                     {selectedShiftTypes.length} loại ca × 7 ngày ={" "}
                     {selectedShiftTypes.length * 7} ca
                   </p>

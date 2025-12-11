@@ -229,7 +229,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<UserOutlined className="text-gray-400" />}
+                prefix={<UserOutlined className="text-gray-700" />}
                 placeholder="VD: EMP001"
               />
             </Form.Item>
@@ -244,7 +244,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<MailOutlined className="text-gray-400" />}
+                prefix={<MailOutlined className="text-gray-700" />}
                 placeholder="employee@company.com"
               />
             </Form.Item>
@@ -293,7 +293,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<PhoneOutlined className="text-gray-400" />}
+                prefix={<PhoneOutlined className="text-gray-700" />}
                 placeholder="0912345678"
               />
             </Form.Item>
@@ -489,7 +489,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<PhoneOutlined className="text-gray-400" />}
+                prefix={<PhoneOutlined className="text-gray-700" />}
                 placeholder="0987654321"
               />
             </Form.Item>
@@ -562,7 +562,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
                         tooltip="Tên đăng nhập để nhân viên truy cập hệ thống"
                       >
                         <Input
-                          prefix={<UserOutlined className="text-gray-400" />}
+                          prefix={<UserOutlined className="text-gray-700" />}
                           placeholder="vd: nguyenvana"
                         />
                       </Form.Item>

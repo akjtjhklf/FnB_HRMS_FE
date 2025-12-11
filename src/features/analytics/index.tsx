@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               📊 Thống kê & Phân tích
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               Báo cáo toàn diện về nhân sự, chấm công và hoạt động
             </p>
           </div>
@@ -282,7 +282,7 @@ export default function AnalyticsPage() {
       </Card>
 
       {/* Footer */}
-      <div className="mt-6 text-center text-gray-400 text-sm">
+      <div className="mt-6 text-center text-gray-700 text-sm">
         <p>Dữ liệu được cập nhật theo thời gian thực từ hệ thống</p>
       </div>
     </div>

@@ -131,7 +131,7 @@ export function PositionsManagement() {
       dataIndex: "description",
       key: "description",
       render: (desc: string) => (
-        <span className="text-gray-600">{desc || "-"}</span>
+        <span className="text-gray-700">{desc || "-"}</span>
       ),
     },
     {
@@ -170,11 +170,11 @@ export function PositionsManagement() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-2">
               <TeamOutlined className="text-blue-600" />
               Quản lý Vị trí
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-700 mt-1">
               Quản lý các vị trí làm việc trong ca
             </p>
           </div>

@@ -459,10 +459,10 @@ export const RequestList = () => {
           {record.status === "pending" && record.type !== "attendance" && (
             <>
               <Tooltip title="Duyệt (Chưa hỗ trợ)">
-                <Button type="text" icon={<CheckOutlined />} className="text-gray-400" disabled />
+                <Button type="text" icon={<CheckOutlined />} className="text-gray-700" disabled />
               </Tooltip>
               <Tooltip title="Từ chối (Chưa hỗ trợ)">
-                <Button type="text" icon={<StopOutlined />} className="text-gray-400" disabled />
+                <Button type="text" icon={<StopOutlined />} className="text-gray-700" disabled />
               </Tooltip>
             </>
           )}
@@ -626,7 +626,7 @@ export const RequestList = () => {
             </div>
             <div>
               <span className="text-gray-500 text-sm">Mô tả:</span>
-              <p className="text-gray-800">{selectedRequest.description}</p>
+              <p className="text-gray-700">{selectedRequest.description}</p>
             </div>
             <div>
               <span className="text-gray-500 text-sm">Ngày tạo:</span>

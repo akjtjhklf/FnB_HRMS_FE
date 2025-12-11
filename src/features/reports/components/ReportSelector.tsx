@@ -83,7 +83,7 @@ export const ReportSelector = ({
                 <div className="flex flex-col items-center text-center py-4">
                   <div
                     className={`mb-3 ${
-                      isSelected ? report.textColor : "text-gray-400"
+                      isSelected ? report.textColor : "text-gray-700"
                     }`}
                   >
                     {report.icon}

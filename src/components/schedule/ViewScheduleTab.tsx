@@ -193,10 +193,10 @@ export function ViewScheduleTab() {
         <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-800 mb-2">
+              <h3 className="font-semibold text-gray-700 mb-2">
                 Lịch làm việc của bạn
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-700">
                 Bạn có <strong className="text-blue-600">{myAssignments.length}</strong> ca
                 làm việc trong tuần này
               </p>
@@ -219,7 +219,7 @@ export function ViewScheduleTab() {
                   <span className="text-xs font-medium text-purple-600 uppercase">
                     {day.short}
                   </span>
-                  <span className="text-sm font-bold text-gray-800 mt-1">
+                  <span className="text-sm font-bold text-gray-700 mt-1">
                     {day.label}
                   </span>
                 </div>
@@ -236,10 +236,10 @@ export function ViewScheduleTab() {
                     >
                       {/* Shift Info */}
                       <div className="mb-2 pb-2 border-b border-gray-200">
-                        <h4 className="font-semibold text-sm text-gray-800">
+                        <h4 className="font-semibold text-sm text-gray-700">
                           {shift.shift_type?.name || "Ca làm việc"}
                         </h4>
-                        <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                        <div className="flex items-center gap-1 text-xs text-gray-700 mt-1">
                           <ClockCircleOutlined />
                           <span>
                             {shift.start_at} - {shift.end_at}
@@ -271,7 +271,7 @@ export function ViewScheduleTab() {
                                     {employee?.first_name?.[0] || "?"}
                                   </Avatar>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-gray-800 truncate">
+                                    <p className="text-xs font-medium text-gray-700 truncate">
                                       {employee?.first_name} {employee?.last_name}
                                     </p>
                                     <Tag color="blue" className="text-xs mt-1">
@@ -322,7 +322,7 @@ export function ViewScheduleTab() {
                         ) : (
                           <div className="text-center py-2">
                             <UserOutlined className="text-gray-300 text-lg" />
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-700 mt-1">
                               Chưa có phân công
                             </p>
                           </div>
@@ -334,7 +334,7 @@ export function ViewScheduleTab() {
                   <Card size="small" className="border-dashed">
                     <Empty
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={<span className="text-xs text-gray-400">Không có ca</span>}
+                      description={<span className="text-xs text-gray-700">Không có ca</span>}
                     />
                   </Card>
                 )}
@@ -369,7 +369,7 @@ export function ViewScheduleTab() {
         <Form form={form} layout="vertical" onFinish={handleSwapSubmit}>
           {selectedAssignment && (
             <Card size="small" className="mb-4 bg-gray-50">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-700">
                 Ca: <strong>{typeof selectedAssignment.shift_id === "object" ? (selectedAssignment.shift_id.shift_type?.name || "Ca làm việc") : "Chưa có"}</strong>
               </p>
             </Card>

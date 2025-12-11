@@ -184,7 +184,7 @@ export const ProfileEdit: React.FC = () => {
                   name="employee_code"
                 >
                   <Input
-                    prefix={<UserOutlined className="text-gray-400" />}
+                    prefix={<UserOutlined className="text-gray-700" />}
                     disabled
                   />
                 </Form.Item>
@@ -199,7 +199,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<MailOutlined className="text-gray-400" />}
+                    prefix={<MailOutlined className="text-gray-700" />}
                     placeholder="employee@company.com"
                   />
                 </Form.Item>
@@ -248,7 +248,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    prefix={<PhoneOutlined className="text-gray-700" />}
                     placeholder="0912345678"
                   />
                 </Form.Item>
@@ -324,7 +324,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    prefix={<PhoneOutlined className="text-gray-700" />}
                     placeholder="0987654321"
                   />
                 </Form.Item>
