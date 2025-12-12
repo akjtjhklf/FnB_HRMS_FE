@@ -28,7 +28,7 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
     { icon: <Users size={18} />, label: "Yêu Cầu Vị Trí", href: "/schedule/shift-requirements" },
     { icon: <ClipboardList size={18} />, label: "Yêu Cầu Đổi Ca", href: "/schedule/change-requests" },
   ] : [
-    { icon: <BarChart3 size={18} />, label: "Dashboard", href: "/schedule" },
+    // Employees don't need Dashboard - they have My Schedule and Availability Registry
     { icon: <Calendar size={18} />, label: "Lịch Của Tôi", href: "/schedule/my-schedule" },
     { icon: <ClipboardList size={18} />, label: "Đăng Ký Ca", href: "/schedule/availability" },
     { icon: <ClipboardList size={18} />, label: "Đổi Ca", href: "/schedule/change-requests" },

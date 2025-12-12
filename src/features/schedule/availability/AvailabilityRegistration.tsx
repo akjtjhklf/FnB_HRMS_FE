@@ -366,19 +366,29 @@ export function AvailabilityRegistration() {
       message.success(
         `Đăng ký thành công ${newPositions.length} vị trí cho ca làm việc!`
       );
+
+      // Refetch both lists and WAIT for completion before closing modal
+      // This prevents race condition where user could register again before data is updated
+      await Promise.all([
+        availabilitiesQuery.refetch(),
+        availabilityPositionsQuery.refetch(),
+      ]);
+
+      // Only reset state after refetch is complete
       setRegisterModalOpen(false);
       setSelectedShift(null);
       setSelectedPositions([]);
       form.resetFields();
-
-      // Refetch both lists
-      availabilitiesQuery.refetch();
-      availabilityPositionsQuery.refetch();
     } catch (error: any) {
       console.error("Registration error:", error);
       message.error(
         error?.message || "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại."
       );
+      // Đóng modal và reset state ngay cả khi lỗi
+      setRegisterModalOpen(false);
+      setSelectedShift(null);
+      setSelectedPositions([]);
+      form.resetFields();
     }
   };
 
@@ -927,19 +937,6 @@ export function AvailabilityRegistration() {
                   </Space>
                 </Card>
 
-                <Alert
-                  message="Thông tin đăng ký"
-                  description={
-                    <Space direction="vertical" style={{ width: "100%" }}>
-                      <Text>• Độ ưu tiên: (Tự động theo vai trò )</Text>
-                      <Text>• Bạn có thể chọn nhiều vị trí cùng lúc</Text>
-                      <Text>• Mỗi vị trí sẽ được tạo một đăng ký riêng</Text>
-                    </Space>
-                  }
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
 
                 {/* Position Selection */}
                 <div style={{ marginBottom: 16 }}>
