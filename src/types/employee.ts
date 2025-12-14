@@ -108,7 +108,7 @@ export interface Position {
   description?: string;
   department?: string;
   level?: string;
-  priority?: number;
+  is_priority?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -118,7 +118,7 @@ export interface CreatePositionDto {
   description?: string;
   department?: string;
   level?: string;
-  priority?: number;
+  is_priority?: boolean;
 }
 
 export interface UpdatePositionDto extends Partial<CreatePositionDto> { }
