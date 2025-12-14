@@ -121,3 +121,16 @@ export const getStatusColor = (status: string): string => {
   
   return statusColors[status.toLowerCase()] || "gray";
 };
+
+/**
+ * Format time from ISO string to HH:mm format
+ */
+export const formatTime = (isoString: string): string => {
+  if (!isoString) return "";
+  
+  const date = new Date(isoString);
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  
+  return `${hours}:${minutes}`;
+};

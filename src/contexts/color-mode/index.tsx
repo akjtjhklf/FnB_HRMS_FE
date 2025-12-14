@@ -2,6 +2,7 @@
 
 import { RefineThemes } from "@refinedev/antd";
 import { App as AntdApp, ConfigProvider, theme } from "antd";
+import vi_VN from "antd/locale/vi_VN";
 import Cookies from "js-cookie";
 import React, {
   type PropsWithChildren,
@@ -9,6 +10,9 @@ import React, {
   useEffect,
   useState,
 } from "react";
+
+// Import configured dayjs to ensure locale is set correctly (weekStart = Monday)
+import "@/lib/dayjs";
 
 type ColorModeContextType = {
   mode: string;
@@ -60,6 +64,7 @@ export const ColorModeContextProvider: React.FC<
       }}
     >
       <ConfigProvider
+        locale={vi_VN}
         // you can change the theme colors here. example: ...RefineThemes.Magenta,
         theme={{
           ...RefineThemes.Blue,

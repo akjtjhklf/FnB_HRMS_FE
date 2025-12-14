@@ -4,11 +4,12 @@ export * from "./auth";
 export * from "./employee";
 export * from "./attendance";
 export * from "./salary";
+export * from "./schedule";
 
 // Legacy types (keep for backward compatibility if needed)
 // User and Authentication types
 export interface User {
-  id: number;
+  id: string;
   email: string;
   username?: string;
   is_active: boolean;
@@ -22,7 +23,7 @@ export interface User {
 }
 
 export interface Role {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   created_at: string;
@@ -30,7 +31,7 @@ export interface Role {
 }
 
 export interface Permission {
-  id: number;
+  id: string;
   action: string;
   collection: string;
   fields?: string;
@@ -39,16 +40,16 @@ export interface Permission {
 }
 
 export interface Policy {
-  id: number;
+  id: string;
   name: string;
   roles: Role[];
   permissions: Permission[];
 }
 
 export interface UserRole {
-  id: number;
-  user_id: number;
-  role_id: number;
+  id: string;
+  user_id: string;
+  role_id: string;
   role?: Role;
   scope?: Record<string, any>;
   created_at: string;
@@ -56,8 +57,8 @@ export interface UserRole {
 
 // Employee types
 export interface Employee {
-  id: number;
-  user_id?: number;
+  id: string;
+  user_id?: string;
   employee_code: string;
   first_name?: string;
   last_name?: string;
@@ -71,7 +72,7 @@ export interface Employee {
   hire_date?: string;
   termination_date?: string;
   status?: "active" | "on_leave" | "suspended" | "terminated";
-  scheme_id?: number;
+  scheme_id?: string;
   default_work_hours_per_week?: number;
   max_hours_per_week?: number;
   max_consecutive_days?: number;
@@ -88,7 +89,7 @@ export interface Employee {
 
 // Position types
 export interface Position {
-  id: number;
+  id: string;
   name: string;
   description?: string;
   created_at: string;
@@ -97,8 +98,8 @@ export interface Position {
 
 // RFID Card types
 export interface RfidCard {
-  id: number;
-  employee_id?: number;
+  id: string;
+  employee_id?: string;
   card_uid: string;
   issued_at?: string;
   revoked_at?: string;
@@ -110,9 +111,9 @@ export interface RfidCard {
 
 // Salary Scheme types
 export interface SalaryScheme {
-  id: number;
+  id: string;
   name: string;
-  position_id?: number;
+  position_id?: string;
   pay_type: "hourly" | "fixed_shift" | "monthly";
   rate: number;
   min_hours?: number;
@@ -128,11 +129,11 @@ export interface SalaryScheme {
 
 // Attendance types
 export interface AttendanceLog {
-  id: number;
+  id: string;
   card_uid: string;
-  rfid_card_id?: number;
-  employee_id?: number;
-  device_id?: number;
+  rfid_card_id?: string;
+  employee_id?: string;
+  device_id?: string;
   event_type: "tap" | "clock_in" | "clock_out";
   event_time: string;
   raw_payload?: string;
@@ -142,10 +143,10 @@ export interface AttendanceLog {
 }
 
 export interface AttendanceShift {
-  id: number;
-  shift_id?: number;
-  schedule_assignment_id?: number;
-  employee_id: number;
+  id: string;
+  shift_id?: string;
+  schedule_assignment_id?: string;
+  employee_id: string;
   clock_in?: string;
   clock_out?: string;
   worked_minutes?: number;
@@ -159,7 +160,7 @@ export interface AttendanceShift {
 
 // Device types
 export interface Device {
-  id: number;
+  id: string;
   name: string;
   location?: string;
   device_key: string;
@@ -169,7 +170,7 @@ export interface Device {
   last_seen_at?: string;
   status: "online" | "offline" | "decommissioned";
   current_mode: "attendance" | "enroll";
-  employee_id_pending?: number;
+  employee_id_pending?: string;
   metadata?: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -177,11 +178,12 @@ export interface Device {
 
 // Posts example type
 export interface Post {
-  id: number;
+  id: string;
   title: string;
   content: string;
   status: "draft" | "published" | "archived";
-  author_id: number;
+  author_id: string;
   created_at: string;
   updated_at: string;
 }
+

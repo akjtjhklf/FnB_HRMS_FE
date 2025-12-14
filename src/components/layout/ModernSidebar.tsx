@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useLogout } from "@refinedev/core";
+import { useLogout, useGetIdentity } from "@refinedev/core";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -16,62 +17,88 @@ import {
   FileText,
   LogOut,
   X,
+  User,
 } from "lucide-react";
+import { BranchesOutlined } from "@ant-design/icons";
+import LogoImage from "@/assets/logo.png";
 
 interface SidebarItem {
   icon: React.ReactNode;
   label: string;
   href: string;
   badge?: string | number;
+  // Roles được phép truy cập: undefined = tất cả, [] = không ai
+  allowedRoles?: ("admin" | "manager" | "employee")[];
 }
 
-const sidebarItems: SidebarItem[] = [
+// Định nghĩa tất cả menu items với quyền truy cập
+const allSidebarItems: SidebarItem[] = [
   {
     icon: <LayoutDashboard size={24} />,
-    label: "Dashboard",
+    label: "Tổng quan",
     href: "/dashboard",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <Users size={24} />,
     label: "Nhân viên",
     href: "/employees",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
+  },
+  {
+    icon: <User size={24} />,
+    label: "Thông tin",
+    href: "/profile",
+    // Tất cả đều có thể xem profile của mình
   },
   {
     icon: <Calendar size={24} />,
     label: "Lịch làm",
     href: "/schedule",
+    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
   },
   {
     icon: <CheckSquare size={24} />,
     label: "Chấm công",
     href: "/attendance",
-  },
-  {
-    icon: <ClipboardList size={24} />,
-    label: "Yêu cầu",
-    href: "/requests",
+    // Tất cả đều có thể xem, RBAC xử lý chi tiết bên trong
   },
   {
     icon: <DollarSign size={24} />,
     label: "Bảng lương",
     href: "/salary",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager quản lý bảng lương
+  },
+  {
+    icon: <DollarSign size={24} />,
+    label: "Lương của tôi",
+    href: "/salary/my-salary",
+    allowedRoles: ["employee"], // Chỉ employee xem lương của mình
   },
   {
     icon: <Bell size={24} />,
     label: "Thông báo",
     href: "/notifications",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
   },
   {
     icon: <FileText size={24} />,
     label: "Thống kê",
     href: "/reports",
+    allowedRoles: ["admin", "manager"], // Chỉ admin và manager
+  },
+  {
+    icon: <BranchesOutlined size={24} />,
+    label: "Phân quyền",
+    href: "/permissions",
+    allowedRoles: ["admin"], // Chỉ admin
   },
 ];
 
 const bottomItems: SidebarItem[] = [
   {
     icon: <LogOut size={24} />,
-    label: "Logout",
+    label: "Đăng xuất",
     href: "/logout",
   },
 ];
@@ -87,21 +114,62 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { mutate: logout } = useLogout();
+  const { data: identity } = useGetIdentity<{
+    id: string;
+    role?: string | { name?: string };
+    employee_id?: any;
+  }>();
+
+  // Lấy role từ identity (có thể là string hoặc object)
+  const userRole = useMemo((): "admin" | "manager" | "employee" => {
+    let roleName: string | undefined;
+    
+    // Role có thể là string hoặc object { name: string }
+    if (typeof identity?.role === "string") {
+      roleName = identity.role;
+    } else if (typeof identity?.role === "object" && identity?.role?.name) {
+      roleName = identity.role.name;
+    }
+    
+    const role = roleName?.toLowerCase();
+    // Match các variants của admin: admin, administrator
+    if (role === "admin" || role === "administrator") return "admin";
+    // Match các variants của manager
+    if (role === "manager") return "manager";
+    return "employee";
+  }, [identity?.role]);
+
+  // Lọc sidebar items dựa trên role
+  const sidebarItems = useMemo(() => {
+    return allSidebarItems.filter((item) => {
+      // Nếu không có allowedRoles => tất cả đều được phép
+      if (!item.allowedRoles) return true;
+      // Kiểm tra role có trong danh sách cho phép không
+      return item.allowedRoles.includes(userRole);
+    });
+  }, [userRole]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
-      return pathname === "/dashboard" || pathname === "/" || pathname === "/(dashboard)";
+      return (
+        pathname === "/dashboard" ||
+        pathname === "/" ||
+        pathname === "/(dashboard)"
+      );
     }
     return pathname?.startsWith(href);
   };
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    if (mobileOpen && onMobileClose) {
+    if (
+      onMobileClose &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 1024
+    ) {
       onMobileClose();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, onMobileClose]);
 
   return (
     <>
@@ -118,28 +186,26 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
         className={cn(
           "h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 fixed left-0 top-0 z-50",
           "w-24",
-          // Mobile: slide in/out
           "lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-center border-b border-gray-200 relative">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">L</span>
-          </div>
-          
-          {/* Mobile Close Button */}
-          <button
-            onClick={onMobileClose}
-            className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X size={16} className="text-gray-600" />
-          </button>
+          <Image
+            src={LogoImage}
+            alt="Logo"
+            width={48}
+            height={48}
+            className="rounded-lg object-contain"
+          />
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2">
+        <nav
+          className="flex-1 overflow-y-auto py-2 px-2"
+          style={{ scrollbarWidth: "none" }}
+        >
           <div className="space-y-2">
             {sidebarItems.map((item, index) => {
               const active = isActive(item.href);
@@ -151,7 +217,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-all duration-200 group relative",
                     active
                       ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
                   {/* Active Indicator */}
@@ -160,9 +226,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   )}
 
                   {/* Icon */}
-                  <div className="flex-shrink-0">
-                    {item.icon}
-                  </div>
+                  <div className="flex-shrink-0">{item.icon}</div>
 
                   {/* Label */}
                   <span className="font-medium text-[10px] text-center leading-tight">
@@ -187,7 +251,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
             {bottomItems.map((item, index) => {
               const active = isActive(item.href);
               const isLogout = item.href === "/logout";
-              
+
               if (isLogout) {
                 return (
                   <button
@@ -199,9 +263,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     )}
                   >
                     {/* Icon */}
-                    <div className="flex-shrink-0">
-                      {item.icon}
-                    </div>
+                    <div className="flex-shrink-0">{item.icon}</div>
 
                     {/* Label */}
                     <span className="font-medium text-[10px] text-center leading-tight">
@@ -210,7 +272,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   </button>
                 );
               }
-              
+
               return (
                 <Link
                   key={index}
@@ -219,13 +281,11 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     "flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-200 group relative",
                     active
                       ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   )}
                 >
                   {/* Icon */}
-                  <div className="flex-shrink-0">
-                    {item.icon}
-                  </div>
+                  <div className="flex-shrink-0">{item.icon}</div>
 
                   {/* Label */}
                   <span className="font-medium text-[10px] text-center leading-tight">

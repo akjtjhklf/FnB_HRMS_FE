@@ -13,8 +13,13 @@ export const requestInterceptor = (
 ) => {
   request.use(
     (config: InternalAxiosRequestConfig) => {
-      // Không thêm token cho refresh token endpoint
-      if (config.url === AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT) {
+      // Không thêm token cho login, refresh token và logout endpoints
+      const isAuthEndpoint = 
+        config.url === AUTH_CONFIG.REFRESH_TOKEN_ENDPOINT ||
+        config.url === AUTH_CONFIG.LOGIN_ENDPOINT ||
+        config.url === AUTH_CONFIG.LOGOUT_ENDPOINT;
+      
+      if (isAuthEndpoint) {
         return config;
       }
 

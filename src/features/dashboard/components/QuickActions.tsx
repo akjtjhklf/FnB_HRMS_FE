@@ -41,7 +41,7 @@ export const QuickActions: React.FC = () => {
       icon: <Calendar size={20} />,
       color: "text-green-600",
       bgColor: "bg-green-50 hover:bg-green-100",
-      href: "/schedule/weekly/create",
+      href: "/schedule/assignments",
     },
     {
       title: "Tính lương",
@@ -49,7 +49,7 @@ export const QuickActions: React.FC = () => {
       icon: <DollarSign size={20} />,
       color: "text-orange-600",
       bgColor: "bg-orange-50 hover:bg-orange-100",
-      href: "/salary/schemes",
+      href: "/salary",
     },
     {
       title: "Báo cáo",
@@ -57,24 +57,25 @@ export const QuickActions: React.FC = () => {
       icon: <FileText size={20} />,
       color: "text-purple-600",
       bgColor: "bg-purple-50 hover:bg-purple-100",
-      onClick: () => alert("Chức năng báo cáo đang phát triển"),
+      // onClick: () => alert("Chức năng báo cáo đang phát triển"),
+      href: "/reports",
     },
-    {
-      title: "Cài đặt",
-      description: "Cấu hình hệ thống",
-      icon: <Settings size={20} />,
-      color: "text-gray-600",
-      bgColor: "bg-gray-50 hover:bg-gray-100",
-      onClick: () => alert("Chức năng cài đặt đang phát triển"),
-    },
-    {
-      title: "Xuất dữ liệu",
-      description: "Tải xuống Excel/PDF",
-      icon: <Download size={20} />,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50 hover:bg-cyan-100",
-      onClick: () => alert("Chức năng xuất dữ liệu đang phát triển"),
-    },
+    // {
+    //   title: "Cài đặt",
+    //   description: "Cấu hình hệ thống",
+    //   icon: <Settings size={20} />,
+    //   color: "text-gray-700",
+    //   bgColor: "bg-gray-50 hover:bg-gray-100",
+    //   onClick: () => alert("Chức năng cài đặt đang phát triển"),
+    // },
+    // {
+    //   title: "Xuất dữ liệu",
+    //   description: "Tải xuống Excel/PDF",
+    //   icon: <Download size={20} />,
+    //   color: "text-cyan-600",
+    //   bgColor: "bg-cyan-50 hover:bg-cyan-100",
+    //   onClick: () => alert("Chức năng xuất dữ liệu đang phát triển"),
+    // },
   ];
 
   const handleActionClick = (action: QuickAction) => {
@@ -94,7 +95,7 @@ export const QuickActions: React.FC = () => {
       <Title level={4} className="!mb-4">
         Thao tác nhanh
       </Title>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {actions.map((action, index) => (
           <button
             key={index}
