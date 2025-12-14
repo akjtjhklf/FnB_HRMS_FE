@@ -53,9 +53,9 @@ export function DayColumn({
           <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
             {dayShort}
           </span>
-          <span className="text-sm font-bold text-gray-800 mt-1">{dayLabel}</span>
+          <span className="text-sm font-bold text-gray-700 mt-1">{dayLabel}</span>
           {date && (
-            <span className="text-xs text-gray-600 mt-0.5">
+            <span className="text-xs text-gray-700 mt-0.5">
               {dayjs(date).format("DD/MM")}
             </span>
           )}
@@ -80,7 +80,7 @@ export function DayColumn({
           <Card size="small" className="border-dashed">
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={<span className="text-xs text-gray-400">Chưa có ca</span>}
+              description={<span className="text-xs text-gray-700">Chưa có ca</span>}
             />
           </Card>
         )}

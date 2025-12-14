@@ -65,7 +65,7 @@ export const PermissionForm: React.FC<PermissionFormProps> = ({
         <div className="flex items-center justify-between">
           <span>{opt.label}</span>
           {opt.data?.description && (
-            <span className="text-xs text-gray-400 ml-2">{opt.data.description}</span>
+            <span className="text-xs text-gray-700 ml-2">{opt.data.description}</span>
           )}
         </div>
       ),

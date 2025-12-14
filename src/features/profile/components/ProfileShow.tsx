@@ -162,7 +162,7 @@ export const ProfileShow = () => {
 
               <div className="space-y-3 text-left mt-6">
                 <div className="flex items-start gap-2">
-                  <Mail className="w-4 h-4 text-gray-400 mt-1" />
+                  <Mail className="w-4 h-4 text-gray-700 mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Email</p>
                     <p className="text-sm font-medium">{employeeData.email || "-"}</p>
@@ -170,7 +170,7 @@ export const ProfileShow = () => {
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <Phone className="w-4 h-4 text-gray-400 mt-1" />
+                  <Phone className="w-4 h-4 text-gray-700 mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Số điện thoại</p>
                     <p className="text-sm font-medium">
@@ -180,7 +180,7 @@ export const ProfileShow = () => {
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400 mt-1" />
+                  <Calendar className="w-4 h-4 text-gray-700 mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Ngày sinh</p>
                     <p className="text-sm font-medium">
@@ -190,7 +190,7 @@ export const ProfileShow = () => {
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <Briefcase className="w-4 h-4 text-gray-400 mt-1" />
+                  <Briefcase className="w-4 h-4 text-gray-700 mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Ngày vào làm</p>
                     <p className="text-sm font-medium">
@@ -200,7 +200,7 @@ export const ProfileShow = () => {
                 </div>
 
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400 mt-1" />
+                  <MapPin className="w-4 h-4 text-gray-700 mt-1" />
                   <div className="flex-1">
                     <p className="text-xs text-gray-500">Địa chỉ</p>
                     <p className="text-sm font-medium">{employeeData.address || "-"}</p>
@@ -325,7 +325,7 @@ export const ProfileShow = () => {
 
                           {/* Notes */}
                           <Card type="inner" title="Ghi chú" size="small">
-                            <p className="text-gray-600">
+                            <p className="text-gray-700">
                               {employeeData.notes || "Không có ghi chú"}
                             </p>
                           </Card>
@@ -380,7 +380,7 @@ export const ProfileShow = () => {
                             </div>
                             <div>
                               <p className="text-gray-500 text-sm">Mô tả</p>
-                              <p className="font-medium text-gray-600">
+                              <p className="font-medium text-gray-700">
                                 {identity?.role?.description || "Không có mô tả"}
                               </p>
                             </div>

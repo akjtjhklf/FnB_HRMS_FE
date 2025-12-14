@@ -23,6 +23,7 @@ import { AttendanceAnalytics } from "./components/AttendanceAnalytics";
 import { ScheduleAnalytics } from "./components/ScheduleAnalytics";
 import { SalaryAnalytics } from "./components/SalaryAnalytics";
 import { ExportButton } from "./components/ExportButton";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Dayjs } from "dayjs";
 
 export default function AnalyticsPage() {
@@ -78,7 +79,7 @@ export default function AnalyticsPage() {
   };
 
   const handleDateChange = (date: Dayjs | null) => {
-    setDateFilter(date ? date.format("YYYY-MM-DD") : undefined);
+    setDateFilter(date ? date.format(DATE_FORMATS.DATE_ONLY) : undefined);
   };
 
   const getExportConfig = () => {
@@ -229,7 +230,7 @@ export default function AnalyticsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               📊 Thống kê & Phân tích
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-700">
               Báo cáo toàn diện về nhân sự, chấm công và hoạt động
             </p>
           </div>
@@ -282,7 +283,7 @@ export default function AnalyticsPage() {
       </Card>
 
       {/* Footer */}
-      <div className="mt-6 text-center text-gray-400 text-sm">
+      <div className="mt-6 text-center text-gray-700 text-sm">
         <p>Dữ liệu được cập nhật theo thời gian thực từ hệ thống</p>
       </div>
     </div>

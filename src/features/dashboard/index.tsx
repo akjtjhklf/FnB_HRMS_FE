@@ -154,7 +154,7 @@ const Dashboard: React.FC = () => {
               Hệ thống đang hoạt động bình thường
             </Text>
           </div>
-          <Text className="text-sm text-gray-400">
+          <Text className="text-sm text-gray-700">
             Cập nhật lần cuối: {lastUpdated}
           </Text>
         </div>

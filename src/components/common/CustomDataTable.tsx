@@ -286,7 +286,7 @@ export function CustomDataTable<T extends Record<string, any>>({
           {searchable && (
             <Input
               placeholder={searchPlaceholder}
-              prefix={<SearchOutlined className="text-gray-400" />}
+              prefix={<SearchOutlined className="text-gray-700" />}
               value={searchText}
               onChange={(e) => handleSearch(e.target.value)}
               allowClear

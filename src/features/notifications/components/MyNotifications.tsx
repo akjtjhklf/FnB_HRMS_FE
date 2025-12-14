@@ -223,7 +223,7 @@ export const MyNotifications = () => {
                         >
                             {notification.body || notification.message}
                         </Paragraph>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="flex items-center gap-2 text-xs text-gray-700">
                             <ClockCircleOutlined />
                             <span>{formatTimeAgo(notification.created_at)}</span>
                             {isRead && (

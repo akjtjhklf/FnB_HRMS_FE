@@ -211,8 +211,8 @@ export const EmployeeList = () => {
       ellipsis: true,
       render: (email: string) => (
         <div className="flex items-center gap-2">
-          <Mail className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-600">{email}</span>
+          <Mail className="w-4 h-4 text-gray-700" />
+          <span className="text-gray-700">{email}</span>
         </div>
       ),
     },
@@ -223,8 +223,8 @@ export const EmployeeList = () => {
       width: 150,
       render: (phone: string) => (
         <div className="flex items-center gap-2">
-          <Phone className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-600">
+          <Phone className="w-4 h-4 text-gray-700" />
+          <span className="text-gray-700">
             {phone ? formatPhoneNumber(phone) : "-"}
           </span>
         </div>
@@ -261,8 +261,8 @@ export const EmployeeList = () => {
       sorter: true,
       render: (date: string) => (
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-600">{formatDate(date || "")}</span>
+          <Calendar className="w-4 h-4 text-gray-700" />
+          <span className="text-gray-700">{formatDate(date || "")}</span>
         </div>
       ),
     },
@@ -321,7 +321,7 @@ export const EmployeeList = () => {
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">
+                <span className="text-gray-700 font-medium">
                   Tổng nhân viên
                 </span>
               }
@@ -335,7 +335,7 @@ export const EmployeeList = () => {
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">
+                <span className="text-gray-700 font-medium">
                   Đang làm việc
                 </span>
               }
@@ -349,7 +349,7 @@ export const EmployeeList = () => {
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">Nghỉ phép</span>
+                <span className="text-gray-700 font-medium">Nghỉ phép</span>
               }
               value={stats.onLeave}
               prefix={<ClockCircleOutlined className="text-orange-500" />}
@@ -361,7 +361,7 @@ export const EmployeeList = () => {
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">
+                <span className="text-gray-700 font-medium">
                   Đã nghỉ việc
                 </span>
               }

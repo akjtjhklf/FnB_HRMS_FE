@@ -33,7 +33,7 @@ export default function EmployeesLayout({
             onClick={handleMobileOpen}
             className="lg:hidden fixed top-4 left-4 z-[60] w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <Menu size={20} className="text-gray-600" />
+            <Menu size={20} className="text-gray-700" />
           </button>
           
           <Header />

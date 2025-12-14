@@ -8,7 +8,7 @@ import { ReportSelector } from "./ReportSelector";
 import { DateRangeSelector } from "./DateRangeSelector";
 import { ReportPreview } from "./ReportPreview";
 import { ExportButtons } from "./ExportButtons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 export const ReportsDashboard = () => {
   const { message } = App.useApp();
@@ -22,8 +22,8 @@ export const ReportsDashboard = () => {
   // Initialize date range to current month
   useEffect(() => {
     const now = dayjs();
-    setStartDate(now.startOf("month").format("YYYY-MM-DD"));
-    setEndDate(now.format("YYYY-MM-DD"));
+    setStartDate(now.startOf("month").format(DATE_FORMATS.DATE_ONLY));
+    setEndDate(now.format(DATE_FORMATS.DATE_ONLY));
   }, []);
 
   const handleDateChange = (start?: string, end?: string) => {

@@ -1,6 +1,6 @@
 import { Card, Tag, Badge } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";
@@ -53,12 +53,12 @@ export function ShiftCard({
   ): string => {
     if (time) {
       return time.includes("T")
-        ? dayjs(time).format("HH:mm")
+        ? dayjs(time).format(DATE_FORMATS.TIME_SHORT)
         : time.substring(0, 5);
     }
     if (fallbackTime) {
       return fallbackTime.includes("T")
-        ? dayjs(fallbackTime).format("HH:mm")
+        ? dayjs(fallbackTime).format(DATE_FORMATS.TIME_SHORT)
         : fallbackTime.substring(0, 5);
     }
     return "--:--";
@@ -90,7 +90,7 @@ export function ShiftCard({
         </div>
 
         {/* Time */}
-        <div className="flex items-center gap-1 text-xs text-gray-600">
+        <div className="flex items-center gap-1 text-xs text-gray-700">
           <ClockCircleOutlined />
           {getTimeDisplay(shift.start_at, shiftType?.start_time)} -{" "}
           {getTimeDisplay(shift.end_at, shiftType?.end_time)}
@@ -111,7 +111,7 @@ export function ShiftCard({
               key={posId}
               className="flex items-center justify-between text-xs"
             >
-              <span className="text-gray-600 truncate flex-1">
+              <span className="text-gray-700 truncate flex-1">
                 {positionName}
               </span>
               <Badge

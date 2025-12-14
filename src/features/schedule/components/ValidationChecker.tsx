@@ -26,7 +26,7 @@ export function ValidationChecker({ scheduleId, onValidated, onCancel }: Validat
     return (
       <div className="text-center py-8">
         <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
-        <p className="mt-4 text-gray-600">Đang kiểm tra lịch...</p>
+        <p className="mt-4 text-gray-700">Đang kiểm tra lịch...</p>
       </div>
     );
   }

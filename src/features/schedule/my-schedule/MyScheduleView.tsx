@@ -27,7 +27,7 @@ import {
   UserOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Dayjs } from "dayjs";
 
 interface ScheduleAssignment {
@@ -245,8 +245,8 @@ export function MyScheduleView() {
         {dayAssignments.map((assignment: ScheduleAssignment) => {
           const shift = getShift(assignment);
           const shiftName = shift?.shift_type?.name || "Ca làm việc";
-          const startTime = shift?.start_time ? dayjs(shift.start_time).format("HH:mm") : "";
-          const endTime = shift?.end_time ? dayjs(shift.end_time).format("HH:mm") : "";
+          const startTime = shift?.start_time ? dayjs(shift.start_time).format(DATE_FORMATS.TIME_SHORT) : "";
+          const endTime = shift?.end_time ? dayjs(shift.end_time).format(DATE_FORMATS.TIME_SHORT) : "";
 
           return (
             <li key={assignment.id} style={{ marginBottom: "4px" }}>
@@ -326,7 +326,7 @@ export function MyScheduleView() {
           <Space>
             <ClockCircleOutlined />
             <span>
-              {dayjs(shift.start_time).format("HH:mm")} - {dayjs(shift.end_time).format("HH:mm")}
+              {dayjs(shift.start_time).format(DATE_FORMATS.TIME_SHORT)} - {dayjs(shift.end_time).format(DATE_FORMATS.TIME_SHORT)}
             </span>
           </Space>
         </Descriptions.Item>
@@ -335,7 +335,7 @@ export function MyScheduleView() {
         </Descriptions.Item>
         <Descriptions.Item label="Phân công lúc">
           {selectedAssignment.assigned_at
-            ? dayjs(selectedAssignment.assigned_at).format("DD/MM/YYYY HH:mm")
+            ? dayjs(selectedAssignment.assigned_at).format(DATE_FORMATS.DISPLAY_DATETIME)
             : "-"}
         </Descriptions.Item>
         {selectedAssignment.notes && (
@@ -463,7 +463,7 @@ export function MyScheduleView() {
                   message="Ca làm việc của bạn"
                   description={`${shift.shift_type?.name || "Ca làm việc"} - ${dayjs(
                     shift.date
-                  ).format("DD/MM/YYYY")} (${dayjs(shift.start_time).format("HH:mm")} - ${dayjs(shift.end_time).format("HH:mm")})`}
+                  ).format(DATE_FORMATS.DISPLAY_DATE)} (${dayjs(shift.start_time).format(DATE_FORMATS.TIME_SHORT)} - ${dayjs(shift.end_time).format(DATE_FORMATS.TIME_SHORT)})`}
                   type="info"
                   style={{ marginBottom: "16px" }}
                 />

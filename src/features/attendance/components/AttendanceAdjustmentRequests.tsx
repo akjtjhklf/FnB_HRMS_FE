@@ -302,7 +302,7 @@ export const AttendanceAdjustmentRequests = () => {
                 const oldIn = formatTime(oldTimes.clock_in);
                 const oldOut = formatTime(oldTimes.clock_out);
                 return (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-700">
                         <div>Vào: {oldIn}</div>
                         <div>Ra: {oldOut}</div>
                     </div>

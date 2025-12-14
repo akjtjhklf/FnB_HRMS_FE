@@ -193,7 +193,7 @@ export const EmployeeAttendanceDetail = ({
         width: 250,
         ellipsis: true,
         render: (notes) => (
-          <span className="text-gray-600">{notes || "-"}</span>
+          <span className="text-gray-700">{notes || "-"}</span>
         ),
       },
     ],
@@ -217,7 +217,7 @@ export const EmployeeAttendanceDetail = ({
       {/* Back Button */}
       <button
         onClick={() => router.push("/attendance")}
-        className="mb-4 px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2 transition-colors"
+        className="mb-4 px-4 py-2 text-gray-700 hover:text-gray-900 flex items-center gap-2 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Quay lại danh sách

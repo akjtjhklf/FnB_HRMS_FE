@@ -31,7 +31,7 @@ import {
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 
 dayjs.extend(weekOfYear);
@@ -85,12 +85,12 @@ export const ScheduleList = () => {
       filters: {
         permanent: selectedScheduleId
           ? [
-              {
-                field: "schedule_id",
-                operator: "eq",
-                value: selectedScheduleId,
-              },
-            ]
+            {
+              field: "schedule_id",
+              operator: "eq",
+              value: selectedScheduleId,
+            },
+          ]
           : [],
       },
       queryOptions: {
@@ -128,8 +128,8 @@ export const ScheduleList = () => {
         {
           resource: "weekly-schedules/with-shifts",
           values: {
-            week_start: values.week_start.format("YYYY-MM-DD"),
-            week_end: values.week_end.format("YYYY-MM-DD"),
+            week_start: values.week_start.format(DATE_FORMATS.DATE_ONLY),
+            week_end: values.week_end.format(DATE_FORMATS.DATE_ONLY),
             status: "draft",
           },
         },
@@ -245,7 +245,7 @@ export const ScheduleList = () => {
         <div>
           <p className="font-medium text-gray-900">
             {dayjs(record.week_start).format("DD/MM")} -{" "}
-            {dayjs(record.week_end).format("DD/MM/YYYY")}
+            {dayjs(record.week_end).format(DATE_FORMATS.DISPLAY_DATE)}
           </p>
           <p className="text-xs text-gray-500">
             Tuần {dayjs(record.week_start).week()}
@@ -265,7 +265,7 @@ export const ScheduleList = () => {
       dataIndex: "created_at",
       key: "created_at",
       width: 150,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY HH:mm"),
+      render: (date: string) => dayjs(date).format(DATE_FORMATS.DISPLAY_DATETIME),
     },
     {
       title: "Thao tác",
@@ -313,7 +313,7 @@ export const ScheduleList = () => {
             : "";
         return (
           <div>
-            <p className="font-medium text-gray-800">{shiftName}</p>
+            <p className="font-medium text-gray-700">{shiftName}</p>
             <p className="text-xs text-gray-500">{timeRange}</p>
           </div>
         );
@@ -379,7 +379,7 @@ export const ScheduleList = () => {
         confirmed ? (
           <CheckCircleOutlined className="text-green-600 text-lg" />
         ) : (
-          <CloseCircleOutlined className="text-gray-400 text-lg" />
+          <CloseCircleOutlined className="text-gray-700 text-lg" />
         ),
     },
     {
@@ -571,7 +571,7 @@ export const ScheduleList = () => {
             <p className="text-sm text-gray-700">
               Hệ thống sẽ tự động xếp lịch dựa trên:
             </p>
-            <ul className="mt-2 ml-6 text-sm text-gray-600 space-y-1 list-disc">
+            <ul className="mt-2 ml-6 text-sm text-gray-700 space-y-1 list-disc">
               <li>Đăng ký khả dụng của nhân viên</li>
               <li>Vị trí và ưu tiên đã chọn</li>
               <li>Yêu cầu số lượng cho mỗi ca</li>

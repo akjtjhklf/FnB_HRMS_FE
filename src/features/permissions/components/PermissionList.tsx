@@ -202,7 +202,7 @@ export const PermissionList = () => {
         <Tooltip title={text}>
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-purple-600" />
-            <span className="text-gray-600 font-mono text-xs">{text}</span>
+            <span className="text-gray-700 font-mono text-xs">{text}</span>
           </div>
         </Tooltip>
       ),
@@ -234,7 +234,7 @@ export const PermissionList = () => {
         const count = Object.keys(permissions).length;
         return (
           <Badge count={count} showZero color="blue">
-            <Settings className="w-5 h-5 text-gray-400" />
+            <Settings className="w-5 h-5 text-gray-700" />
           </Badge>
         );
       },
@@ -281,7 +281,7 @@ export const PermissionList = () => {
           <Card className="mb-4">
             <Input
               placeholder="Tìm kiếm theo collection, action, policy..."
-              prefix={<SearchOutlined className="text-gray-400" />}
+              prefix={<SearchOutlined className="text-gray-700" />}
               size="large"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
@@ -355,18 +355,18 @@ export const PermissionList = () => {
               <Card type="inner" title="Thông tin cơ bản">
                 <Space direction="vertical" className="w-full" size="middle">
                   <div>
-                    <p className="text-gray-500 text-sm">Collection</p>
+                    <p className="text-gray-500 text-sm">Bảng dữ liệu</p>
                     <p className="font-medium">{selectedPermission.collection}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">Action</p>
+                    <p className="text-gray-500 text-sm">Hành động</p>
                     <Tag icon={getActionIcon(selectedPermission.action)} color={getActionColor(selectedPermission.action)}>
                       {selectedPermission.action.toUpperCase()}
                     </Tag>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">Mã chính sách</p>
-                    <p className="font-mono text-xs text-gray-600 break-all">{selectedPermission.policy}</p>
+                    <p className="font-mono text-xs text-gray-700 break-all">{selectedPermission.policy}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">Trường dữ liệu</p>

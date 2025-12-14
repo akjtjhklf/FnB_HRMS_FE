@@ -64,7 +64,7 @@ export const QuickActions: React.FC = () => {
     //   title: "Cài đặt",
     //   description: "Cấu hình hệ thống",
     //   icon: <Settings size={20} />,
-    //   color: "text-gray-600",
+    //   color: "text-gray-700",
     //   bgColor: "bg-gray-50 hover:bg-gray-100",
     //   onClick: () => alert("Chức năng cài đặt đang phát triển"),
     // },

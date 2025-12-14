@@ -16,7 +16,7 @@ import {
     Button,
 } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
 import type { WeeklySchedule } from "@/types/schedule/weekly-schedule.types";
@@ -259,7 +259,7 @@ export function ShiftRequirementsMatrixView() {
     }, [shiftTypes]);
 
     const scheduleOptions = schedules.map((s: any) => ({
-        label: `${s.schedule_name || "Lịch tuần"} (${dayjs(s.week_start).format("DD/MM/YYYY")} - ${dayjs(s.week_end).format("DD/MM/YYYY")})`,
+        label: `${s.schedule_name || "Lịch tuần"} (${dayjs(s.week_start).format(DATE_FORMATS.DISPLAY_DATE)} - ${dayjs(s.week_end).format(DATE_FORMATS.DISPLAY_DATE)})`,
         value: s.id,
     }));
 

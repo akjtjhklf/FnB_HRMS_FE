@@ -58,7 +58,7 @@ export const PolicyList = () => {
             ),
         },
         {
-            title: "Tên Policy",
+            title: "Tên Chính sách",
             dataIndex: "name",
             key: "name",
             render: (text: string) => <span className="font-medium">{text}</span>,
@@ -103,7 +103,7 @@ export const PolicyList = () => {
                         size="small"
                         recordItemId={record.id}
                         resource="policies"
-                        confirmTitle="Xóa policy này?"
+                        confirmTitle="Xóa chính sách này?"
                         confirmOkText="Xóa"
                         confirmCancelText="Hủy"
                     />
@@ -115,9 +115,9 @@ export const PolicyList = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <Title level={4} className="m-0">Danh sách Policies</Title>
+                <Title level={4} className="m-0">Danh sách chính sách</Title>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                    Thêm Policy
+                    Thêm chính sách
                 </Button>
             </div>
 

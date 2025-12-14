@@ -28,7 +28,7 @@ export default function LoginPage() {
       onSuccess: (data: any) => {
         message.success("Đăng nhập thành công!");
         setLoading(false);
-        
+
         // Refine sẽ tự động redirect về "/" (đã config trong authProviderClient)
         // "/" sẽ redirect về dashboard nếu đã authenticated
       },
@@ -85,7 +85,7 @@ export default function LoginPage() {
               ]}
             >
               <Input
-                prefix={<UserOutlined className="text-gray-400" />}
+                prefix={<UserOutlined className="text-gray-700" />}
                 placeholder="admin@example.com"
               />
             </Form.Item>
@@ -96,7 +96,7 @@ export default function LoginPage() {
               rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
             >
               <Input.Password
-                prefix={<LockOutlined className="text-gray-400" />}
+                prefix={<LockOutlined className="text-gray-700" />}
                 placeholder="••••••••"
               />
             </Form.Item>
@@ -115,7 +115,7 @@ export default function LoginPage() {
                 </Button>
 
                 <Divider plain>
-                  <Text className="text-xs text-gray-400">HOẶC</Text>
+                  <Text className="text-xs text-gray-700">HOẶC</Text>
                 </Divider>
 
                 <Button
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <Text className="text-xs text-gray-400">
+            <Text className="text-xs text-gray-700">
               © 2025 HRMS. Bảo lưu mọi quyền.
             </Text>
           </div>

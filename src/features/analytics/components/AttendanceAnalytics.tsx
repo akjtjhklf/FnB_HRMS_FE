@@ -47,11 +47,12 @@ export function AttendanceAnalytics({
     );
   }
 
-  // Prepare chart data
+  // Prepare chart data - ensure no negative values
+  const onTimeCount = Math.max(0, data.totalPresent - data.totalLate);
   const chartData = [
     {
       name: "Đúng giờ",
-      value: data.totalPresent - data.totalLate,
+      value: onTimeCount,
       fill: "#52c41a",
     },
     { name: "Đi muộn", value: data.totalLate, fill: "#faad14" },
@@ -110,7 +111,7 @@ export function AttendanceAnalytics({
           <Card className="shadow-sm">
             <Statistic
               title="Đúng giờ"
-              value={data.totalPresent - data.totalLate}
+              value={onTimeCount}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: "#52c41a", fontSize: "24px" }}
             />

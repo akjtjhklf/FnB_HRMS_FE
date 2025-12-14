@@ -30,7 +30,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import React, { useState } from "react";
-import dayjs from "dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface EmployeeFormComponentProps {
@@ -91,12 +91,12 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
   const handleFinish = async (values: any) => {
     const formattedValues = {
       ...values,
-      dob: values.dob ? dayjs(values.dob).format("YYYY-MM-DD") : null,
+      dob: values.dob ? dayjs(values.dob).format(DATE_FORMATS.DATE_ONLY) : null,
       hire_date: values.hire_date
-        ? dayjs(values.hire_date).format("YYYY-MM-DD")
+        ? dayjs(values.hire_date).format(DATE_FORMATS.DATE_ONLY)
         : null,
       termination_date: values.termination_date
-        ? dayjs(values.termination_date).format("YYYY-MM-DD")
+        ? dayjs(values.termination_date).format(DATE_FORMATS.DATE_ONLY)
         : null,
       photo_url: avatarUrl || values.photo_url,
     };
@@ -229,7 +229,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<UserOutlined className="text-gray-400" />}
+                prefix={<UserOutlined className="text-gray-700" />}
                 placeholder="VD: EMP001"
               />
             </Form.Item>
@@ -244,7 +244,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<MailOutlined className="text-gray-400" />}
+                prefix={<MailOutlined className="text-gray-700" />}
                 placeholder="employee@company.com"
               />
             </Form.Item>
@@ -293,7 +293,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<PhoneOutlined className="text-gray-400" />}
+                prefix={<PhoneOutlined className="text-gray-700" />}
                 placeholder="0912345678"
               />
             </Form.Item>
@@ -489,7 +489,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
               ]}
             >
               <Input
-                prefix={<PhoneOutlined className="text-gray-400" />}
+                prefix={<PhoneOutlined className="text-gray-700" />}
                 placeholder="0987654321"
               />
             </Form.Item>
@@ -562,7 +562,7 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
                         tooltip="Tên đăng nhập để nhân viên truy cập hệ thống"
                       >
                         <Input
-                          prefix={<UserOutlined className="text-gray-400" />}
+                          prefix={<UserOutlined className="text-gray-700" />}
                           placeholder="vd: nguyenvana"
                         />
                       </Form.Item>

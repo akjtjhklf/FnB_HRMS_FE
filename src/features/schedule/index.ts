@@ -8,3 +8,4 @@ export { ShiftTypesManagement } from "./shift-types/ShiftTypesManagement";
 export { WeeklySchedulesManagement } from "./weekly-schedules/WeeklySchedulesManagement";
 export { AvailabilityRegistration } from "./availability/AvailabilityRegistration";
 export { ScheduleDashboard } from "./dashboard/ScheduleDashboard";
+export { FinalizedScheduleView } from "./finalized-view/FinalizedScheduleView";

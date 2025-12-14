@@ -29,7 +29,7 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import React, { useState } from "react";
-import dayjs from "dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -131,14 +131,14 @@ export const ProfileEdit: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="mb-6">
-          <Link
-            href={`/profile`}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-          >
-            <ArrowLeftOutlined className="mr-2" />
-            Quay lại
-          </Link>
-        </div>
+        <Link
+          href={`/profile`}
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <ArrowLeftOutlined className="mr-2" />
+          Quay lại
+        </Link>
+      </div>
       <div className="max-w-5xl mx-auto">
         <Form
           {...formProps}
@@ -184,7 +184,7 @@ export const ProfileEdit: React.FC = () => {
                   name="employee_code"
                 >
                   <Input
-                    prefix={<UserOutlined className="text-gray-400" />}
+                    prefix={<UserOutlined className="text-gray-700" />}
                     disabled
                   />
                 </Form.Item>
@@ -199,7 +199,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<MailOutlined className="text-gray-400" />}
+                    prefix={<MailOutlined className="text-gray-700" />}
                     placeholder="employee@company.com"
                   />
                 </Form.Item>
@@ -248,7 +248,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    prefix={<PhoneOutlined className="text-gray-700" />}
                     placeholder="0912345678"
                   />
                 </Form.Item>
@@ -269,13 +269,13 @@ export const ProfileEdit: React.FC = () => {
 
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12}>
-                <Form.Item 
-                  label="Ngày sinh" 
+                <Form.Item
+                  label="Ngày sinh"
                   name="dob"
                   getValueProps={(value) => ({
                     value: value ? dayjs(value) : undefined,
                   })}
-                  normalize={(value) => value ? dayjs(value).format("YYYY-MM-DD") : null}
+                  normalize={(value) => value ? dayjs(value).format(DATE_FORMATS.DATE_ONLY) : null}
                 >
                   <DatePicker
                     className="w-full"
@@ -324,7 +324,7 @@ export const ProfileEdit: React.FC = () => {
                   ]}
                 >
                   <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    prefix={<PhoneOutlined className="text-gray-700" />}
                     placeholder="0987654321"
                   />
                 </Form.Item>
@@ -350,9 +350,9 @@ export const ProfileEdit: React.FC = () => {
           {/* Action Buttons */}
           <Card className="sticky bottom-4 shadow-lg border-t-4 border-blue-500">
             <div className="flex justify-end items-center gap-3">
-              <AntButton 
-                size="large" 
-                icon={<CloseOutlined />} 
+              <AntButton
+                size="large"
+                icon={<CloseOutlined />}
                 onClick={() => router.push("/profile")}
               >
                 Hủy

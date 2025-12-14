@@ -207,7 +207,7 @@ export const Step2EmployeeInfo: React.FC = () => {
                         </Col>
                         <Col span={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
                             <div className="flex items-center gap-3 pb-2">
-                                <span className="text-sm text-gray-600">Avatar:</span>
+                                <span className="text-sm text-gray-700">Avatar:</span>
                                 <Avatar
                                     src={formData.photo_url}
                                     size={64}

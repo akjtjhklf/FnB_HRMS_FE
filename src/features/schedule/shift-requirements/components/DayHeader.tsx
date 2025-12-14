@@ -1,4 +1,4 @@
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface DayHeaderProps {
     date: dayjs.Dayjs;
@@ -11,8 +11,8 @@ export const DayHeader = ({ date }: DayHeaderProps) => {
 
     return (
         <div>
-            <div className="font-semibold text-gray-800">{capitalizedDayName}</div>
-            <div className="text-gray-500 text-xs">{date.format("DD/MM/YYYY")}</div>
+            <div className="font-semibold text-gray-700">{capitalizedDayName}</div>
+            <div className="text-gray-500 text-xs">{date.format(DATE_FORMATS.DISPLAY_DATE)}</div>
         </div>
     );
 };

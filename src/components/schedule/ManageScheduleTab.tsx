@@ -141,7 +141,7 @@ export function ManageScheduleTab() {
             : shifts.find((s) => s.id === record.shift_id);
         return (
           <div>
-            <p className="font-medium text-gray-800">{shift?.shift_type?.name || "Chưa có"}</p>
+            <p className="font-medium text-gray-700">{shift?.shift_type?.name || "Chưa có"}</p>
             <p className="text-xs text-gray-500">
               {shift?.start_at} - {shift?.end_at}
             </p>
@@ -158,7 +158,7 @@ export function ManageScheduleTab() {
         const employee = employees.find((e) => e.id === employeeId);
         return employee ? (
           <div>
-            <p className="font-medium text-gray-800">
+            <p className="font-medium text-gray-700">
               {employee.first_name} {employee.last_name}
             </p>
             <p className="text-xs text-gray-500">{employee.employee_code}</p>
@@ -222,7 +222,7 @@ export function ManageScheduleTab() {
         confirmed ? (
           <CheckCircleOutlined className="text-green-600 text-lg" />
         ) : (
-          <CloseCircleOutlined className="text-gray-400 text-lg" />
+          <CloseCircleOutlined className="text-gray-700 text-lg" />
         ),
     },
     {
@@ -232,7 +232,7 @@ export function ManageScheduleTab() {
       width: 200,
       ellipsis: true,
       render: (note) => (
-        <span className="text-gray-600">{note || "-"}</span>
+        <span className="text-gray-700">{note || "-"}</span>
       ),
     },
     {
@@ -307,10 +307,10 @@ export function ManageScheduleTab() {
               <div className="flex items-center gap-4">
                 <TeamOutlined className="text-blue-600 text-2xl" />
                 <div>
-                  <h3 className="font-semibold text-gray-800">
+                  <h3 className="font-semibold text-gray-700">
                     Lịch tuần: {selectedSchedule.week_start} - {selectedSchedule.week_end}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-700">
                     Trạng thái:{" "}
                     <Tag color={selectedSchedule.status === "finalized" ? "success" : "processing"}>
                       {selectedSchedule.status}
@@ -320,7 +320,7 @@ export function ManageScheduleTab() {
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-blue-600">{assignments.length}</p>
-                <p className="text-xs text-gray-600">Phân công</p>
+                <p className="text-xs text-gray-700">Phân công</p>
               </div>
             </div>
           </Card>
@@ -373,7 +373,7 @@ export function ManageScheduleTab() {
               <p className="text-sm text-gray-700">
                 Hệ thống sẽ tự động xếp lịch dựa trên:
               </p>
-              <ul className="mt-2 ml-6 text-sm text-gray-600 space-y-1 list-disc">
+              <ul className="mt-2 ml-6 text-sm text-gray-700 space-y-1 list-disc">
                 <li>Đăng ký khả dụng của nhân viên</li>
                 <li>Vị trí và ưu tiên đã chọn</li>
                 <li>Yêu cầu số lượng cho mỗi ca</li>

@@ -71,7 +71,7 @@ export const Step2EmergencyNotes: React.FC = () => {
                                 ]}
                             >
                                 <Input 
-                                    prefix={<PhoneOutlined className="text-gray-400" />}
+                                    prefix={<PhoneOutlined className="text-gray-700" />}
                                     placeholder="0987654321" 
                                 />
                             </Form.Item>

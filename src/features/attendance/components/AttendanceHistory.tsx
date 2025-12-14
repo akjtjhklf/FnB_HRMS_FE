@@ -1,11 +1,11 @@
 "use client";
 
-import { Table, Badge, Card, Row, Col, Statistic, Button, Radio, DatePicker, Modal, Form, Input, TimePicker, App } from "antd";
+import { Table, Badge, Card, Row, Col, Statistic, Button, Radio, DatePicker, Modal, Form, Input, App } from "antd";
 import { useTable } from "@refinedev/antd";
 import { useCustomMutation } from "@refinedev/core";
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
 import { useMemo, useState } from "react";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { EmployeeAttendanceCalendar } from "./EmployeeAttendanceCalendar";
 
 interface AttendanceShift {
@@ -69,8 +69,8 @@ export function AttendanceHistory() {
             width: 150,
             render: (date: string) => (
                 <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-gray-400" />
-                    <span>{dayjs(date).format("DD/MM/YYYY")}</span>
+                    <Calendar size={16} className="text-gray-700" />
+                    <span>{dayjs(date).format(DATE_FORMATS.DISPLAY_DATE)}</span>
                 </div>
             ),
         },
@@ -83,10 +83,10 @@ export function AttendanceHistory() {
                 time ? (
                     <div className="flex items-center gap-2">
                         <Clock size={16} className="text-green-600" />
-                        <span>{dayjs(time).format("HH:mm:ss")}</span>
+                        <span>{dayjs(time).format(DATE_FORMATS.TIME_ONLY)}</span>
                     </div>
                 ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-gray-700">-</span>
                 ),
         },
         {
@@ -100,7 +100,7 @@ export function AttendanceHistory() {
                         {Math.floor(minutes / 60)}h {minutes % 60}m
                     </span>
                 ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-gray-700">-</span>
                 ),
         },
         {
@@ -201,7 +201,7 @@ export function AttendanceHistory() {
                 <Col xs={12} sm={12} md={6}>
                     <Card className="shadow-sm hover:shadow-md transition-shadow">
                         <Statistic
-                            title={<span className="text-gray-600 font-medium">Tổng số ngày</span>}
+                            title={<span className="text-gray-700 font-medium">Tổng số ngày</span>}
                             value={stats.total}
                             prefix={<Calendar className="w-5 h-5 text-blue-500" />}
                             valueStyle={{ color: "#1890ff", fontSize: "24px", fontWeight: "bold" }}
@@ -211,7 +211,7 @@ export function AttendanceHistory() {
                 <Col xs={12} sm={12} md={6}>
                     <Card className="shadow-sm hover:shadow-md transition-shadow">
                         <Statistic
-                            title={<span className="text-gray-600 font-medium">Có mặt</span>}
+                            title={<span className="text-gray-700 font-medium">Có mặt</span>}
                             value={stats.present}
                             prefix={<CheckCircle className="w-5 h-5 text-green-500" />}
                             valueStyle={{ color: "#52c41a", fontSize: "24px", fontWeight: "bold" }}
@@ -221,7 +221,7 @@ export function AttendanceHistory() {
                 <Col xs={12} sm={12} md={6}>
                     <Card className="shadow-sm hover:shadow-md transition-shadow">
                         <Statistic
-                            title={<span className="text-gray-600 font-medium">Tổng giờ làm</span>}
+                            title={<span className="text-gray-700 font-medium">Tổng giờ làm</span>}
                             value={stats.totalWorked}
                             suffix="giờ"
                             prefix={<Clock className="w-5 h-5 text-purple-500" />}
@@ -232,7 +232,7 @@ export function AttendanceHistory() {
                 <Col xs={12} sm={12} md={6}>
                     <Card className="shadow-sm hover:shadow-md transition-shadow">
                         <Statistic
-                            title={<span className="text-gray-600 font-medium">Tổng đi muộn</span>}
+                            title={<span className="text-gray-700 font-medium">Tổng đi muộn</span>}
                             value={stats.totalLate}
                             suffix="phút"
                             prefix={<AlertCircle className="w-5 h-5 text-orange-500" />}
@@ -308,10 +308,10 @@ export function AttendanceHistory() {
                 <Form form={form} layout="vertical">
                     <div className="flex gap-4">
                         <Form.Item label="Giờ vào đề xuất" name="clock_in" className="flex-1">
-                            <TimePicker format="HH:mm" className="w-full" />
+                            <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
                         </Form.Item>
                         <Form.Item label="Giờ ra đề xuất" name="clock_out" className="flex-1">
-                            <TimePicker format="HH:mm" className="w-full" />
+                            <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
                         </Form.Item>
                     </div>
                     <Form.Item

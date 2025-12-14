@@ -19,7 +19,7 @@ export const RequirementCell = ({
     if (!shift) {
         return (
             <div className="h-full flex items-center justify-center bg-gray-50/50 rounded p-2 border border-dashed border-gray-200">
-                <span className="text-gray-400 text-xs">Không có ca</span>
+                <span className="text-gray-700 text-xs">Không có ca</span>
             </div>
         );
     }
@@ -53,7 +53,7 @@ export const RequirementCell = ({
                 </div>
             ) : (
                 <div className="flex-1 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs italic">Chưa có yêu cầu</span>
+                    <span className="text-gray-700 text-xs italic">Chưa có yêu cầu</span>
                 </div>
             )}
 

@@ -30,7 +30,7 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { ShiftType, CreateShiftTypeDto, UpdateShiftTypeDto } from "@/types/schedule";
 import { useCanManageSchedule } from "@/hooks/usePermissions";
 
@@ -77,12 +77,12 @@ export function ShiftTypesManagement() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       // Build DTO according to BE schema
       const dto: CreateShiftTypeDto | UpdateShiftTypeDto = {
         name: values.name,
-        start_time: values.start_time.format("HH:mm:ss"),
-        end_time: values.end_time.format("HH:mm:ss"),
+        start_time: values.start_time.format(DATE_FORMATS.TIME_ONLY),
+        end_time: values.end_time.format(DATE_FORMATS.TIME_ONLY),
         cross_midnight: values.cross_midnight || null,
         notes: values.notes || null,
       };
@@ -230,8 +230,8 @@ export function ShiftTypesManagement() {
       dataIndex: "created_at",
       key: "created_at",
       width: 180,
-      render: (date: string | null) => 
-        date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-",
+      render: (date: string | null) =>
+        date ? dayjs(date).format(DATE_FORMATS.DISPLAY_DATETIME) : "-",
     },
     {
       title: "Thao tác",

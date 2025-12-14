@@ -57,7 +57,7 @@ export const ReportPreview = ({
         <Col xs={12} sm={12} md={6}>
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
-              title={<span className="text-gray-600 font-medium">Tổng NV</span>}
+              title={<span className="text-gray-700 font-medium">Tổng NV</span>}
               value={report.totalEmployees}
               prefix={<UserOutlined className="text-blue-500" />}
               valueStyle={{
@@ -72,7 +72,7 @@ export const ReportPreview = ({
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">Đang làm việc</span>
+                <span className="text-gray-700 font-medium">Đang làm việc</span>
               }
               value={report.activeEmployees}
               prefix={<CheckCircleOutlined className="text-green-500" />}
@@ -88,7 +88,7 @@ export const ReportPreview = ({
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">Nghỉ phép</span>
+                <span className="text-gray-700 font-medium">Nghỉ phép</span>
               }
               value={report.onLeaveEmployees}
               prefix={<ClockCircleOutlined className="text-orange-500" />}
@@ -104,7 +104,7 @@ export const ReportPreview = ({
           <Card className="shadow-sm hover:shadow-md transition-shadow">
             <Statistic
               title={
-                <span className="text-gray-600 font-medium">Đã nghỉ việc</span>
+                <span className="text-gray-700 font-medium">Đã nghỉ việc</span>
               }
               value={report.inactiveEmployees}
               prefix={<StopOutlined className="text-gray-500" />}

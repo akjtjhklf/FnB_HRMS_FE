@@ -2,7 +2,8 @@
 
 import { Radio, DatePicker, Space } from "antd";
 import { DateRangeType } from "@/types/report";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
+import type { Dayjs } from "dayjs";
 
 const { RangePicker } = DatePicker;
 
@@ -44,7 +45,7 @@ export const DateRangeSelector = ({
         return;
     }
 
-    onDateChange(start.format("YYYY-MM-DD"), end.format("YYYY-MM-DD"));
+    onDateChange(start.format(DATE_FORMATS.DATE_ONLY), end.format(DATE_FORMATS.DATE_ONLY));
   };
 
   const handleCustomRange = (
@@ -93,9 +94,9 @@ export const DateRangeSelector = ({
         )}
 
         {rangeType !== "custom" && startDate && endDate && (
-          <div className="text-sm text-gray-600">
-            📅 Từ <strong>{dayjs(startDate).format("DD/MM/YYYY")}</strong> đến{" "}
-            <strong>{dayjs(endDate).format("DD/MM/YYYY")}</strong>
+          <div className="text-sm text-gray-700">
+            📅 Từ <strong>{dayjs(startDate).format(DATE_FORMATS.DISPLAY_DATE)}</strong> đến{" "}
+            <strong>{dayjs(endDate).format(DATE_FORMATS.DISPLAY_DATE)}</strong>
           </div>
         )}
       </Space>

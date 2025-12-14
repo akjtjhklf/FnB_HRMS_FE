@@ -20,7 +20,7 @@ import {
   WarningOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { WeeklySchedule } from "@/types/schedule/weekly-schedule.types";
@@ -232,7 +232,7 @@ export function ScheduleAssignmentManagement() {
       return {
         ...day,
         date: firstShift
-          ? dayjs(firstShift.shift_date).format("YYYY-MM-DD")
+          ? dayjs(firstShift.shift_date).format(DATE_FORMATS.DATE_ONLY)
           : null,
         shifts: dayShifts.sort((a: any, b: any) =>
           (a.start_at || "").localeCompare(b.start_at || "")
@@ -397,11 +397,11 @@ export function ScheduleAssignmentManagement() {
       <Card>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-gray-700 flex items-center gap-2">
               <CalendarOutlined className="text-blue-600" />
               Xếp Lịch Làm Việc
             </h2>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-700 mt-1">
               Click vào ca để xếp nhân viên cho từng vị trí
             </p>
           </div>
@@ -453,7 +453,7 @@ export function ScheduleAssignmentManagement() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Tỷ lệ hoàn thành</span>
+                <span className="text-sm text-gray-700">Tỷ lệ hoàn thành</span>
                 <span className="text-sm font-medium">
                   {readiness.totalAssigned} / {readiness.totalRequired} vị trí
                 </span>

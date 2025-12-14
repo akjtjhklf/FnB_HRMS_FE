@@ -221,7 +221,7 @@ export default function CustomDataTableExample() {
         sorter: (a, b) =>
           new Date(a.joinDate).getTime() - new Date(b.joinDate).getTime(),
         render: (date) => (
-          <span className="text-gray-600">
+          <span className="text-gray-700">
             {new Date(date).toLocaleDateString("vi-VN")}
           </span>
         ),
@@ -300,7 +300,7 @@ export default function CustomDataTableExample() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Custom DataTable Demo
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             Component bảng dữ liệu với đầy đủ tính năng: search, filter, sort,
             pagination
           </p>

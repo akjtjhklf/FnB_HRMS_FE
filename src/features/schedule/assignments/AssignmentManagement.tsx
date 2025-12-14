@@ -30,7 +30,7 @@ import {
   ThunderboltOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface ScheduleAssignment {
   id: string;
@@ -141,12 +141,12 @@ export function AssignmentManagement() {
     resource: "shifts",
     filters: selectedWeeklyScheduleId
       ? [
-          {
-            field: "weekly_schedule_id",
-            operator: "eq",
-            value: selectedWeeklyScheduleId,
-          },
-        ]
+        {
+          field: "weekly_schedule_id",
+          operator: "eq",
+          value: selectedWeeklyScheduleId,
+        },
+      ]
       : [],
     queryOptions: {
       enabled: !!selectedWeeklyScheduleId || assignModalOpen,
@@ -291,7 +291,7 @@ export function AssignmentManagement() {
               <strong>{record.shift.shift_type?.name || "Ca làm việc"}</strong>
             </div>
             <div style={{ fontSize: "12px", color: "#888" }}>
-              {dayjs(record.shift.date).format("DD/MM/YYYY")} - {record.shift.start_time} → {record.shift.end_time}
+              {dayjs(record.shift.date).format(DATE_FORMATS.DISPLAY_DATE)} - {record.shift.start_time} → {record.shift.end_time}
             </div>
           </div>
         );
@@ -319,7 +319,7 @@ export function AssignmentManagement() {
       dataIndex: "assigned_at",
       key: "assigned_at",
       width: 150,
-      render: (date: string) => date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-",
+      render: (date: string) => date ? dayjs(date).format(DATE_FORMATS.DISPLAY_DATETIME) : "-",
     },
     {
       title: "Thao tác",
@@ -485,7 +485,7 @@ export function AssignmentManagement() {
             >
               {shifts.map((shift: Shift) => (
                 <Select.Option key={shift.id} value={shift.id}>
-                  {shift.shift_type?.name || "Ca làm việc"} - {dayjs(shift.date).format("DD/MM/YYYY")} ({shift.start_time} - {shift.end_time})
+                  {shift.shift_type?.name || "Ca làm việc"} - {dayjs(shift.date).format(DATE_FORMATS.DISPLAY_DATE)} ({shift.start_time} - {shift.end_time})
                 </Select.Option>
               ))}
             </Select>
@@ -552,7 +552,7 @@ export function AssignmentManagement() {
               {selectedAssignment.shift ? (
                 <>
                   {selectedAssignment.shift.shift_type?.name || "Ca làm việc"} <br />
-                  {dayjs(selectedAssignment.shift.date).format("DD/MM/YYYY")} - {selectedAssignment.shift.start_time} → {selectedAssignment.shift.end_time}
+                  {dayjs(selectedAssignment.shift.date).format(DATE_FORMATS.DISPLAY_DATE)} - {selectedAssignment.shift.start_time} → {selectedAssignment.shift.end_time}
                 </>
               ) : (
                 "Chưa có"
@@ -565,7 +565,7 @@ export function AssignmentManagement() {
               <Tag color="blue">{selectedAssignment.position?.name || "Chưa có"}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Phân công lúc">
-              {selectedAssignment.assigned_at ? dayjs(selectedAssignment.assigned_at).format("DD/MM/YYYY HH:mm") : "-"}
+              {selectedAssignment.assigned_at ? dayjs(selectedAssignment.assigned_at).format(DATE_FORMATS.DISPLAY_DATETIME) : "-"}
             </Descriptions.Item>
             {selectedAssignment.notes && (
               <Descriptions.Item label="Ghi chú">

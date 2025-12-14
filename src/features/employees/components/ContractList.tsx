@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/utils";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface ContractListProps {
@@ -424,7 +424,7 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       width: 130,
       render: (date: string) => (
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-400" />
+          <Calendar className="w-4 h-4 text-gray-700" />
           {formatDate(date)}
         </div>
       ),
@@ -437,7 +437,7 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
       responsive: ["md"] as ("md")[],
       render: (date: string) => (
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-400" />
+          <Calendar className="w-4 h-4 text-gray-700" />
           {date ? formatDate(date) : "Không có"}
         </div>
       ),
@@ -460,7 +460,7 @@ export const ContractList: React.FC<ContractListProps> = ({ employeeId }) => {
         ) : value ? (
           <Tag>{value}</Tag>
         ) : (
-          <span className="text-gray-400">--</span>
+          <span className="text-gray-700">--</span>
         );
       },
     },
