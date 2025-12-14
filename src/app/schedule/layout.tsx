@@ -26,7 +26,6 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
     { icon: <ClipboardList size={18} />, label: "Xếp Lịch", href: "/schedule/assignments" },
     { icon: <ClipboardList size={18} />, label: "Loại Ca", href: "/schedule/shift-types" },
     { icon: <Users size={18} />, label: "Vị Trí", href: "/schedule/positions" },
-    { icon: <Users size={18} />, label: "Yêu Cầu Vị Trí", href: "/schedule/shift-requirements" },
     { icon: <ClipboardList size={18} />, label: "Yêu Cầu Đổi Ca", href: "/schedule/change-requests" },
   ] : [
     // Employees don't need Dashboard - they have My Schedule and Availability Registry

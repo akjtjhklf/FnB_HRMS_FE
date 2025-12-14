@@ -97,8 +97,8 @@ export const RoleForm = ({ open, onCancel, initialValues }: RoleFormProps) => {
             <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Form.Item
                     name="name"
-                    label="Tên Role"
-                    rules={[{ required: true, message: "Vui lòng nhập tên role" }]}
+                    label="Tên vai trò"
+                    rules={[{ required: true, message: "Vui lòng nhập tên vai trò" }]}
                 >
                     <Input placeholder="Ví dụ: Quản lý, Nhân viên..." />
                 </Form.Item>

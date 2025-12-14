@@ -8,11 +8,13 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
   message,
   Table,
   Space,
   Popconfirm,
   Tag,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
@@ -135,6 +137,20 @@ export function PositionsManagement() {
       ),
     },
     {
+      title: "Độ ưu tiên",
+      dataIndex: "priority",
+      key: "priority",
+      width: 120,
+      sorter: (a: Position, b: Position) => (a.priority || 0) - (b.priority || 0),
+      render: (priority: number) => (
+        <Tooltip title="Độ ưu tiên cao hơn sẽ được xếp trước trong thuật toán tự động">
+          <Tag color={priority >= 5 ? "red" : priority >= 3 ? "orange" : "blue"}>
+            {priority || 0}
+          </Tag>
+        </Tooltip>
+      ),
+    },
+    {
       title: "Hành động",
       key: "actions",
       width: 120,
@@ -229,8 +245,22 @@ export function PositionsManagement() {
 
           <Form.Item name="description" label="Mô tả">
             <Input.TextArea
-              rows={4}
+              rows={3}
               placeholder="Mô tả chi tiết về vị trí này..."
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="priority"
+            label="Độ ưu tiên"
+            tooltip="Vị trí có độ ưu tiên cao hơn sẽ được xếp trước trong thuật toán xếp lịch tự động (0-10)"
+            initialValue={0}
+          >
+            <InputNumber
+              min={0}
+              max={10}
+              style={{ width: "100%" }}
+              placeholder="0 = thấp nhất, 10 = cao nhất"
             />
           </Form.Item>
         </Form>

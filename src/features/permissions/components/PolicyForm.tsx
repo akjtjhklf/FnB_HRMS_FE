@@ -75,8 +75,8 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
                 <Form form={form} layout="vertical" onFinish={onFinish}>
                     <Form.Item
                         name="name"
-                        label="Tên Policy"
-                        rules={[{ required: true, message: "Vui lòng nhập tên policy" }]}
+                        label="Tên Chính sách"
+                        rules={[{ required: true, message: "Vui lòng nhập tên chính sách" }]}
                     >
                         <Input placeholder="Ví dụ: Quản lý nhân sự" />
                     </Form.Item>
@@ -126,7 +126,7 @@ export const PolicyForm = ({ open, onCancel, initialValues, icon = "badge" }: Po
         },
         {
             key: "permissions",
-            label: "Phân quyền (Permissions)",
+            label: "Phân quyền",
             disabled: !initialValues, // Can only edit permissions for existing policy
             children: initialValues ? (
                 <div className=" overflow-hidden flex flex-col">

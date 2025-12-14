@@ -355,11 +355,11 @@ export const PermissionList = () => {
               <Card type="inner" title="Thông tin cơ bản">
                 <Space direction="vertical" className="w-full" size="middle">
                   <div>
-                    <p className="text-gray-500 text-sm">Collection</p>
+                    <p className="text-gray-500 text-sm">Bảng dữ liệu</p>
                     <p className="font-medium">{selectedPermission.collection}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">Action</p>
+                    <p className="text-gray-500 text-sm">Hành động</p>
                     <Tag icon={getActionIcon(selectedPermission.action)} color={getActionColor(selectedPermission.action)}>
                       {selectedPermission.action.toUpperCase()}
                     </Tag>

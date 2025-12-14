@@ -99,7 +99,7 @@ export interface CreateEmployeeDto {
   metadata?: Record<string, any> | null;
 }
 
-export interface UpdateEmployeeDto extends Partial<CreateEmployeeDto> {}
+export interface UpdateEmployeeDto extends Partial<CreateEmployeeDto> { }
 
 // Position types
 export interface Position {
@@ -108,6 +108,7 @@ export interface Position {
   description?: string;
   department?: string;
   level?: string;
+  priority?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -117,9 +118,10 @@ export interface CreatePositionDto {
   description?: string;
   department?: string;
   level?: string;
+  priority?: number;
 }
 
-export interface UpdatePositionDto extends Partial<CreatePositionDto> {}
+export interface UpdatePositionDto extends Partial<CreatePositionDto> { }
 
 // Contract types
 export interface Contract {
@@ -134,7 +136,7 @@ export interface Contract {
   end_date: string;
 
   base_salary: number | null;
-  salary_scheme_id?: string | { id: string; name: string; [key: string]: any } | null;
+  salary_scheme_id?: string | { id: string; name: string;[key: string]: any } | null;
 
   probation_end_date: string | null;
 
@@ -171,7 +173,7 @@ export interface CreateContractDto {
   terms?: string | null;
 }
 
-export interface UpdateContractDto extends Partial<CreateContractDto> {}
+export interface UpdateContractDto extends Partial<CreateContractDto> { }
 
 // RFID Card types
 export interface RfidCard {
@@ -191,4 +193,4 @@ export interface CreateRfidCardDto {
   issued_date?: string;
 }
 
-export interface UpdateRfidCardDto extends Partial<CreateRfidCardDto> {}
+export interface UpdateRfidCardDto extends Partial<CreateRfidCardDto> { }
