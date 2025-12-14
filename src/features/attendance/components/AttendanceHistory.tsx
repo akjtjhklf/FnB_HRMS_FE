@@ -64,13 +64,13 @@ export function AttendanceHistory() {
     const columns = [
         {
             title: "Ngày",
-            dataIndex: "created_at",
+            dataIndex: ["shift_id", "shift_date"],
             key: "date",
             width: 150,
             render: (date: string) => (
                 <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-gray-700" />
-                    <span>{dayjs(date).format(DATE_FORMATS.DISPLAY_DATE)}</span>
+                    <span>{date ? dayjs(date, "YYYY-MM-DD").format(DATE_FORMATS.DISPLAY_DATE) : "-"}</span>
                 </div>
             ),
         },
