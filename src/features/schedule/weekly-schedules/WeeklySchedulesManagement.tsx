@@ -40,7 +40,7 @@ import {
   EyeOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { WeeklySchedule } from "@/types/schedule";
 import type {
@@ -143,8 +143,8 @@ export function WeeklySchedulesManagement() {
       const values = await form.validateFields();
 
       const dto: CreateWeeklyScheduleDto | UpdateWeeklyScheduleDto = {
-        week_start: values.week_range[0].format("YYYY-MM-DD"),
-        week_end: values.week_range[1].format("YYYY-MM-DD"),
+        week_start: values.week_range[0].format(DATE_FORMATS.DATE_ONLY),
+        week_end: values.week_range[1].format(DATE_FORMATS.DATE_ONLY),
         created_by: user?.id || null,
         status: "draft",
         notes: values.notes || null,
@@ -314,8 +314,8 @@ export function WeeklySchedulesManagement() {
       render: (_: any, record: WeeklySchedule) => (
         <div>
           <Text strong>
-            {dayjs(record.week_start).format("DD/MM/YYYY")} -{" "}
-            {dayjs(record.week_end).format("DD/MM/YYYY")}
+            {dayjs(record.week_start).format(DATE_FORMATS.DISPLAY_DATE)} -{" "}
+            {dayjs(record.week_end).format(DATE_FORMATS.DISPLAY_DATE)}
           </Text>
           <div style={{ fontSize: "12px", color: "#888" }}>
             Tuần {dayjs(record.week_start).isoWeek()} /{" "}
@@ -338,7 +338,7 @@ export function WeeklySchedulesManagement() {
       width: 180,
       render: (date: string | null) =>
         date ? (
-          dayjs(date).format("DD/MM/YYYY HH:mm")
+          dayjs(date).format(DATE_FORMATS.DISPLAY_DATETIME)
         ) : (
           <Text type="secondary">-</Text>
         ),
@@ -357,7 +357,7 @@ export function WeeklySchedulesManagement() {
       key: "created_at",
       width: 180,
       render: (date: string | null) =>
-        date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-",
+        date ? dayjs(date).format(DATE_FORMATS.DISPLAY_DATETIME) : "-",
     },
     {
       title: "Thao tác",

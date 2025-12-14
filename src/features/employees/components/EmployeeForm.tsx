@@ -30,7 +30,7 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 import React, { useState } from "react";
-import dayjs from "dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface EmployeeFormComponentProps {
@@ -91,12 +91,12 @@ export const EmployeeForm: React.FC<EmployeeFormComponentProps> = ({
   const handleFinish = async (values: any) => {
     const formattedValues = {
       ...values,
-      dob: values.dob ? dayjs(values.dob).format("YYYY-MM-DD") : null,
+      dob: values.dob ? dayjs(values.dob).format(DATE_FORMATS.DATE_ONLY) : null,
       hire_date: values.hire_date
-        ? dayjs(values.hire_date).format("YYYY-MM-DD")
+        ? dayjs(values.hire_date).format(DATE_FORMATS.DATE_ONLY)
         : null,
       termination_date: values.termination_date
-        ? dayjs(values.termination_date).format("YYYY-MM-DD")
+        ? dayjs(values.termination_date).format(DATE_FORMATS.DATE_ONLY)
         : null,
       photo_url: avatarUrl || values.photo_url,
     };

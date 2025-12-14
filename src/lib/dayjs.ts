@@ -38,4 +38,35 @@ dayjs.locale("vi");
 // Set default timezone
 dayjs.tz.setDefault("Asia/Ho_Chi_Minh");
 
+// ============================================
+// STANDARD CONSTANTS (shared with BE)
+// ============================================
+
+/** Standard timezone for the application */
+export const TIMEZONE = "Asia/Ho_Chi_Minh";
+
+/** Standard date/time formats */
+export const DATE_FORMATS = {
+  /** Date only for API/DB: 2025-12-14 */
+  DATE_ONLY: "YYYY-MM-DD",
+
+  /** Time only: 14:30:00 */
+  TIME_ONLY: "HH:mm:ss",
+
+  /** Time short for display: 14:30 */
+  TIME_SHORT: "HH:mm",
+
+  /** Full datetime: 2025-12-14T14:30:00 */
+  DATETIME: "YYYY-MM-DDTHH:mm:ss",
+
+  /** Display date format: 14/12/2025 */
+  DISPLAY_DATE: "DD/MM/YYYY",
+
+  /** Display datetime: 14/12/2025 14:30 */
+  DISPLAY_DATETIME: "DD/MM/YYYY HH:mm",
+
+  /** Display date with day name: 14/12/2025 (Thứ Bảy) */
+  DISPLAY_DATE_WITH_DAY: "DD/MM/YYYY (dddd)",
+} as const;
+
 export default dayjs;

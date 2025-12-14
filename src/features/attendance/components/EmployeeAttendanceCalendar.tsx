@@ -1,6 +1,6 @@
 import { Calendar, Badge, Tooltip, Card, Tag } from "antd";
 import type { Dayjs } from "dayjs";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface AttendanceRecord {
     id: string;
@@ -41,12 +41,12 @@ const getShiftInfo = (clockIn: string | null, shift?: AttendanceRecord['shift'])
             time: `${shift.shift_type_id.start_time} - ${shift.shift_type_id.end_time}`
         };
     }
-    
+
     // Fallback: Xác định ca dựa trên giờ clock_in
     if (!clockIn) return { name: 'Không xác định', color: '#999', time: '' };
-    
+
     const hour = dayjs(clockIn).hour();
-    
+
     if (hour >= 5 && hour < 10) {
         return { name: '🌅 Ca Sáng', color: '#52c41a', time: '07:00 - 15:00' };
     } else if (hour >= 10 && hour < 16) {
@@ -64,10 +64,10 @@ export const EmployeeAttendanceCalendar = ({
     onEdit,
 }: EmployeeAttendanceCalendarProps) => {
     const getListData = (value: Dayjs) => {
-        const dateStr = value.format("YYYY-MM-DD");
+        const dateStr = value.format(DATE_FORMATS.DATE_ONLY);
         // Filter records for this day based on clock_in time (not created_at)
         const dayRecords = records.filter((r) =>
-            r.clock_in && dayjs(r.clock_in).format("YYYY-MM-DD") === dateStr
+            r.clock_in && dayjs(r.clock_in).format(DATE_FORMATS.DATE_ONLY) === dateStr
         );
 
         return dayRecords || [];
@@ -75,19 +75,19 @@ export const EmployeeAttendanceCalendar = ({
 
     const dateCellRender = (value: Dayjs) => {
         const listData = getListData(value);
-        
+
         // Sort records by clock_in time
         const sortedRecords = [...listData].sort((a, b) => {
             if (!a.clock_in || !b.clock_in) return 0;
             return dayjs(a.clock_in).valueOf() - dayjs(b.clock_in).valueOf();
         });
-        
+
         return (
             <div className="events space-y-2">
                 {sortedRecords.map((item) => {
                     const shiftInfo = getShiftInfo(item.clock_in, item.shift);
                     const hasIssue = (item.late_minutes || 0) > 0 || (item.early_leave_minutes || 0) > 0;
-                    
+
                     return (
                         <Tooltip
                             key={item.id}
@@ -95,8 +95,8 @@ export const EmployeeAttendanceCalendar = ({
                                 <div className="text-sm">
                                     <div className="font-semibold mb-1">{shiftInfo.name}</div>
                                     <div>Ca: {shiftInfo.time}</div>
-                                    <div>Vào: {item.clock_in ? dayjs(item.clock_in).format("HH:mm") : '-'}</div>
-                                    <div>Ra: {item.clock_out ? dayjs(item.clock_out).format("HH:mm") : '-'}</div>
+                                    <div>Vào: {item.clock_in ? dayjs(item.clock_in).format(DATE_FORMATS.TIME_SHORT) : '-'}</div>
+                                    <div>Ra: {item.clock_out ? dayjs(item.clock_out).format(DATE_FORMATS.TIME_SHORT) : '-'}</div>
                                     <div>Làm: {item.worked_minutes ? `${Math.floor(item.worked_minutes / 60)}h ${item.worked_minutes % 60}p` : '-'}</div>
                                     {(item.late_minutes || 0) > 0 && <div className="text-red-300">Trễ: {item.late_minutes} phút</div>}
                                     {(item.early_leave_minutes || 0) > 0 && <div className="text-orange-300">Về sớm: {item.early_leave_minutes} phút</div>}
@@ -114,33 +114,33 @@ export const EmployeeAttendanceCalendar = ({
                                 onClick={() => onEdit && onEdit(item)}
                             >
                                 {/* Shift Label */}
-                                <div 
+                                <div
                                     className="text-[10px] font-medium mb-0.5 truncate"
                                     style={{ color: shiftInfo.color }}
                                 >
                                     {shiftInfo.name}
                                 </div>
-                                
+
                                 {/* Check-in/out times */}
                                 <div className="flex flex-col gap-0.5">
-                                    <Tag 
-                                        
+                                    <Tag
+
                                         color={(item.late_minutes || 0) > 0 ? "warning" : "success"}
                                         className="text-[10px] px-1 py-0 m-0"
                                     >
-                                        In: {dayjs(item.clock_in).format("HH:mm")}
+                                        In: {dayjs(item.clock_in).format(DATE_FORMATS.TIME_SHORT)}
                                     </Tag>
                                     {item.clock_out && (
-                                        <Tag 
+                                        <Tag
                                             // size="small"
                                             color={(item.early_leave_minutes || 0) > 0 ? "warning" : "success"}
                                             className="text-[10px] px-1 py-0 m-0"
                                         >
-                                            Out: {dayjs(item.clock_out).format("HH:mm")}
+                                            Out: {dayjs(item.clock_out).format(DATE_FORMATS.TIME_SHORT)}
                                         </Tag>
                                     )}
                                 </div>
-                                
+
                                 {/* Issues summary */}
                                 {hasIssue && (
                                     <div className="text-[9px] mt-0.5">
@@ -181,7 +181,7 @@ export const EmployeeAttendanceCalendar = ({
                     <span>🌙 Ca Đêm (22:00-06:00)</span>
                 </div>
             </div>
-            
+
             <Calendar
                 value={month}
                 cellRender={dateCellRender}

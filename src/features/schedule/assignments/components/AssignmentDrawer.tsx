@@ -1,6 +1,6 @@
 import { Drawer, Card, Tag, Divider, Empty } from "antd";
 import { CalendarOutlined } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { ShiftPositionRequirement } from "@/types/schedule/shift-position-requirement.types";
@@ -62,7 +62,7 @@ export function AssignmentDrawer({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-semibold">Ngày:</span>
-              <span>{dayjs(shift.shift_date).format("DD/MM/YYYY")}</span>
+              <span>{dayjs(shift.shift_date).format(DATE_FORMATS.DISPLAY_DATE)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold">Loại ca:</span>

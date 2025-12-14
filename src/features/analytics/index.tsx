@@ -23,6 +23,7 @@ import { AttendanceAnalytics } from "./components/AttendanceAnalytics";
 import { ScheduleAnalytics } from "./components/ScheduleAnalytics";
 import { SalaryAnalytics } from "./components/SalaryAnalytics";
 import { ExportButton } from "./components/ExportButton";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Dayjs } from "dayjs";
 
 export default function AnalyticsPage() {
@@ -78,7 +79,7 @@ export default function AnalyticsPage() {
   };
 
   const handleDateChange = (date: Dayjs | null) => {
-    setDateFilter(date ? date.format("YYYY-MM-DD") : undefined);
+    setDateFilter(date ? date.format(DATE_FORMATS.DATE_ONLY) : undefined);
   };
 
   const getExportConfig = () => {

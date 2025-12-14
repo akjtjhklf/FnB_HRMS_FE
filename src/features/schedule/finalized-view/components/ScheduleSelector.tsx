@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useList } from "@refinedev/core";
 import { Select, Space, Typography, Tag } from "antd";
 import { CalendarOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { WeeklySchedule } from "@/types/schedule";
 
 const { Text } = Typography;
@@ -48,7 +48,7 @@ export function ScheduleSelector({
         const weekNumber = weekStart.isoWeek();
         const year = weekStart.year();
 
-        return `${weekStart.format("DD/MM")} - ${weekEnd.format("DD/MM/YYYY")} (Tuần ${weekNumber}/${year})`;
+        return `${weekStart.format("DD/MM")} - ${weekEnd.format(DATE_FORMATS.DISPLAY_DATE)} (Tuần ${weekNumber}/${year})`;
     };
 
     // Options for Select

@@ -36,7 +36,7 @@ import {
   InfoCircleOutlined,
   CheckOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type {
   Shift,
   CreateShiftDto,
@@ -158,8 +158,8 @@ export function ShiftsManagement() {
   // Memoize select options to avoid re-render
   const scheduleOptions = schedules.map((s: any) => ({
     label: `${s.schedule_name || "Lịch tuần"} (${dayjs(s.week_start).format(
-      "DD/MM/YYYY"
-    )} - ${dayjs(s.week_end).format("DD/MM/YYYY")})`,
+      DATE_FORMATS.DISPLAY_DATE
+    )} - ${dayjs(s.week_end).format(DATE_FORMATS.DISPLAY_DATE)})`,
     value: s.id,
   }));
 
@@ -205,7 +205,7 @@ export function ShiftsManagement() {
         if (!actualDate) return false;
         // Compare exact date (YYYY-MM-DD)
         const shiftDate = s.shift_date?.split('T')[0] || s.shift_date; // Handle ISO datetime format
-        return shiftDate === actualDate.format("YYYY-MM-DD");
+        return shiftDate === actualDate.format(DATE_FORMATS.DATE_ONLY);
       }),
     };
   });
@@ -281,17 +281,17 @@ export function ShiftsManagement() {
         0
       );
 
-      const shiftDateStr = values.shift_date.format("YYYY-MM-DD");
+      const shiftDateStr = values.shift_date.format(DATE_FORMATS.DATE_ONLY);
 
       const data: CreateShiftDto | UpdateShiftDto = {
         ...values,
         schedule_id: selectedSchedule,
         shift_date: shiftDateStr,
         start_at: values.start_at
-          ? `${shiftDateStr}T${values.start_at.format("HH:mm:ss")}`
+          ? `${shiftDateStr}T${values.start_at.format(DATE_FORMATS.TIME_ONLY)}`
           : null,
         end_at: values.end_at
-          ? `${shiftDateStr}T${values.end_at.format("HH:mm:ss")}`
+          ? `${shiftDateStr}T${values.end_at.format(DATE_FORMATS.TIME_ONLY)}`
           : null,
         total_required: totalRequired > 0 ? totalRequired : (values.total_required || 0),
       };
@@ -453,12 +453,12 @@ export function ShiftsManagement() {
         shiftsToCreate.push({
           schedule_id: selectedSchedule,
           shift_type_id: shiftTypeId,
-          shift_date: shiftDate.format("YYYY-MM-DD"),
+          shift_date: shiftDate.format(DATE_FORMATS.DATE_ONLY),
           start_at: shiftType?.start_time,
           end_at: shiftType?.end_time,
           total_required: totalRequired,
           notes: `Tự động tạo cho ${DAYS_OF_WEEK[dayIndex]?.label || "Ngày"
-            } (${shiftDate.format("DD/MM/YYYY")})`,
+            } (${shiftDate.format(DATE_FORMATS.DISPLAY_DATE)})`,
         });
       });
     }
@@ -637,7 +637,7 @@ export function ShiftsManagement() {
                   </span>
                   {day.date && (
                     <span className="text-xs text-gray-700 mt-0.5">
-                      {day.date.format("DD/MM/YYYY")}
+                      {day.date.format(DATE_FORMATS.DISPLAY_DATE)}
                     </span>
                   )}
                 </div>
@@ -1003,15 +1003,15 @@ export function ShiftsManagement() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
                 <span className="font-medium text-amber-900">📅 Tuần: </span>
                 <span className="text-amber-800">
-                  {scheduleStartDate.format("DD/MM/YYYY")} -{" "}
-                  {scheduleStartDate.add(6, "day").format("DD/MM/YYYY")}
+                  {scheduleStartDate.format(DATE_FORMATS.DISPLAY_DATE)} -{" "}
+                  {scheduleStartDate.add(6, "day").format(DATE_FORMATS.DISPLAY_DATE)}
                 </span>
               </div>
 
               {/* Days preview */}
               <div className="grid grid-cols-7 gap-2">
                 {DAYS_OF_WEEK.map((day) => {
-                  const actualDate = scheduleStartDate.day(day.value);
+                  const actualDate = scheduleStartDate.add(day.value, 'day');
                   return (
                     <div
                       key={day.value}

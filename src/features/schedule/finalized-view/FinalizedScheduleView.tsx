@@ -23,7 +23,7 @@ import {
     ClockCircleOutlined,
     TableOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { ScheduleSelector, WeeklyCalendarGrid } from "./components";
 import type { WeeklySchedule } from "@/types/schedule";
 import type { Shift } from "@/types/schedule/shift.types";
@@ -248,7 +248,7 @@ export function FinalizedScheduleView() {
                 </Row>
                 {schedule && (
                     <Text type="secondary">
-                        Tuần {dayjs(schedule.week_start).isoWeek()}: {dayjs(schedule.week_start).format("DD/MM/YYYY")} - {dayjs(schedule.week_end).format("DD/MM/YYYY")}
+                        Tuần {dayjs(schedule.week_start).isoWeek()}: {dayjs(schedule.week_start).format(DATE_FORMATS.DISPLAY_DATE)} - {dayjs(schedule.week_end).format(DATE_FORMATS.DISPLAY_DATE)}
                     </Text>
                 )}
             </div>

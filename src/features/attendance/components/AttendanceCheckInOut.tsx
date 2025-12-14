@@ -5,7 +5,7 @@ import { Button, Select, Form, App, Spin } from "antd";
 import { Clock, MapPin, Calendar, CheckCircle2, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCustomMutation, useList, useGetIdentity } from "@refinedev/core";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 export function AttendanceCheckInOut() {
     const { message } = App.useApp();
@@ -269,7 +269,7 @@ export function AttendanceCheckInOut() {
                 {/* Current Time */}
                 <div className="text-center">
                     <div className="text-6xl font-bold text-gray-700">
-                        {dayjs().format("HH:mm:ss")}
+                        {dayjs().format(DATE_FORMATS.TIME_ONLY)}
                     </div>
                     <div className="text-gray-500 mt-2">
                         {dayjs().format("dddd, DD MMMM YYYY")}
@@ -288,7 +288,7 @@ export function AttendanceCheckInOut() {
                         options={todayAssignments.map((a: any) => {
                             const shift = getShift(a);
                             const shiftName = shift?.shift_type?.name || "Ca làm việc";
-                            const time = shift ? `${dayjs(shift.start_time).format("HH:mm")} - ${dayjs(shift.end_time).format("HH:mm")}` : "";
+                            const time = shift ? `${dayjs(shift.start_time).format(DATE_FORMATS.TIME_SHORT)} - ${dayjs(shift.end_time).format(DATE_FORMATS.TIME_SHORT)}` : "";
                             return {
                                 label: `${shiftName} (${time})`,
                                 value: a.id
@@ -305,7 +305,7 @@ export function AttendanceCheckInOut() {
                     <div className="text-sm text-gray-700">
                         <p>
                             {lastAction.type === "check-in" ? "Chấm công vào" : "Chấm công ra"} lúc:{" "}
-                            {dayjs(lastAction.time).format("HH:mm:ss")}
+                            {dayjs(lastAction.time).format(DATE_FORMATS.TIME_ONLY)}
                         </p>
                     </div>
                 )}
@@ -358,7 +358,7 @@ export function AttendanceCheckInOut() {
                         <p className="text-sm text-gray-700">Giờ làm</p>
                         <p className="font-semibold">
                             {selectedShift
-                                ? `${dayjs(selectedShift.start_time).format("HH:mm")} - ${dayjs(selectedShift.end_time).format("HH:mm")}`
+                                ? `${dayjs(selectedShift.start_time).format(DATE_FORMATS.TIME_SHORT)} - ${dayjs(selectedShift.end_time).format(DATE_FORMATS.TIME_SHORT)}`
                                 : "--:-- - --:--"}
                         </p>
                     </div>

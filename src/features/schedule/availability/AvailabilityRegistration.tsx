@@ -45,7 +45,7 @@ import {
     LockOutlined,
     StopOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Dayjs } from "dayjs";
 import type { BadgeProps } from "antd";
 import type {
@@ -306,7 +306,7 @@ export function AvailabilityRegistration() {
     const shiftsByDate = useMemo(() => {
         const map: Record<string, Shift[]> = {};
         shifts.forEach((shift) => {
-            const dateKey = dayjs(shift.shift_date).format("YYYY-MM-DD");
+            const dateKey = dayjs(shift.shift_date).format(DATE_FORMATS.DATE_ONLY);
             if (!map[dateKey]) map[dateKey] = [];
             map[dateKey].push(shift);
         });
@@ -367,7 +367,7 @@ export function AvailabilityRegistration() {
                     values: availabilityData,
                 });
 
-                availabilityId = availabilityResult?.data?.id;
+                availabilityId = availabilityResult?.data?.id as string;
             }
 
             if (!availabilityId) {
@@ -619,7 +619,7 @@ export function AvailabilityRegistration() {
     };
 
     const getDateTimeDisplay = (isoDateTime: string | null | undefined) => {
-        return isoDateTime ? dayjs(isoDateTime).format("DD/MM/YYYY HH:mm") : "Chưa có";
+        return isoDateTime ? dayjs(isoDateTime).format(DATE_FORMATS.DISPLAY_DATETIME) : "Chưa có";
     };
 
     const getStatusTag = (status: string) => {
@@ -662,7 +662,7 @@ export function AvailabilityRegistration() {
                             <strong>Ca làm việc</strong>
                         </div>
                         <div style={{ fontSize: "12px", color: "#888" }}>
-                            {dayjs(shift.shift_date).format("DD/MM/YYYY")} •{" "}
+                            {dayjs(shift.shift_date).format(DATE_FORMATS.DISPLAY_DATE)} •{" "}
                             {shift.start_at || "--:--"} - {shift.end_at || "--:--"}
                         </div>
                     </div>
@@ -833,7 +833,7 @@ export function AvailabilityRegistration() {
                         // Only render for date cells, not month cells
                         if (info.type !== 'date') return null;
 
-                        const dateKey = date.format("YYYY-MM-DD");
+                        const dateKey = date.format(DATE_FORMATS.DATE_ONLY);
                         const dayShifts = shiftsByDate[dateKey] || [];
 
                         if (dayShifts.length === 0) return null;

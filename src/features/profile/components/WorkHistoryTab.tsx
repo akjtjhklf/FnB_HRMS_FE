@@ -27,7 +27,7 @@ import {
 } from "@ant-design/icons";
 import { TrendingUp, Award, AlertTriangle, Briefcase } from "lucide-react";
 import { useState, useMemo } from "react";
-import dayjs from "dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface WorkHistoryTabProps {
   employeeId: string;
@@ -248,8 +248,8 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
   };
 
   // Get base_salary from contract if available (overrides scheme rate)
-  const currentSalary = activeContract?.base_salary 
-    ? Number(activeContract.base_salary) 
+  const currentSalary = activeContract?.base_salary
+    ? Number(activeContract.base_salary)
     : Number(currentScheme.rate) || 0;
 
   // Filter salary schemes that have higher rate than current (for raise request)
@@ -636,7 +636,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
               dataIndex: "created_at",
               key: "created_at",
               width: 110,
-              render: (text: string) => dayjs(text).format("DD/MM/YYYY"),
+              render: (text: string) => dayjs(text).format(DATE_FORMATS.DISPLAY_DATE),
             },
             {
               title: "Loại",
@@ -926,7 +926,7 @@ export const WorkHistoryTab: React.FC<WorkHistoryTabProps> = ({
                     const diff = schemeRate - currentSalary;
                     const diffPercent = currentSalary > 0 ? (diff / currentSalary * 100) : 0;
                     const isRaise = diff > 0;
-                    
+
                     return (
                       <Select.Option key={scheme.id} value={scheme.id}>
                         <div className="flex justify-between items-center">

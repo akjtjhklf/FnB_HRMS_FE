@@ -88,7 +88,7 @@ export const RoleList = () => {
                         size="small"
                         recordItemId={record.id}
                         resource="roles"
-                        confirmTitle="Xóa role này?"
+                        confirmTitle="Xóa vai trò này?"
                         confirmOkText="Xóa"
                         confirmCancelText="Hủy"
                     />
@@ -100,9 +100,9 @@ export const RoleList = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
-                <Title level={4} className="m-0">Danh sách Roles</Title>
+                <Title level={4} className="m-0">Danh sách vai trò</Title>
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                    Thêm Role
+                    Thêm vai trò
                 </Button>
             </div>
 

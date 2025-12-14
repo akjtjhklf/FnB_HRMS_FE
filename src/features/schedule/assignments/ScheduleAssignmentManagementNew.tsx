@@ -20,7 +20,7 @@ import {
   WarningOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ShiftType } from "@/types/schedule/shift-type.types";
 import type { WeeklySchedule } from "@/types/schedule/weekly-schedule.types";
@@ -232,7 +232,7 @@ export function ScheduleAssignmentManagement() {
       return {
         ...day,
         date: firstShift
-          ? dayjs(firstShift.shift_date).format("YYYY-MM-DD")
+          ? dayjs(firstShift.shift_date).format(DATE_FORMATS.DATE_ONLY)
           : null,
         shifts: dayShifts.sort((a: any, b: any) =>
           (a.start_at || "").localeCompare(b.start_at || "")

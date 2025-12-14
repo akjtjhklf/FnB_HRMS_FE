@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { formatDate } from "@/lib/utils";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import { useConfirmModalStore } from "@/store/confirmModalStore";
 
 interface ContractListProps {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import dayjs from "dayjs";
+import dayjs from "@/lib/dayjs";
 import { useTable } from "@refinedev/antd";
 import { useCreate, useCustomMutation, useUpdate, useGetIdentity } from "@refinedev/core";
 // @ts-ignore
@@ -80,11 +80,11 @@ const formatCurrency = (value: number) => {
 
 export const SalaryList = () => {
   const { data: user } = useGetIdentity<any>();
-  
+
   // Check role name trực tiếp thay vì dùng usePermissions
   const roleName = user?.role?.name;
   const isAdminOrManager = roleName === 'Administrator' || roleName === 'Manager';
-  
+
   // Debug log
   console.log('🔍 User identity:', user);
   console.log('🔍 Role name:', roleName);
@@ -498,9 +498,9 @@ export const SalaryList = () => {
     bulkChangeStatusMutation({
       url: "monthly-payrolls/change-status-bulk",
       method: "post",
-      values: { 
+      values: {
         ids: selectedRowKeys,
-        status: bulkSelectedStatus 
+        status: bulkSelectedStatus
       },
       successNotification: () => ({
         message: "Cập nhật trạng thái thành công",
@@ -632,9 +632,9 @@ export const SalaryList = () => {
   // Handle send payslip from modal
   const handleConfirmSendPayslip = () => {
     if (!sendPayslipTarget) return;
-    
+
     const employeeName = getEmployeeName(sendPayslipTarget);
-    
+
     sendPayslipMutation(
       {
         url: `monthly-payrolls/${sendPayslipTarget.id}/send-payslip`,
@@ -682,12 +682,12 @@ export const SalaryList = () => {
   // Handle bulk send payslip
   const handleConfirmBulkSendPayslip = () => {
     const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
-    
+
     sendPayslipMutation(
       {
         url: `monthly-payrolls/send-payslip-bulk`,
         method: "post",
-        values: { 
+        values: {
           payrollIds: approvedPayrolls.map((p) => p.id),
           sendNotification: sendPayslipOptions.sendNotification,
           sendEmail: sendPayslipOptions.sendEmail,
@@ -1029,8 +1029,8 @@ export const SalaryList = () => {
                   <Button size="small" onClick={() => setSelectedRowKeys([])}>
                     Bỏ chọn
                   </Button>
-                  <Button 
-                    size="small" 
+                  <Button
+                    size="small"
                     type="primary"
                     onClick={() => setBulkStatusModalOpen(true)}
                   >
@@ -1397,7 +1397,7 @@ export const SalaryList = () => {
             {/* Employee Info */}
             <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 mb-4 border border-gray-200">
               <div className="flex items-center gap-4">
-                <EmployeeAvatar 
+                <EmployeeAvatar
                   photoUrl={statusChangePayroll.employee?.avatar}
                   name={statusChangePayroll.employee?.full_name}
                   size={48}
@@ -1460,11 +1460,11 @@ export const SalaryList = () => {
                       key={status.value}
                       type={selectedStatus === status.value ? "primary" : "default"}
                       className={`h-auto py-3 ${selectedStatus === status.value ? '' : 'border-gray-200'}`}
-                      style={selectedStatus === status.value ? { 
-                        backgroundColor: status.color === 'default' ? '#666' : 
+                      style={selectedStatus === status.value ? {
+                        backgroundColor: status.color === 'default' ? '#666' :
                           status.color === 'gold' ? '#faad14' :
-                          status.color === 'green' ? '#52c41a' :
-                          status.color === 'blue' ? '#1890ff' : '#666'
+                            status.color === 'green' ? '#52c41a' :
+                              status.color === 'blue' ? '#1890ff' : '#666'
                       } : {}}
                       onClick={() => setSelectedStatus(status.value)}
                     >
@@ -1488,8 +1488,8 @@ export const SalaryList = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <Button 
-                size="large" 
+              <Button
+                size="large"
                 className="flex-1"
                 onClick={() => {
                   setStatusModalOpen(false);
@@ -1499,9 +1499,9 @@ export const SalaryList = () => {
               >
                 Hủy
               </Button>
-              <Button 
-                type="primary" 
-                size="large" 
+              <Button
+                type="primary"
+                size="large"
                 className="flex-1"
                 disabled={!selectedStatus || selectedStatus === (statusChangePayroll.status || "draft")}
                 onClick={handleChangeStatus}
@@ -1558,7 +1558,7 @@ export const SalaryList = () => {
             {/* Employee Info Card */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4 border border-blue-100">
               <div className="flex items-center gap-4">
-                <EmployeeAvatar 
+                <EmployeeAvatar
                   photoUrl={sendPayslipTarget.employee?.avatar}
                   name={sendPayslipTarget.employee?.full_name}
                   size={56}
@@ -1620,13 +1620,13 @@ export const SalaryList = () => {
                 Tùy chọn gửi
               </h4>
               <div className="space-y-2">
-                <Checkbox 
+                <Checkbox
                   checked={sendPayslipOptions.sendNotification}
                   onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendNotification: e.target.checked }))}
                 >
                   <span className="text-gray-700">Gửi thông báo trong hệ thống</span>
                 </Checkbox>
-                <Checkbox 
+                <Checkbox
                   checked={sendPayslipOptions.sendEmail}
                   onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
                   disabled
@@ -1643,8 +1643,8 @@ export const SalaryList = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-3">
-              <Button 
-                size="large" 
+              <Button
+                size="large"
                 className="flex-1"
                 onClick={() => {
                   setSendPayslipModalOpen(false);
@@ -1653,9 +1653,9 @@ export const SalaryList = () => {
               >
                 Hủy
               </Button>
-              <Button 
-                type="primary" 
-                size="large" 
+              <Button
+                type="primary"
+                size="large"
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 icon={<SendOutlined />}
                 loading={isSendingPayslip}
@@ -1681,7 +1681,7 @@ export const SalaryList = () => {
         {(() => {
           const approvedPayrolls = payrolls.filter((p) => p.status === "approved" || p.status === "paid");
           const totalNetSalary = approvedPayrolls.reduce((sum, p) => sum + (parseFloat(p.net_salary as any) || 0), 0);
-          
+
           return (
             <div className="py-2">
               {/* Header */}
@@ -1768,13 +1768,13 @@ export const SalaryList = () => {
                   Tùy chọn gửi
                 </h4>
                 <div className="space-y-2">
-                  <Checkbox 
+                  <Checkbox
                     checked={sendPayslipOptions.sendNotification}
                     onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendNotification: e.target.checked }))}
                   >
                     <span className="text-gray-700">Gửi thông báo trong hệ thống</span>
                   </Checkbox>
-                  <Checkbox 
+                  <Checkbox
                     checked={sendPayslipOptions.sendEmail}
                     onChange={(e) => setSendPayslipOptions(prev => ({ ...prev, sendEmail: e.target.checked }))}
                     disabled
@@ -1796,16 +1796,16 @@ export const SalaryList = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <Button 
-                  size="large" 
+                <Button
+                  size="large"
                   className="flex-1"
                   onClick={() => setBulkSendModalOpen(false)}
                 >
                   Hủy
                 </Button>
-                <Button 
-                  type="primary" 
-                  size="large" 
+                <Button
+                  type="primary"
+                  size="large"
                   className="flex-1 bg-purple-600 hover:bg-purple-700"
                   icon={<SendOutlined />}
                   loading={isSendingPayslip}
@@ -1856,16 +1856,16 @@ export const SalaryList = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button 
-              size="large" 
+            <Button
+              size="large"
               className="flex-1"
               onClick={() => setBulkStatusModalOpen(false)}
             >
               Hủy
             </Button>
-            <Button 
-              type="primary" 
-              size="large" 
+            <Button
+              type="primary"
+              size="large"
               className="flex-1 bg-orange-500 hover:bg-orange-600"
               icon={<LockOutlined />}
               onClick={handleBulkChangeStatus}

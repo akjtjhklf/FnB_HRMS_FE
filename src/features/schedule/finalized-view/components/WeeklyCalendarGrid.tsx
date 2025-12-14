@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Card, Typography, Tag, Empty } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { ShiftAssignmentCard } from "./ShiftAssignmentCard";
 import type { Shift } from "@/types/schedule/shift.types";
 import type { ScheduleAssignment } from "@/types/schedule/schedule-assignment.types";
@@ -53,7 +53,7 @@ export function WeeklyCalendarGrid({
         const grid: Record<string, Record<string, Shift>> = {};
 
         shifts.forEach((shift) => {
-            const dateKey = dayjs(shift.shift_date).format("YYYY-MM-DD");
+            const dateKey = dayjs(shift.shift_date).format(DATE_FORMATS.DATE_ONLY);
             const shiftTypeId = typeof shift.shift_type_id === "object"
                 ? (shift.shift_type_id as ShiftTypeInfo).id
                 : shift.shift_type_id;
@@ -104,7 +104,7 @@ export function WeeklyCalendarGrid({
                 </div>
                 {days.map((day) => (
                     <div
-                        key={day.format("YYYY-MM-DD")}
+                        key={day.format(DATE_FORMATS.DATE_ONLY)}
                         style={{
                             textAlign: "center",
                             padding: "8px",
@@ -145,7 +145,7 @@ export function WeeklyCalendarGrid({
 
                         {/* Day cells - exact date map from Mon-Sun of ISO week */}
                         {days.map((day) => {
-                            const dateKey = day.format("YYYY-MM-DD");
+                            const dateKey = day.format(DATE_FORMATS.DATE_ONLY);
                             const shift = shiftsByDateAndType[dateKey]?.[shiftType.id];
                             const shiftAssignments = shift ? assignmentsByShift[shift.id] || [] : [];
 

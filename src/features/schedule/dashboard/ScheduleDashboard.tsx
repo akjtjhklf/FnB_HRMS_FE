@@ -27,10 +27,10 @@ import {
   SendOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
-import type { 
-  WeeklySchedule, 
+import type {
+  WeeklySchedule,
   ScheduleAssignment,
   EmployeeAvailability,
   ScheduleChangeRequest,
@@ -61,7 +61,7 @@ import type { User } from "@/types/auth";
 export function ScheduleDashboard() {
   const go = useGo();
   const { data: user } = useGetIdentity<User>();
-  
+
   // RBAC: Dynamic permission check
   const isManager = useCanManageSchedule();
   const thisWeek = dayjs().startOf("isoWeek");
@@ -80,7 +80,7 @@ export function ScheduleDashboard() {
       {
         field: "shift_date",
         operator: "gte",
-        value: thisWeek.format("YYYY-MM-DD"),
+        value: thisWeek.format(DATE_FORMATS.DATE_ONLY),
       },
     ],
     meta: { fields: ["*", "shift_type.name"] },
@@ -123,12 +123,12 @@ export function ScheduleDashboard() {
 
   // Get this week's schedule ID for stats
   const thisWeekScheduleId = useMemo(() => {
-    const schedule = schedulesQuery.data?.data?.find((s: WeeklySchedule) => 
+    const schedule = schedulesQuery.data?.data?.find((s: WeeklySchedule) =>
       dayjs(s.week_start).isSame(thisWeek, "day")
     );
     return schedule?.id;
   }, [schedulesQuery.data?.data, thisWeek]);
-  
+
   // Fetch detailed stats for current week
   const { stats: weeklyStats, isLoading: statsLoading } = useScheduleStats(thisWeekScheduleId);
 
@@ -142,10 +142,10 @@ export function ScheduleDashboard() {
   // Calculate stats
   const stats = useMemo(() => {
     if (isManager) {
-      const thisWeekSchedule = schedules.find((s: WeeklySchedule) => 
+      const thisWeekSchedule = schedules.find((s: WeeklySchedule) =>
         dayjs(s.week_start).isSame(thisWeek, "day")
       );
-      
+
       const thisWeekShifts = shifts.filter((sh: Shift) =>
         thisWeekSchedule && sh.schedule_id === thisWeekSchedule.id
       );
@@ -158,8 +158,8 @@ export function ScheduleDashboard() {
         totalSchedules: schedules.length,
         publishedSchedules: schedules.filter((s: WeeklySchedule) => s.status === "scheduled").length,
         draftSchedules: schedules.filter((s: WeeklySchedule) => s.status === "draft").length,
-        thisWeekCoverage: thisWeekShifts.length > 0 
-          ? Math.round((thisWeekAssignments.length / thisWeekShifts.length) * 100) 
+        thisWeekCoverage: thisWeekShifts.length > 0
+          ? Math.round((thisWeekAssignments.length / thisWeekShifts.length) * 100)
           : 0,
         pendingAvailabilities: availabilities.length,
         pendingChangeRequests: changeRequests.length,
@@ -262,11 +262,11 @@ export function ScheduleDashboard() {
           <div style={{ marginBottom: "8px" }}>
             <Text strong>Độ phủ lịch tuần này</Text>
           </div>
-          <Progress 
-            percent={stats.thisWeekCoverage ?? 0} 
+          <Progress
+            percent={stats.thisWeekCoverage ?? 0}
             status={(stats.thisWeekCoverage ?? 0) >= 80 ? "success" : "exception"}
           />
-          
+
           {/* Detailed Stats from API */}
           {weeklyStats && !statsLoading && (
             <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #f0f0f0" }}>
@@ -321,7 +321,7 @@ export function ScheduleDashboard() {
         <Row gutter={[16, 16]}>
           {/* Upcoming Schedules */}
           <Col xs={24} lg={12}>
-            <Card 
+            <Card
               title={<Space><CalendarOutlined /> Lịch Sắp Tới</Space>}
               extra={<Button type="link" onClick={() => go({ to: "/schedule/weekly-schedules" })}>Xem tất cả</Button>}
             >
@@ -331,10 +331,10 @@ export function ScheduleDashboard() {
                   <List.Item
                     key={schedule.id}
                     actions={[
-                      <Button 
+                      <Button
                         key="view"
-                        type="link" 
-                        size="small" 
+                        type="link"
+                        size="small"
                         icon={<EyeOutlined />}
                         onClick={() => go({ to: `/schedule/weekly-schedules` })}
                       >
@@ -344,7 +344,7 @@ export function ScheduleDashboard() {
                   >
                     <List.Item.Meta
                       title={`Tuần ${dayjs(schedule.week_start).isoWeek()} - ${dayjs(schedule.week_start).year()}`}
-                      description={`${dayjs(schedule.week_start).format("DD/MM")} - ${dayjs(schedule.week_end).format("DD/MM/YYYY")}`}
+                      description={`${dayjs(schedule.week_start).format("DD/MM")} - ${dayjs(schedule.week_end).format(DATE_FORMATS.DISPLAY_DATE)}`}
                     />
                     <Tag color={schedule.status === "scheduled" ? "blue" : "default"}>
                       {schedule.status === "scheduled" ? "Đã công bố" : "Nháp"}
@@ -362,7 +362,7 @@ export function ScheduleDashboard() {
 
           {/* Pending Approvals */}
           <Col xs={24} lg={12}>
-            <Card 
+            <Card
               title={<Space><ClockCircleOutlined /> Chờ Duyệt</Space>}
               extra={<Button type="link" onClick={() => go({ to: "/schedule/change-requests" })}>Xem tất cả</Button>}
             >
@@ -374,7 +374,7 @@ export function ScheduleDashboard() {
                     <List.Item>
                       <List.Item.Meta
                         title={isAvailability ? "Đăng ký ca" : "Yêu cầu đổi ca"}
-                        description={dayjs(item.created_at).format("DD/MM/YYYY HH:mm")}
+                        description={dayjs(item.created_at).format(DATE_FORMATS.DISPLAY_DATETIME)}
                       />
                       <Tag color="orange">Chờ duyệt</Tag>
                     </List.Item>
@@ -398,7 +398,7 @@ export function ScheduleDashboard() {
     .filter((a: any) =>
       a.shift?.shift_date && dayjs(a.shift.shift_date).isAfter(dayjs())
     )
-    .sort((a: any, b: any) => 
+    .sort((a: any, b: any) =>
       dayjs(a.shift?.shift_date).diff(dayjs(b.shift?.shift_date))
     )
     .slice(0, 5);
@@ -469,7 +469,7 @@ export function ScheduleDashboard() {
       </Card>
 
       {/* My Upcoming Shifts */}
-      <Card 
+      <Card
         title={<Space><CalendarOutlined /> Ca Sắp Tới</Space>}
         extra={<Button type="link" onClick={() => go({ to: "/schedule/my-schedule" })}>Xem tất cả</Button>}
       >

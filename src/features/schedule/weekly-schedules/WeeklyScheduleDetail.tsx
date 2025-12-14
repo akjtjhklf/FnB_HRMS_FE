@@ -31,7 +31,7 @@ import {
   ClockCircleOutlined,
   InfoCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import type { WeeklySchedule } from "@/types/schedule";
 import type { Shift } from "@/types/schedule/shift.types";
@@ -191,7 +191,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
 
   // Group shifts by day
   const shiftsByDay = shifts.reduce((acc, shift) => {
-    const day = dayjs(shift.shift_date).format("YYYY-MM-DD");
+    const day = dayjs(shift.shift_date).format(DATE_FORMATS.DATE_ONLY);
     if (!acc[day]) {
       acc[day] = [];
     }
@@ -205,7 +205,7 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
       title: "Ngày",
       dataIndex: "shift_date",
       key: "shift_date",
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY (dddd)"),
+      render: (date: string) => dayjs(date).format(DATE_FORMATS.DISPLAY_DATE_WITH_DAY),
     },
     {
       title: "Loại ca",
@@ -395,8 +395,8 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
             <Space>
               <CalendarOutlined />
               <Text strong>
-                {dayjs(schedule.week_start).format("DD/MM/YYYY")} -{" "}
-                {dayjs(schedule.week_end).format("DD/MM/YYYY")}
+                {dayjs(schedule.week_start).format(DATE_FORMATS.DISPLAY_DATE)} -{" "}
+                {dayjs(schedule.week_end).format(DATE_FORMATS.DISPLAY_DATE)}
               </Text>
               <Text type="secondary">
                 (Tuần {dayjs(schedule.week_start).isoWeek()} /{" "}
@@ -409,12 +409,12 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
           </Descriptions.Item>
           <Descriptions.Item label="Ngày công bố">
             {schedule.published_at
-              ? dayjs(schedule.published_at).format("DD/MM/YYYY HH:mm")
+              ? dayjs(schedule.published_at).format(DATE_FORMATS.DISPLAY_DATETIME)
               : "-"}
           </Descriptions.Item>
           <Descriptions.Item label="Ngày tạo" span={2}>
             {schedule.created_at
-              ? dayjs(schedule.created_at).format("DD/MM/YYYY HH:mm")
+              ? dayjs(schedule.created_at).format(DATE_FORMATS.DISPLAY_DATETIME)
               : "-"}
           </Descriptions.Item>
           {schedule.notes && (
@@ -556,21 +556,21 @@ export function WeeklyScheduleDetail({ id }: WeeklyScheduleDetailProps) {
                     schedule.created_at
                       ? {
                         color: "blue",
-                        label: dayjs(schedule.created_at).format("DD/MM/YYYY HH:mm"),
+                        label: dayjs(schedule.created_at).format(DATE_FORMATS.DISPLAY_DATETIME),
                         children: "Lịch tuần được tạo",
                       }
                       : null,
                     schedule.published_at
                       ? {
                         color: "green",
-                        label: dayjs(schedule.published_at).format("DD/MM/YYYY HH:mm"),
+                        label: dayjs(schedule.published_at).format(DATE_FORMATS.DISPLAY_DATETIME),
                         children: "Lịch tuần được công bố",
                       }
                       : null,
                     schedule.status === "finalized"
                       ? {
                         color: "purple",
-                        label: dayjs(schedule.updated_at).format("DD/MM/YYYY HH:mm"),
+                        label: dayjs(schedule.updated_at).format(DATE_FORMATS.DISPLAY_DATETIME),
                         children: "Lịch tuần được hoàn tất",
                       }
                       : null,

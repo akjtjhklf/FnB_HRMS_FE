@@ -6,7 +6,7 @@ import { useCreate, useDelete, useList } from "@refinedev/core";
 import { Table, Button, Modal, Form, Select, InputNumber, DatePicker, Input, App, Tag, Space, Popconfirm, Row, Col, Card, Statistic } from "antd";
 import { PlusOutlined, DeleteOutlined, CheckCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import type { EmployeeAvailability, Shift, Position } from "@/types/schedule";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface Employee {
   id: string;
@@ -38,11 +38,11 @@ export function AvailabilityRegistry() {
       initial: [{ field: "created_at", order: "desc" }],
     },
   });
-  
+
   const { query: availabilitiesQuery } = useList<EmployeeAvailability>({
     resource: "employee-availability",
   });
-  
+
   const availabilities = availabilitiesQuery.data?.data || [];
   const refetch = availabilitiesQuery.refetch;
 
@@ -93,7 +93,7 @@ export function AvailabilityRegistry() {
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
-      
+
       createAvailability(
         {
           resource: "employee-availability",
@@ -101,7 +101,7 @@ export function AvailabilityRegistry() {
             employee_id: values.employee_id,
             shift_id: values.shift_id,
             priority: values.priority || 5,
-            expires_at: values.expires_at ? dayjs(values.expires_at).format("YYYY-MM-DD") : null,
+            expires_at: values.expires_at ? dayjs(values.expires_at).format(DATE_FORMATS.DATE_ONLY) : null,
             note: values.note || null,
             positions: values.positions || [],
           },
@@ -160,7 +160,7 @@ export function AvailabilityRegistry() {
         const shift = record.shift_id as any;
         if (typeof shift === "object" && shift) {
           // Get shift name from shift_type
-          const shiftName = shift.shift_type?.name 
+          const shiftName = shift.shift_type?.name
             || (typeof shift.shift_type_id === 'object' ? shift.shift_type_id?.name : null)
             || `Ca ${shift.shift_date || 'Chưa có'}`;
           return (
@@ -196,7 +196,7 @@ export function AvailabilityRegistry() {
         const isExpired = dayjs(expires_at).isBefore(dayjs());
         return (
           <Tag color={isExpired ? "red" : "blue"} icon={isExpired ? undefined : <ClockCircleOutlined />}>
-            {dayjs(expires_at).format("DD/MM/YYYY")}
+            {dayjs(expires_at).format(DATE_FORMATS.DISPLAY_DATE)}
           </Tag>
         );
       },
@@ -212,7 +212,7 @@ export function AvailabilityRegistry() {
       dataIndex: "created_at",
       key: "created_at",
       width: 120,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+      render: (date: string) => dayjs(date).format(DATE_FORMATS.DISPLAY_DATE),
     },
     {
       title: "Thao tác",

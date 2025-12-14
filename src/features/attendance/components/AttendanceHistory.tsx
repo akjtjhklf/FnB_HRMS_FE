@@ -5,7 +5,7 @@ import { useTable } from "@refinedev/antd";
 import { useCustomMutation } from "@refinedev/core";
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, RefreshCcw } from "lucide-react";
 import { useMemo, useState } from "react";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 import { EmployeeAttendanceCalendar } from "./EmployeeAttendanceCalendar";
 
 interface AttendanceShift {
@@ -70,7 +70,7 @@ export function AttendanceHistory() {
             render: (date: string) => (
                 <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-gray-700" />
-                    <span>{dayjs(date).format("DD/MM/YYYY")}</span>
+                    <span>{dayjs(date).format(DATE_FORMATS.DISPLAY_DATE)}</span>
                 </div>
             ),
         },
@@ -83,7 +83,7 @@ export function AttendanceHistory() {
                 time ? (
                     <div className="flex items-center gap-2">
                         <Clock size={16} className="text-green-600" />
-                        <span>{dayjs(time).format("HH:mm:ss")}</span>
+                        <span>{dayjs(time).format(DATE_FORMATS.TIME_ONLY)}</span>
                     </div>
                 ) : (
                     <span className="text-gray-700">-</span>

@@ -6,7 +6,7 @@ import { useCreate, useUpdate, useList } from "@refinedev/core";
 import { Table, Button, Modal, Form, Select, Input, App, Tag, Space, Row, Col, Card, Statistic, Descriptions } from "antd";
 import { PlusOutlined, SwapOutlined, UserDeleteOutlined, CalendarOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from "@ant-design/icons";
 import type { ScheduleChangeRequest } from "@/types/schedule";
-import dayjs from "@/lib/dayjs";
+import dayjs, { DATE_FORMATS } from "@/lib/dayjs";
 
 interface Employee {
   id: string;
@@ -89,7 +89,7 @@ export function ChangeRequests() {
   const handleCreate = async () => {
     try {
       const values = await form.validateFields();
-      
+
       createRequest(
         {
           resource: "schedule-change-requests",
@@ -233,7 +233,7 @@ export function ChangeRequests() {
       dataIndex: "created_at",
       key: "created_at",
       width: 120,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+      render: (date: string) => dayjs(date).format(DATE_FORMATS.DISPLAY_DATE),
     },
     {
       title: "Thao tác",
@@ -445,11 +445,11 @@ export function ChangeRequests() {
             )}
             <Descriptions.Item label="Lý do">{selectedRequest.reason || "-"}</Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
-              {dayjs(selectedRequest.created_at).format("DD/MM/YYYY HH:mm")}
+              {dayjs(selectedRequest.created_at).format(DATE_FORMATS.DISPLAY_DATETIME)}
             </Descriptions.Item>
             {selectedRequest.approved_at && (
               <Descriptions.Item label="Ngày duyệt">
-                {dayjs(selectedRequest.approved_at).format("DD/MM/YYYY HH:mm")}
+                {dayjs(selectedRequest.approved_at).format(DATE_FORMATS.DISPLAY_DATETIME)}
               </Descriptions.Item>
             )}
             {selectedRequest.approved_by && (
