@@ -2,7 +2,7 @@
 
 import { Header } from "@components/header";
 import { ModernSidebar } from "@components/layout";
-import { Menu, Calendar, ClipboardList, BarChart3, Users } from "lucide-react";
+import { Menu, Calendar, ClipboardList, BarChart3, Users, Eye } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGetIdentity } from "@refinedev/core";
@@ -21,6 +21,7 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
   const scheduleMenuItems = isManager ? [
     { icon: <BarChart3 size={18} />, label: "Dashboard", href: "/schedule" },
     { icon: <Calendar size={18} />, label: "Lịch Tuần", href: "/schedule/weekly-schedules" },
+    { icon: <Eye size={18} />, label: "Xem Lịch", href: "/schedule/finalized-view" },
     { icon: <Calendar size={18} />, label: "Quản Lý Ca", href: "/schedule/shifts" },
     { icon: <ClipboardList size={18} />, label: "Xếp Lịch", href: "/schedule/assignments" },
     { icon: <ClipboardList size={18} />, label: "Loại Ca", href: "/schedule/shift-types" },
@@ -30,6 +31,7 @@ export default function ScheduleLayout({ children }: { children: ReactNode }) {
   ] : [
     // Employees don't need Dashboard - they have My Schedule and Availability Registry
     { icon: <Calendar size={18} />, label: "Lịch Của Tôi", href: "/schedule/my-schedule" },
+    { icon: <Eye size={18} />, label: "Xem Lịch", href: "/schedule/finalized-view" },
     { icon: <ClipboardList size={18} />, label: "Đăng Ký Ca", href: "/schedule/availability" },
     { icon: <ClipboardList size={18} />, label: "Đổi Ca", href: "/schedule/change-requests" },
   ];

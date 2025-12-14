@@ -61,7 +61,7 @@ a {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #888;
 }
 
 /* Smooth scroll behavior */
@@ -117,6 +117,6 @@ html {
 
 /* Ẩn thanh cuộn thừa nếu còn sót lại */
 ::-webkit-scrollbar {
-  width: 0px;
+  width: 5px;
   background: transparent;
 }
