@@ -372,6 +372,44 @@ export function WeeklySchedulesManagement() {
             label: "Xem chi tiết",
             onClick: () => handleViewDetail(record.id),
           },
+          {
+            key: "delete",
+            icon: <DeleteOutlined />,
+            label: "Xóa",
+            onClick: () => {
+              openConfirm({
+                title: "Xóa lịch tuần",
+                content:
+                  "Bạn có chắc muốn xóa lịch tuần này? Tất cả ca làm việc và yêu cầu vị trí sẽ bị xóa.",
+                okText: "Xóa",
+                cancelText: "Hủy",
+                type: "danger",
+                onConfirm: async () => {
+                  return new Promise((resolve, reject) => {
+                    deleteSchedule(
+                      {
+                        resource: "weekly-schedules",
+                        id: record.id,
+                      },
+                      {
+                        onSuccess: () => {
+                          message.success("Xóa lịch tuần thành công");
+                          tableQueryResult.refetch();
+                          resolve();
+                        },
+                        onError: (error: any) => {
+                          message.error(
+                            error?.message || "Có lỗi xảy ra khi xóa"
+                          );
+                          reject(error);
+                        },
+                      }
+                    );
+                  });
+                },
+              });
+            },
+          },
         ];
 
         if (record.status === "draft") {
@@ -387,44 +425,6 @@ export function WeeklySchedulesManagement() {
               icon: <SendOutlined />,
               label: "Công bố",
               onClick: () => handlePublish(record.id),
-            },
-            {
-              key: "delete",
-              icon: <DeleteOutlined />,
-              label: "Xóa",
-              onClick: () => {
-                openConfirm({
-                  title: "Xóa lịch tuần",
-                  content:
-                    "Bạn có chắc muốn xóa lịch tuần này? Tất cả ca làm việc và yêu cầu vị trí sẽ bị xóa.",
-                  okText: "Xóa",
-                  cancelText: "Hủy",
-                  type: "danger",
-                  onConfirm: async () => {
-                    return new Promise((resolve, reject) => {
-                      deleteSchedule(
-                        {
-                          resource: "weekly-schedules",
-                          id: record.id,
-                        },
-                        {
-                          onSuccess: () => {
-                            message.success("Xóa lịch tuần thành công");
-                            tableQueryResult.refetch();
-                            resolve();
-                          },
-                          onError: (error: any) => {
-                            message.error(
-                              error?.message || "Có lỗi xảy ra khi xóa"
-                            );
-                            reject(error);
-                          },
-                        }
-                      );
-                    });
-                  },
-                });
-              },
             }
           );
         }
